@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':backend:common')
+    api project(':backend:executions') // для чтения истории
+    api project(':backend:jobs')       // для контекста задач
+    
+    // Чтение данных, JPA не обязательно, но может использоваться для мат. представлений
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.postgresql:postgresql'
+    
+    // HTTP-клиент для вызова ml-service
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    
+    // Кэширование (например, Caffeine)
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+    
+    // Для агрегации
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+}
