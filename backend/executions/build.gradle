@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':backend:common')
+    api project(':backend:jobs') // для получения конфигурации Job
+    
+    api 'org.springframework.boot:spring-boot-starter-data-jpa'
+    api 'org.postgresql:postgresql'
+    api 'org.flywaydb:flyway-core'
+    
+    // Для работы с артефактами (MinIO)
+    implementation 'io.minio:minio:8.5.17' // версию указать явно или через ext
+    implementation 'org.springframework.boot:spring-boot-starter-web' // для RestTemplate (если нужно)
+    
+    // Для uuid
+    implementation 'com.fasterxml.uuid:java-uuid-generator:5.1.0'
+}
+
+// Определяем конфигурацию для интерфейсов, которые должны быть доступны orchestrator'у
+// (например, ExecutionLockService, ExecutionCommandService)
+// Они уже в api, так как модуль library экспортирует всё.

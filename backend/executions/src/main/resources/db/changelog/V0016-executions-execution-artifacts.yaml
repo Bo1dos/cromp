@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-execution-artifacts-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: execution_artifacts
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: execution_id, type: BIGINT, constraints: { nullable: false, references: executions(id), foreignKeyName: fk_execution_artifacts_execution_id, deleteCascade: true } }
+              - column: { name: kind, type: artifact_kind, constraints: { nullable: false } }
+              - column: { name: storage_path, type: TEXT, constraints: { nullable: false, unique: true } }
+              - column: { name: size_bytes, type: BIGINT }
+              - column: { name: checksum_sha256, type: CHAR(64) }
+              - column: { name: content_type, type: VARCHAR(255), defaultValue: text/plain }
+              - column: { name: compression, type: VARCHAR(20) }
+              - column: { name: metadata, type: JSONB, defaultValue: "{}" }
+              - column: { name: retention_days, type: INTEGER }
+              - column: { name: uploaded_by, type: BIGINT, constraints: { references: users(id), foreignKeyName: fk_execution_artifacts_uploaded_by } }
+              - column: { name: uploaded_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            indexName: idx_artifacts_execution
+            tableName: execution_artifacts
+            columns: [ execution_id ]
