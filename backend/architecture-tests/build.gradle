@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    // ArchUnit
+    implementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
+
+    // Зависимости на все модули для сканирования классов
+    implementation project(':backend:common')
+    implementation project(':backend:iam')
+    implementation project(':backend:jobs')
+    implementation project(':backend:schedules')
+    implementation project(':backend:executions')
+    implementation project(':backend:secrets')
+    implementation project(':backend:analytics')
+    implementation project(':backend:api')
+    implementation project(':backend:orchestrator')
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar.enabled = false
