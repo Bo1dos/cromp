@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-extensions
+      author: bo1dos
+      changes:
+        - sql: CREATE EXTENSION IF NOT EXISTS pgcrypto;
+        - sql: CREATE EXTENSION IF NOT EXISTS citext;

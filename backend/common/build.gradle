@@ -1,0 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    // Только минимальные общие аннотации
+    api 'jakarta.validation:jakarta.validation-api'
+    api 'com.fasterxml.jackson.core:jackson-annotations'
+}
