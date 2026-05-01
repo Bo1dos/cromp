@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-organizations-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: organizations
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: org_uuid, type: UUID, defaultValueComputed: gen_random_uuid(), constraints: { nullable: false, unique: true } }
+              - column: { name: name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: settings, type: JSONB, defaultValue: "{}" }
+              - column: { name: created_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: deleted_at, type: TIMESTAMPTZ }
+        - sql:
+            sql: |
+              ALTER TABLE organizations ADD COLUMN is_deleted BOOLEAN GENERATED ALWAYS AS (deleted_at IS NOT NULL) STORED;
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX ux_organizations_name_not_deleted ON organizations (name) WHERE deleted_at IS NULL;
+        - sql:
+            sql: |
+              CREATE TRIGGER tr_organizations_updated BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
