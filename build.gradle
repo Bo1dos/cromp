@@ -1,0 +1,58 @@
+plugins {
+    // Здесь не применяем плагины — они будут в подмодулях
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'org.springframework.boot' version '3.4.1' apply false
+}
+
+group = 'com.cromp'
+version = '1.0.0-SNAPSHOT'
+
+subprojects {
+    repositories {
+        mavenCentral()
+    }
+
+    apply plugin: 'java'
+
+    // Общие настройки Java
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+        options.encoding = 'UTF-8'
+    }
+
+    // Управление зависимостями (версии из Spring Boot BOM)
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencyManagement {
+        imports {
+            mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+        }
+        dependencies {
+            // Задаём версии для библиотек, не входящих в BOM
+            dependency 'com.cronutils:cron-utils:9.2.1'
+            dependency 'io.jsonwebtoken:jjwt-api:0.12.6'
+            dependency 'io.jsonwebtoken:jjwt-impl:0.12.6'
+            dependency 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+            dependency 'org.mapstruct:mapstruct:1.6.3'
+            dependency 'org.mapstruct:mapstruct-processor:1.6.3'
+            dependency 'org.projectlombok:lombok:1.18.36' // явно, хотя в BOM есть
+            dependency 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+            
+        }
+    }
+
+    // Общие тестовые зависимости
+    dependencies {
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:testcontainers'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
+        // ArchUnit для проверки архитектурных инвариантов
+        testImplementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}

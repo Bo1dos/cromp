@@ -1,0 +1,20 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'cron-as-a-service'
+
+
+include 'backend:common'
+include 'backend:iam'
+include 'backend:jobs'
+include 'backend:schedules'
+include 'backend:executions'
+include 'backend:secrets'
+include 'backend:analytics'
+include 'backend:orchestrator'
+include 'backend:api'
+include 'backend:architecture-tests'
