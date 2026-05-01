@@ -1,0 +1,35 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'java'
+}
+
+dependencies {
+    implementation project(':backend:common')
+    implementation project(':backend:iam')
+    implementation project(':backend:jobs')
+    implementation project(':backend:schedules')
+    implementation project(':backend:executions')
+    implementation project(':backend:secrets')
+    implementation project(':backend:analytics')
+    // api не включаем
+    
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.postgresql:postgresql'
+    
+    // Liquibase
+    implementation 'org.liquibase:liquibase-core'
+    
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+    implementation 'io.minio:minio:8.5.17' // если orchestrator работает с MinIO
+}
+
+bootJar {
+    archiveFileName = 'cron-service.jar'
+    mainClass = 'com.cromp.orchestrator.OrchestratorApplication' // замените на реальный
+}
