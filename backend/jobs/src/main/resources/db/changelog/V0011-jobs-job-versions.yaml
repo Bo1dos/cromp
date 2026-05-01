@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-job-versions-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: job_versions
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: job_id, type: BIGINT, constraints: { nullable: false, references: jobs(id), foreignKeyName: fk_job_versions_job_id, deleteCascade: true } }
+              - column: { name: version, type: INTEGER, defaultValueNumeric: 1, constraints: { nullable: false } }
+              - column: { name: config, type: JSONB, constraints: { nullable: false } }
+              - column: { name: target_url, type: TEXT }
+              - column: { name: method, type: VARCHAR(10) }
+              - column: { name: timeout_ms, type: INTEGER }
+              - column: { name: retry_policy, type: JSONB }
+              - column: { name: created_by, type: BIGINT, constraints: { references: users(id), foreignKeyName: fk_job_versions_created_by } }
+              - column: { name: created_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: job_versions
+            columnNames: job_id, version
+            constraintName: uk_job_versions_job_version
+        - createIndex:
+            indexName: idx_job_versions_job
+            tableName: job_versions
+            columns: [ job_id, version ]
+        - sql:
+            sql: |
+              CREATE OR REPLACE FUNCTION sync_job_version_fields()
+              RETURNS TRIGGER AS $$
+              BEGIN
+                NEW.target_url := NEW.config->>'url';
+                NEW.method := NEW.config->>'method';
+                NEW.timeout_ms := (NEW.config->>'timeoutMs')::INTEGER;
+                NEW.retry_policy := NEW.config->'retryPolicy';
+                RETURN NEW;
+              END;
+              $$ LANGUAGE plpgsql;
+        - sql:
+            sql: |
+              CREATE TRIGGER tr_sync_job_version_fields
+                BEFORE INSERT OR UPDATE ON job_versions
+                FOR EACH ROW
+                EXECUTE FUNCTION sync_job_version_fields();
+        - sql:
+            sql: |
+              ALTER TABLE job_versions ADD CONSTRAINT check_config_has_url CHECK (config ? 'url');
+              ALTER TABLE job_versions ADD CONSTRAINT check_config_has_method CHECK (config ? 'method');

@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-jobs-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: jobs
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: job_uuid, type: UUID, defaultValueComputed: gen_random_uuid(), constraints: { nullable: false, unique: true } }
+              - column: { name: organization_id, type: BIGINT, constraints: { nullable: false, references: organizations(id), foreignKeyName: fk_jobs_organization_id, deleteCascade: true } }
+              - column: { name: name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: description, type: TEXT }
+              - column: { name: status, type: job_status, defaultValue: ACTIVE, constraints: { nullable: false } }
+              - column: { name: queue_name, type: VARCHAR(100), defaultValue: default }
+              - column: { name: priority, type: INTEGER, defaultValueNumeric: 0 }
+              - column: { name: created_by, type: BIGINT, constraints: { references: users(id), foreignKeyName: fk_jobs_created_by } }
+              - column: { name: created_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: deleted_at, type: TIMESTAMPTZ }
+        - createIndex:
+            indexName: ux_jobs_org_name_not_deleted
+            tableName: jobs
+            unique: true
+            columns: [ organization_id, name ]
+            where: deleted_at IS NULL
+        - createIndex:
+            indexName: idx_jobs_org_status
+            tableName: jobs
+            columns: [ organization_id, status ]
+            where: deleted_at IS NULL
+        - sql:
+            sql: |
+              ALTER TABLE jobs ADD COLUMN is_deleted BOOLEAN GENERATED ALWAYS AS (deleted_at IS NOT NULL) STORED;
+        - sql:
+            sql: |
+              CREATE TRIGGER tr_jobs_updated BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

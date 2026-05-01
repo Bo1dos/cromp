@@ -1,0 +1,19 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':backend:common')
+    api project(':backend:iam') // нужен для проверки прав и tenant
+    
+    api 'org.springframework.boot:spring-boot-starter-data-jpa'
+    api 'org.postgresql:postgresql'
+    api 'org.flywaydb:flyway-core'
+    
+    // Валидация cron-выражений (опционально)
+    implementation 'com.cronutils:cron-utils'
+    
+    // MapStruct для преобразования (если нужен внутри)
+    implementation 'org.mapstruct:mapstruct'
+    annotationProcessor 'org.mapstruct:mapstruct-processor'
+}
