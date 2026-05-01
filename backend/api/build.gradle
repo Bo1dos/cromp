@@ -1,0 +1,32 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':backend:common')
+    api project(':backend:iam')
+    api project(':backend:jobs')
+    api project(':backend:schedules')
+    api project(':backend:executions')
+    api project(':backend:secrets')
+    api project(':backend:analytics')
+    // orchestrator не включаем, чтобы не создавать циклических зависимостей;
+    // если нужны ручные запуски, они могут быть в orchestrator, тогда api будет вызывать orchestrator через его интерфейс.
+    // Но для простоты оставим так: api напрямую вызывает сервисы других модулей.
+    
+    api 'org.springframework.boot:spring-boot-starter-web'
+    api 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // Swagger/OpenAPI
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3'
+    
+    // MapStruct для DTO
+    implementation 'org.mapstruct:mapstruct'
+    annotationProcessor 'org.mapstruct:mapstruct-processor'
+    
+    // Для фильтров
+    implementation 'org.springframework.boot:spring-boot-starter-security' // для JWT фильтра
+    implementation 'io.jsonwebtoken:jjwt-api'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
+}
