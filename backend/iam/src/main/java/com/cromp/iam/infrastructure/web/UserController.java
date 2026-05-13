@@ -19,20 +19,20 @@ public class UserController {
     private final UserFacade userFacade;
 
     @GetMapping("/{userId}")
-    @PreAuthorize("#userId == authentication.principal")
+    @PreAuthorize("isAuthenticated()")
     public UserResponse getUser(@PathVariable Long userId) {
         return userFacade.getById(userId);
     }
 
     @PutMapping("/{userId}/profile")
-    @PreAuthorize("#userId == authentication.principal and #request.userId == authentication.principal")
+    @PreAuthorize("#userId.toString() == authentication.principal.toString() and #request.userId.toString() == authentication.principal.toString()")
     public UserResponse updateProfile(@PathVariable Long userId,
                                       @Valid @RequestBody UpdateUserProfileRequest request) {
         return userFacade.updateProfile(request);
     }
 
     @PutMapping("/{userId}/email")
-    @PreAuthorize("#userId == authentication.principal and #request.userId == authentication.principal")
+    @PreAuthorize("#userId.toString() == authentication.principal.toString() and #request.userId.toString() == authentication.principal.toString()")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changeEmail(@PathVariable Long userId,
                             @Valid @RequestBody ChangeUserEmailRequest request) {
@@ -40,7 +40,7 @@ public class UserController {
     }
 
     @PutMapping("/{userId}/password")
-    @PreAuthorize("#userId == authentication.principal and #request.userId == authentication.principal")
+    @PreAuthorize("#userId.toString() == authentication.principal.toString() and #request.userId.toString() == authentication.principal.toString()")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changePassword(@PathVariable Long userId,
                                @Valid @RequestBody ChangeUserPasswordRequest request) {

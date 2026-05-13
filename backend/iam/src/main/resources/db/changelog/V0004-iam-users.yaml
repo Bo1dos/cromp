@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-users-table
       author: bo1dos
@@ -19,11 +19,14 @@ databaseChangeLog:
               - column: { name: updated_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
               - column: { name: deleted_at, type: TIMESTAMPTZ }
         - sql:
+            splitStatements: false
             sql: |
               ALTER TABLE users ADD COLUMN is_deleted BOOLEAN GENERATED ALWAYS AS (deleted_at IS NOT NULL) STORED;
         - sql:
+            splitStatements: false
             sql: |
               CREATE UNIQUE INDEX ux_users_email_not_deleted ON users (email) WHERE deleted_at IS NULL;
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_users_updated BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-roles-table
       author: bo1dos
@@ -10,6 +10,7 @@ databaseChangeLog:
               - column: { name: name, type: user_role, constraints: { unique: true, nullable: false } }
               - column: { name: description, type: TEXT }
         - sql:
+            splitStatements: false
             sql: |
               INSERT INTO roles (name, description) VALUES
                 ('OWNER', 'Full access, can delete organization'),

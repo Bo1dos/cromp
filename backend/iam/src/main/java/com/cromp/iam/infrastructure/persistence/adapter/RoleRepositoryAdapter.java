@@ -34,7 +34,7 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public Optional<Role> findByName(UserRole name) {
-        return repository.findByName(name).map(mapper::toDomain);
+        return repository.findByName(name.name()).map(mapper::toDomain);
     }
 
     @Override

@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-execution-attempts-table
       author: bo1dos
@@ -32,17 +32,24 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_attempts_org_status_sched
             tableName: execution_attempts
-            columns: [ organization_id, status, scheduled_at ]
+            columns:
+              - column: { name: organization_id }
+              - column: { name: status }
+              - column: { name: scheduled_at }
             where: "status IN ('PENDING','DISPATCHED')"
         - createIndex:
             indexName: idx_attempts_execution
             tableName: execution_attempts
-            columns: [ execution_id ]
+            columns:
+              - column: { name: execution_id }
         - createIndex:
             indexName: idx_attempts_status_updated
             tableName: execution_attempts
-            columns: [ status, updated_at ]
+            columns:
+              - column: { name: status }
+              - column: { name: updated_at }
             where: "status IN ('DISPATCHED','RUNNING')"
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_execution_attempts_updated BEFORE UPDATE ON execution_attempts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

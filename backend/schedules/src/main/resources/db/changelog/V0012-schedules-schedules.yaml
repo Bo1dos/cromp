@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-schedules-table
       author: bo1dos
@@ -18,8 +18,10 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_schedules_next_run
             tableName: schedules
-            columns: [ next_run_at ]
+            columns:
+              - column: { name: next_run_at }
             where: status = 'ACTIVE'
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_schedules_updated BEFORE UPDATE ON schedules FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-job-versions-table
       author: bo1dos
@@ -23,8 +23,11 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_job_versions_job
             tableName: job_versions
-            columns: [ job_id, version ]
+            columns:
+              - column: { name: job_id }
+              - column: { name: version }
         - sql:
+            splitStatements: false
             sql: |
               CREATE OR REPLACE FUNCTION sync_job_version_fields()
               RETURNS TRIGGER AS $$
@@ -37,12 +40,14 @@ databaseChangeLog:
               END;
               $$ LANGUAGE plpgsql;
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_sync_job_version_fields
                 BEFORE INSERT OR UPDATE ON job_versions
                 FOR EACH ROW
                 EXECUTE FUNCTION sync_job_version_fields();
         - sql:
+            splitStatements: false
             sql: |
               ALTER TABLE job_versions ADD CONSTRAINT check_config_has_url CHECK (config ? 'url');
               ALTER TABLE job_versions ADD CONSTRAINT check_config_has_method CHECK (config ? 'method');

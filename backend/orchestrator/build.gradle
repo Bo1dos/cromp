@@ -11,25 +11,27 @@ dependencies {
     implementation project(':backend:executions')
     implementation project(':backend:secrets')
     implementation project(':backend:analytics')
-    // api не включаем
-    
+
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.postgresql:postgresql'
-    
-    // Liquibase
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.liquibase:liquibase-core'
-    
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'io.micrometer:micrometer-tracing-bridge-otel'
     implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
-    implementation 'org.apache.httpcomponents.client5:httpclient5'
-    implementation 'io.minio:minio:8.5.17' // если orchestrator работает с MinIO
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'com.cronutils:cron-utils'
+    implementation 'org.postgresql:postgresql'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 }
 
 bootJar {
     archiveFileName = 'cron-service.jar'
-    mainClass = 'com.cromp.orchestrator.OrchestratorApplication' // замените на реальный
+    mainClass = 'com.cromp.orchestrator.OrchestratorApplication'
 }

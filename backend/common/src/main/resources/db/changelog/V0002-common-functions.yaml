@@ -1,9 +1,10 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-update-timestamp-function
       author: bo1dos
       changes:
         - sql:
+            splitStatements: false
             sql: |
               CREATE OR REPLACE FUNCTION fn_update_updated_at()
               RETURNS TRIGGER AS $$

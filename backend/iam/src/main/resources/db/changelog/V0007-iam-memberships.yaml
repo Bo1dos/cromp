@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-memberships-table
       author: bo1dos
@@ -20,8 +20,10 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_memberships_org
             tableName: memberships
-            columns: [ organization_id ]
+            columns:
+              - column: { name: organization_id }
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_memberships_updated BEFORE UPDATE ON memberships FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
             sql: |

@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/V0000-common-extensions.yaml
+  - include:
+      file: db/changelog/V0001-common-enums.yaml
+  - include:
+      file: db/changelog/V0002-common-functions.yaml
+  - include:
+      file: db/changelog/V0003-iam-organizations.yaml
+  - include:
+      file: db/changelog/V0004-iam-users.yaml
+  - include:
+      file: db/changelog/V0005-iam-roles.yaml
+  - include:
+      file: db/changelog/V0006-iam-role-permissions.yaml
+  - include:
+      file: db/changelog/V0007-iam-memberships.yaml
+  - include:
+      file: db/changelog/V0008-iam-invitations.yaml
+  - include:
+      file: db/changelog/V0009-iam-audit-log.yaml

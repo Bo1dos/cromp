@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-invitations-table
       author: bo1dos
@@ -19,8 +19,11 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_invitations_token
             tableName: invitations
-            columns: [ token_hash ]
+            columns:
+              - column: { name: token_hash }
         - createIndex:
             indexName: idx_invitations_org
             tableName: invitations
-            columns: [ organization_id, status ]
+            columns:
+              - column: { name: organization_id }
+              - column: { name: status }

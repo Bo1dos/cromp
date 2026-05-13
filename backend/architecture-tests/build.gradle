@@ -14,7 +14,6 @@ dependencies {
     implementation project(':backend:executions')
     implementation project(':backend:secrets')
     implementation project(':backend:analytics')
-    implementation project(':backend:api')
     implementation project(':backend:orchestrator')
 }
 

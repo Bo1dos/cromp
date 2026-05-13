@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-organizations-table
       author: bo1dos
@@ -14,11 +14,14 @@ databaseChangeLog:
               - column: { name: updated_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
               - column: { name: deleted_at, type: TIMESTAMPTZ }
         - sql:
+            splitStatements: false
             sql: |
               ALTER TABLE organizations ADD COLUMN is_deleted BOOLEAN GENERATED ALWAYS AS (deleted_at IS NOT NULL) STORED;
         - sql:
+            splitStatements: false
             sql: |
               CREATE UNIQUE INDEX ux_organizations_name_not_deleted ON organizations (name) WHERE deleted_at IS NULL;
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_organizations_updated BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

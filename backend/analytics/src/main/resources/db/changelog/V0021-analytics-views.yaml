@@ -1,9 +1,10 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-analytics-materialized-view
       author: bo1dos
       changes:
         - sql:
+            splitStatements: false
             sql: |
               CREATE MATERIALIZED VIEW mv_job_execution_daily AS
               SELECT
@@ -23,6 +24,7 @@ databaseChangeLog:
               WHERE e.created_at >= now() - INTERVAL '90 days'
               GROUP BY e.job_id, e.organization_id, date_trunc('day', e.created_at);
         - sql:
+            splitStatements: false
             sql: |
               CREATE UNIQUE INDEX idx_mv_job_exec_daily ON mv_job_execution_daily (job_id, day);
         - rollback:

@@ -11,6 +11,8 @@ dependencies {
     // Spring Boot starters
     api 'org.springframework.boot:spring-boot-starter-data-jpa'
     api 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // База
     runtimeOnly 'org.postgresql:postgresql'

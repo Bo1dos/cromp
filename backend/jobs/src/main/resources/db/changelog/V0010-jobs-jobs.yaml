@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-jobs-table
       author: bo1dos
@@ -22,16 +22,22 @@ databaseChangeLog:
             indexName: ux_jobs_org_name_not_deleted
             tableName: jobs
             unique: true
-            columns: [ organization_id, name ]
+            columns:
+              - column: { name: organization_id }
+              - column: { name: name }
             where: deleted_at IS NULL
         - createIndex:
             indexName: idx_jobs_org_status
             tableName: jobs
-            columns: [ organization_id, status ]
+            columns:
+              - column: { name: organization_id }
+              - column: { name: status }
             where: deleted_at IS NULL
         - sql:
+            splitStatements: false
             sql: |
               ALTER TABLE jobs ADD COLUMN is_deleted BOOLEAN GENERATED ALWAYS AS (deleted_at IS NOT NULL) STORED;
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_jobs_updated BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

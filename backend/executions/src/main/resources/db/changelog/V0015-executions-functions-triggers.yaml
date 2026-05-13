@@ -1,9 +1,10 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: create-execution-triggers-and-functions
       author: bo1dos
       changes:
         - sql:
+            splitStatements: false
             sql: |
               CREATE OR REPLACE FUNCTION fn_increment_total_attempts() RETURNS TRIGGER AS $$
               BEGIN
@@ -17,9 +18,11 @@ databaseChangeLog:
               END;
               $$ LANGUAGE plpgsql;
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_after_attempt_insert AFTER INSERT ON execution_attempts FOR EACH ROW EXECUTE FUNCTION fn_increment_total_attempts();
         - sql:
+            splitStatements: false
             sql: |
               CREATE OR REPLACE FUNCTION fn_update_execution_final_status() RETURNS TRIGGER AS $$
               BEGIN
@@ -40,11 +43,13 @@ databaseChangeLog:
               END;
               $$ LANGUAGE plpgsql;
         - sql:
+            splitStatements: false
             sql: |
               CREATE TRIGGER tr_after_attempt_status_update AFTER UPDATE OF status ON execution_attempts
                 FOR EACH ROW WHEN (OLD.status IS DISTINCT FROM NEW.status)
                 EXECUTE FUNCTION fn_update_execution_final_status();
         - sql:
+            splitStatements: false
             sql: |
               CREATE OR REPLACE FUNCTION claim_execution_attempt(p_org_id BIGINT)
               RETURNS TABLE(attempt_id BIGINT, execution_id BIGINT, attempt_uuid UUID, config JSONB) AS $$

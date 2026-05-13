@@ -20,6 +20,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Component
@@ -45,14 +46,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .getPayload();
 
                 Long userId = Long.parseLong(claims.getSubject());
-                Long orgId = claims.get("org_id", String.class) != null
-                        ? Long.parseLong(claims.get("org_id", String.class))
-                        : null;
-                List<String> permissions = claims.get("permissions", List.class);
-
+                Object orgClaim = claims.get("org_id");
+                String orgValue = orgClaim != null ? String.valueOf(orgClaim) : null;
+                Long orgId = orgValue != null && !orgValue.isBlank() ? Long.parseLong(orgValue) : null;
                 List<GrantedAuthority> authorities = new ArrayList<>();
-                if (permissions != null) {
-                    permissions.forEach(p -> authorities.add(new SimpleGrantedAuthority(p)));
+                Object permissions = claims.get("permissions");
+                if (permissions instanceof Collection<?> values) {
+                    values.forEach(p -> authorities.add(new SimpleGrantedAuthority(String.valueOf(p))));
                 }
 
                 // Устанавливаем аутентификацию
