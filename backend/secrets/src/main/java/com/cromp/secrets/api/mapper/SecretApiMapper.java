@@ -11,9 +11,7 @@ public class SecretApiMapper {
 
     public SecretResponse toSecretResponse(Secret secret, SecretVersion activeVersion) {
         return new SecretResponse(
-                secret.getId(),
                 secret.getSecretUuid(),
-                secret.getOrganizationId(),
                 secret.getName(),
                 secret.getScope().name(),
                 secret.getDescription(),
@@ -25,10 +23,8 @@ public class SecretApiMapper {
 
     public SecretVersionResponse toVersionResponse(SecretVersion version) {
         return new SecretVersionResponse(
-                version.getId(),
                 version.getVersion(),
                 version.isActive(),
-                version.getCreatedBy(),
                 version.getCreatedAt(),
                 version.getDeprecatedAt()
         );
