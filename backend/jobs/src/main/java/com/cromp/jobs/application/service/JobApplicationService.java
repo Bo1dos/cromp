@@ -126,27 +126,85 @@ public class JobApplicationService implements JobFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<JobResponse> listJobs(Long organizationId, String status, int limit, int offset) {
+    public List<JobResponse> listJobs(Long organizationId, JobStatus status, int limit, int offset) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
         if (!permissionCheckerPort.isMember(userId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }
+
         List<Job> jobs;
-        if (status != null && !status.isBlank()) {
+        if (status != null) {
             jobs = jobRepository.findByOrganizationIdAndStatus(organizationId, status);
         } else {
             jobs = jobRepository.findByOrganizationId(organizationId);
         }
-        // TODO: вынести пагинацию в общий утилитарный компонент
+
         int toIndex = Math.min(offset + limit, jobs.size());
         if (offset >= jobs.size()) return List.of();
-        List<Job> page = jobs.subList(offset, toIndex);
-        return page.stream().map(job -> {
+
+        return jobs.subList(offset, toIndex).stream().map(job -> {
             JobVersion ver = versionRepository.findLatestByJobId(job.getId()).orElse(null);
             int vCount = versionRepository.findByJobIdOrderByVersionDesc(job.getId()).size();
             return jobApiMapper.toJobResponse(job, ver, vCount);
         }).toList();
+    }
+
+    @Override
+    public JobResponse changeStatus(Long organizationId, Long jobId, ChangeJobStatusRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
+            throw new SecurityException("No permission to change job status");
+        }
+
+        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
+                .orElseThrow(() -> new JobNotFoundException(jobId));
+
+        switch (request.status()) {
+            case ACTIVE -> job.activate();
+            case DISABLED -> job.disable();
+            default -> throw new InvalidJobStateException("Can only change to ACTIVE or DISABLED");
+        }
+
+        jobRepository.save(job);
+        auditPort.record("JOB.STATUS_CHANGE", organizationId, userId, "jobs", jobId,
+                Map.of("status", request.status().name()));
+
+        JobVersion version = versionRepository.findLatestByJobId(jobId).orElseThrow();
+        int vCount = versionRepository.findByJobIdOrderByVersionDesc(jobId).size();
+        return jobApiMapper.toJobResponse(job, version, vCount);
+    }
+
+    @Override
+    public TriggerResponse triggerJob(Long organizationId, Long jobId, TriggerJobRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:execute")) {
+            throw new SecurityException("No permission to execute job");
+        }
+
+        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
+                .orElseThrow(() -> new JobNotFoundException(jobId));
+        if (job.getStatus() != JobStatus.ACTIVE) {
+            throw new InvalidJobStateException("Job must be ACTIVE to trigger manually");
+        }
+
+        JobVersion currentVersion = versionRepository.findLatestByJobId(jobId)
+                .orElseThrow(() -> new JobVersionNotFoundException(jobId, -1));
+
+        Map<String, Object> payload = request.parameters() != null ? request.parameters() : Map.of();
+        UUID correlationId = request.correlationId() != null ? request.correlationId() : UUID.randomUUID();
+
+        UUID executionId = executionCreationPort.createExecution(
+                organizationId, jobId, currentVersion.getId(), "MANUAL", userId,
+                payload, correlationId
+        );
+
+        auditPort.record("JOB.TRIGGER", organizationId, userId, "jobs", jobId,
+                Map.of("executionId", executionId.toString()));
+
+        return new TriggerResponse(executionId, "Execution triggered");
     }
 
     @Override
@@ -163,54 +221,4 @@ public class JobApplicationService implements JobFacade {
         auditPort.record("JOB.ARCHIVE", organizationId, userId, "jobs", jobId, Map.of("status", "ARCHIVED"));
     }
 
-    @Override
-    public JobResponse changeStatus(Long organizationId, Long jobId, ChangeJobStatusRequest request) {
-        Long userId = currentActorPort.currentUserId()
-                .orElseThrow(() -> new SecurityException("Not authenticated"));
-        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
-            throw new SecurityException("No permission to change job status");
-        }
-        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
-        JobStatus newStatus = JobStatus.valueOf(request.status());
-        if (newStatus == JobStatus.ACTIVE) {
-            job.activate();
-        } else if (newStatus == JobStatus.DISABLED) {
-            job.disable();
-        } else {
-            throw new InvalidJobStateException("Can only change to ACTIVE or DISABLED");
-        }
-        jobRepository.save(job);
-        auditPort.record("JOB.STATUS_CHANGE", organizationId, userId, "jobs", jobId,
-                Map.of("status", request.status()));
-        JobVersion version = versionRepository.findLatestByJobId(jobId).orElseThrow();
-        int vCount = versionRepository.findByJobIdOrderByVersionDesc(jobId).size();
-        return jobApiMapper.toJobResponse(job, version, vCount);
-    }
-
-    @Override
-    public TriggerResponse triggerJob(Long organizationId, Long jobId, TriggerJobRequest request) {
-        Long userId = currentActorPort.currentUserId()
-                .orElseThrow(() -> new SecurityException("Not authenticated"));
-        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:execute")) {
-            throw new SecurityException("No permission to execute job");
-        }
-        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
-        if (job.getStatus() != JobStatus.ACTIVE) {
-            throw new InvalidJobStateException("Job must be ACTIVE to trigger manually");
-        }
-        JobVersion currentVersion = versionRepository.findLatestByJobId(jobId)
-                .orElseThrow(() -> new JobVersionNotFoundException(jobId, -1));
-
-        UUID executionId = executionCreationPort.createExecution(
-                organizationId, jobId, currentVersion.getId(), "MANUAL", userId,
-                request.parameters() != null ? request.parameters() : Map.of(),
-                request.correlationId() != null ? request.correlationId() : UUID.randomUUID()
-        );
-
-        auditPort.record("JOB.TRIGGER", organizationId, userId, "jobs", jobId,
-                Map.of("executionId", executionId.toString()));
-        return new TriggerResponse(executionId, "Execution triggered");
-    }
 }

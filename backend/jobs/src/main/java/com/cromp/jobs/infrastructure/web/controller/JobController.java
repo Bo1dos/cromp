@@ -4,6 +4,8 @@ import com.cromp.jobs.api.dto.request.*;
 import com.cromp.jobs.api.dto.response.*;
 import com.cromp.jobs.api.service.JobFacade;
 import com.cromp.jobs.api.service.JobVersionFacade;
+import com.cromp.jobs.domain.model.enums.JobStatus;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,7 +35,7 @@ public class JobController {
     @GetMapping
     @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
     public List<JobResponse> list(@PathVariable Long organizationId,
-                                  @RequestParam(required = false) String status,
+                                  @RequestParam(required = false) JobStatus status,
                                   @RequestParam(defaultValue = "20") int limit,
                                   @RequestParam(defaultValue = "0") int offset) {
         return jobFacade.listJobs(organizationId, status, limit, offset);
