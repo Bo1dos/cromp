@@ -160,18 +160,4 @@ public class SecretApplicationService implements SecretFacade {
                 .map(mapper::toVersionResponse)
                 .toList();
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public byte[] resolveSecretForExecution(Long organizationId, UUID secretUuid) {
-        // TODO: Пока что нужна защита на уровне контроллера
-        Secret secret = secretRepository.findBySecretUuid(secretUuid)
-                .orElseThrow(() -> new SecretNotFoundException("secretUuid=" + secretUuid));
-        if (!secret.getOrganizationId().equals(organizationId)) {
-            throw new SecurityException("Secret does not belong to organization");
-        }
-        SecretVersion activeVersion = versionRepository.findActiveVersion(secret.getId())
-                .orElseThrow(() -> new InvalidSecretStateException("No active version for secret"));
-        return encryptionService.decrypt(activeVersion.getValueCipher());
-    }
 }
