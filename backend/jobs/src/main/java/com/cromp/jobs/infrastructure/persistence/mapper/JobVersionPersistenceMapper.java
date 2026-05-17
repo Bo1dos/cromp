@@ -1,6 +1,7 @@
 package com.cromp.jobs.infrastructure.persistence.mapper;
 
-import com.cromp.jobs.domain.model.*;
+import com.cromp.jobs.domain.model.JobConfig;
+import com.cromp.jobs.domain.model.JobVersion;
 import com.cromp.jobs.infrastructure.persistence.jpa.entity.JobVersionJpaEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

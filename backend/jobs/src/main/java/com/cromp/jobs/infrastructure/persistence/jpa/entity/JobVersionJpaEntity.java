@@ -2,15 +2,19 @@ package com.cromp.jobs.infrastructure.persistence.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.Instant;
-
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
+
 @Entity
-@Table(name = "job_versions",
-        uniqueConstraints = @UniqueConstraint(name = "uk_job_versions_job_version", columnNames = {"job_id", "version"}))
+@Table(
+        name = "job_versions",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_job_versions_job_version",
+                columnNames = {"job_id", "version"}
+        )
+)
 @Getter
 @Setter
 @Builder
@@ -25,9 +29,12 @@ public class JobVersionJpaEntity {
     @Column(name = "job_id", nullable = false)
     private Long jobId;
 
-    @Version
-    @Column(nullable = false)
+    @Column(name = "version", nullable = false)
     private int version;
+
+    @Version
+    @Column(name = "lock_version", nullable = false)
+    private Long lockVersion;
 
     @Column(name = "config", columnDefinition = "jsonb", nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
