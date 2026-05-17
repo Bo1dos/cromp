@@ -35,9 +35,9 @@ public class JobVersionApplicationService implements JobVersionFacade {
     @Transactional(readOnly = true)
     public List<JobVersionResponse> getVersions(Long organizationId, Long jobId) {
         ensureMembership(organizationId);
-        checkJobOwnership(organizationId, jobId);
+        Job job = checkJobOwnership(organizationId, jobId);
         return versionRepository.findByJobIdOrderByVersionDesc(jobId).stream()
-                .map(jobVersionApiMapper::toVersionResponse)
+                .map(v -> jobVersionApiMapper.toVersionResponse(job, v))
                 .toList();
     }
 
@@ -45,15 +45,16 @@ public class JobVersionApplicationService implements JobVersionFacade {
     @Transactional(readOnly = true)
     public JobVersionResponse getVersion(Long organizationId, Long jobId, int version) {
         ensureMembership(organizationId);
-        checkJobOwnership(organizationId, jobId);
+        Job job = checkJobOwnership(organizationId, jobId);
         JobVersion ver = versionRepository.findByJobIdAndVersion(jobId, version)
                 .orElseThrow(() -> new JobVersionNotFoundException(jobId, version));
-        return jobVersionApiMapper.toVersionResponse(ver);
+        return jobVersionApiMapper.toVersionResponse(job, ver);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public JobVersionComparisonResponse compareVersions(Long organizationId, Long jobId, int fromVersion, int toVersion) {
+    public JobVersionComparisonResponse compareVersions(Long organizationId, Long jobId,
+                                                        int fromVersion, int toVersion) {
         ensureMembership(organizationId);
         checkJobOwnership(organizationId, jobId);
         JobVersion from = versionRepository.findByJobIdAndVersion(jobId, fromVersion)
@@ -61,7 +62,6 @@ public class JobVersionApplicationService implements JobVersionFacade {
         JobVersion to = versionRepository.findByJobIdAndVersion(jobId, toVersion)
                 .orElseThrow(() -> new JobVersionNotFoundException(jobId, toVersion));
 
-        // TODO: щас простенько, переделать под нормальное сравнение с помощью либр мб (zjsonpatch, java-diff-utils)
         List<JobVersionComparisonResponse.JobVersionDiff> diffs = new ArrayList<>();
         try {
             String fromJson = objectMapper.writeValueAsString(from.getConfig());
@@ -89,7 +89,7 @@ public class JobVersionApplicationService implements JobVersionFacade {
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
             throw new SecurityException("No permission to revert job");
         }
-        checkJobOwnership(organizationId, jobId);
+        Job job = checkJobOwnership(organizationId, jobId);
         JobVersion source = versionRepository.findByJobIdAndVersion(jobId, version)
                 .orElseThrow(() -> new JobVersionNotFoundException(jobId, version));
         JobVersion latest = versionRepository.findLatestByJobId(jobId).orElseThrow();
@@ -98,20 +98,23 @@ public class JobVersionApplicationService implements JobVersionFacade {
         versionRepository.save(reverted);
         auditPort.record("JOB.REVERT", organizationId, userId, "jobs", jobId,
                 Map.of("fromVersion", version, "newVersion", newVersion));
-        return jobVersionApiMapper.toVersionResponse(reverted);
+        return jobVersionApiMapper.toVersionResponse(job, reverted);
     }
 
     @Override
     @Transactional(readOnly = true)
     public JobVersionResponse getCurrentVersion(Long organizationId, Long jobId) {
         ensureMembership(organizationId);
-        checkJobOwnership(organizationId, jobId);
+        Job job = checkJobOwnership(organizationId, jobId);
         JobVersion latest = versionRepository.findLatestByJobId(jobId)
                 .orElseThrow(() -> new JobVersionNotFoundException(jobId, -1));
-        return jobVersionApiMapper.toVersionResponse(latest);
+        return jobVersionApiMapper.toVersionResponse(job, latest);
     }
 
-
+    private Job checkJobOwnership(Long organizationId, Long jobId) {
+        return jobRepository.findByIdAndOrganizationId(jobId, organizationId)
+                .orElseThrow(() -> new JobNotFoundException(jobId));
+    }
 
     private void ensureMembership(Long orgId) {
         Long userId = currentActorPort.currentUserId()
@@ -119,10 +122,5 @@ public class JobVersionApplicationService implements JobVersionFacade {
         if (!permissionCheckerPort.isMember(userId, orgId)) {
             throw new SecurityException("Not a member of this organization");
         }
-    }
-
-    private void checkJobOwnership(Long organizationId, Long jobId) {
-        jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
     }
 }

@@ -23,7 +23,8 @@ public class JobVersion {
     private Long createdBy;
     private Instant createdAt;
 
-    private JobVersion(Long id, Long jobId, int version, JobConfig config, Long createdBy, Instant createdAt) {
+    private JobVersion(Long id, Long jobId, int version, JobConfig config,
+                       Long createdBy, Instant createdAt) {
         this.id = id;
         this.jobId = DomainChecks.requireNonNullValue(jobId, "jobId");
         this.version = version;

@@ -1,25 +1,25 @@
 package com.cromp.jobs.api.mapper;
 
 import com.cromp.jobs.api.dto.response.*;
+import com.cromp.jobs.domain.model.Job;
+import com.cromp.jobs.domain.model.JobConfig;
 import com.cromp.jobs.domain.model.JobVersion;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JobVersionApiMapper {
 
-    public JobVersionResponse toVersionResponse(JobVersion version) {
+    public JobVersionResponse toVersionResponse(Job job, JobVersion version) {
         return new JobVersionResponse(
-                version.getId(),
-                version.getJobId(),
+                job.getJobUuid(),
                 version.getVersion(),
                 toConfigResponse(version.getConfig()),
-                version.getCreatedBy(),
                 version.getCreatedAt()
         );
     }
 
     // TODO: вынести общий маппинг конфига в отдельный ConfigMapper, когда понадобится в других местах
-    private JobConfigResponse toConfigResponse(com.cromp.jobs.domain.model.JobConfig config) {
+    private JobConfigResponse toConfigResponse(JobConfig config) {
         if (config == null) return null;
         return new JobConfigResponse(
                 new JobTargetResponse(
