@@ -19,10 +19,7 @@ public class MembershipApiMapper {
 
     public MembershipResponse toResponse(Membership membership, String roleName, Instant joinedAt) {
         return new MembershipResponse(
-                membership.getId(),
-                membership.getUserId(),
-                membership.getOrganizationId(),
-                membership.getRoleId(),
+                membership.getMembershipUuid(),
                 roleName,
                 joinedAt,
                 membership.getUpdatedAt()

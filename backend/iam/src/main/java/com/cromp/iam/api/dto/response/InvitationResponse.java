@@ -1,14 +1,12 @@
 package com.cromp.iam.api.dto.response;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record InvitationResponse(
-        Long id,
-        Long organizationId,
+        UUID invitationUuid,
         String email,
-        Long roleId,
         String roleName,
-        Long invitedBy,
         Instant expiresAt,
         Instant createdAt,
         Instant acceptedAt,

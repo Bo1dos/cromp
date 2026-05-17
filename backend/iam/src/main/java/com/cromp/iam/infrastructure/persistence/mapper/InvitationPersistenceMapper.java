@@ -10,6 +10,7 @@ public class InvitationPersistenceMapper {
     public InvitationJpaEntity toJpa(Invitation invitation) {
         return InvitationJpaEntity.builder()
                 .id(invitation.getId())
+                .invitationUuid(invitation.getInvitationUuid())
                 .organizationId(invitation.getOrganizationId())
                 .email(invitation.getEmail())
                 .tokenHash(invitation.getTokenHash())
@@ -25,6 +26,7 @@ public class InvitationPersistenceMapper {
     public Invitation toDomain(InvitationJpaEntity entity) {
         return Invitation.reconstitute(
                 entity.getId(),
+                entity.getInvitationUuid(),
                 entity.getOrganizationId(),
                 entity.getEmail(),
                 entity.getTokenHash(),

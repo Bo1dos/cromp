@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static com.cromp.iam.domain.model.support.DomainChecks.requireNonNullValue;
 
@@ -15,37 +16,42 @@ import static com.cromp.iam.domain.model.support.DomainChecks.requireNonNullValu
 public class Membership extends AbstractAuditableDomainEntity {
 
     @EqualsAndHashCode.Include
-    private Long userId;
-    @EqualsAndHashCode.Include
-    private Long organizationId;
+    private UUID membershipUuid;
 
+    private Long userId;
+    private Long organizationId;
     private Long roleId;
 
     private Membership(Long id,
                        Instant createdAt,
                        Instant updatedAt,
                        Instant deletedAt,
+                       UUID membershipUuid,
                        Long userId,
                        Long organizationId,
                        Long roleId) {
         super(id, createdAt, updatedAt, null);
+        this.membershipUuid = membershipUuid == null ? UUID.randomUUID() : membershipUuid;
         this.userId = requireNonNullValue(userId, "userId");
         this.organizationId = requireNonNullValue(organizationId, "organizationId");
         this.roleId = requireNonNullValue(roleId, "roleId");
     }
 
     public static Membership join(Long userId, Long organizationId, Long roleId) {
-        return new Membership(null, Instant.now(), Instant.now(), null, userId, organizationId, roleId);
+        return new Membership(null, Instant.now(), Instant.now(), null,
+                UUID.randomUUID(), userId, organizationId, roleId);
     }
 
     public static Membership reconstitute(Long id,
+                                          UUID membershipUuid,
                                           Long userId,
                                           Long organizationId,
                                           Long roleId,
                                           Instant createdAt,
                                           Instant updatedAt,
                                           Instant deletedAt) {
-        return new Membership(id, createdAt, updatedAt, deletedAt, userId, organizationId, roleId);
+        return new Membership(id, createdAt, updatedAt, deletedAt,
+                membershipUuid, userId, organizationId, roleId);
     }
 
     public void changeRole(Long roleId) {
@@ -54,6 +60,7 @@ public class Membership extends AbstractAuditableDomainEntity {
     }
 
     public void validate() {
+        requireNonNullValue(membershipUuid, "membershipUuid");
         requireNonNullValue(userId, "userId");
         requireNonNullValue(organizationId, "organizationId");
         requireNonNullValue(roleId, "roleId");

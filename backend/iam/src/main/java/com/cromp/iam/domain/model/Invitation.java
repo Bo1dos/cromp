@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static com.cromp.iam.domain.model.support.DomainChecks.normalizeEmail;
 import static com.cromp.iam.domain.model.support.DomainChecks.requireNonNullValue;
@@ -22,8 +23,9 @@ public class Invitation {
     private Long id;
 
     @EqualsAndHashCode.Include
-    private Long organizationId;
+    private UUID invitationUuid;
 
+    private Long organizationId;
     private String email;
     private String tokenHash;
     private Long roleId;
@@ -34,6 +36,7 @@ public class Invitation {
     private InvitationStatus status;
 
     private Invitation(Long id,
+                       UUID invitationUuid,
                        Long organizationId,
                        String email,
                        String tokenHash,
@@ -44,6 +47,7 @@ public class Invitation {
                        Instant acceptedAt,
                        InvitationStatus status) {
         this.id = id;
+        this.invitationUuid = invitationUuid == null ? UUID.randomUUID() : invitationUuid;
         this.organizationId = requireNonNullValue(organizationId, "organizationId");
         this.email = normalizeEmail(email);
         this.tokenHash = requireText(tokenHash, "tokenHash");
@@ -63,6 +67,7 @@ public class Invitation {
                                     Instant expiresAt) {
         return new Invitation(
                 null,
+                UUID.randomUUID(),
                 organizationId,
                 email,
                 tokenHash,
@@ -76,6 +81,7 @@ public class Invitation {
     }
 
     public static Invitation reconstitute(Long id,
+                                          UUID invitationUuid,
                                           Long organizationId,
                                           String email,
                                           String tokenHash,
@@ -87,6 +93,7 @@ public class Invitation {
                                           InvitationStatus status) {
         return new Invitation(
                 id,
+                invitationUuid,
                 organizationId,
                 email,
                 tokenHash,
@@ -120,6 +127,7 @@ public class Invitation {
     }
 
     public void validate() {
+        requireNonNullValue(invitationUuid, "invitationUuid");
         requireNonNullValue(organizationId, "organizationId");
         requireText(email, "email");
         requireText(tokenHash, "tokenHash");

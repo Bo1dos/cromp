@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-invitation-uuid
+      author: bo1dos
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE invitations
+                ADD COLUMN invitation_uuid UUID NOT NULL DEFAULT gen_random_uuid();
+
+              ALTER TABLE invitations
+                ADD CONSTRAINT ux_invitations_uuid UNIQUE (invitation_uuid);

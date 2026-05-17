@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "invitations")
@@ -18,6 +19,9 @@ public class InvitationJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "invitation_uuid", nullable = false, unique = true, updatable = false)
+    private UUID invitationUuid;
 
     @Column(name = "organization_id", nullable = false)
     private Long organizationId;

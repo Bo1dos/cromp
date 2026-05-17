@@ -1,12 +1,10 @@
 package com.cromp.iam.api.dto.response;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record MembershipResponse(
-        Long id,
-        Long userId,
-        Long organizationId,
-        Long roleId,
+        UUID membershipUuid,
         String roleName,
         Instant joinedAt,
         Instant updatedAt
