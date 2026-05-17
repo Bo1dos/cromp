@@ -25,14 +25,15 @@ public class UserController {
     }
 
     @PutMapping("/{userId}/profile")
-    @PreAuthorize("#userId == authentication.principal and #request.userId == authentication.principal")
+    @PreAuthorize("#userId == authentication.principal")
     public UserResponse updateProfile(@PathVariable Long userId,
-                                      @Valid @RequestBody UpdateUserProfileRequest request) {
+                                    @Valid @RequestBody UpdateUserProfileRequest request) {
         return userFacade.updateProfile(request);
     }
 
+    
     @PutMapping("/{userId}/email")
-    @PreAuthorize("#userId == authentication.principal and #request.userId == authentication.principal")
+    @PreAuthorize("#userId == authentication.principal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changeEmail(@PathVariable Long userId,
                             @Valid @RequestBody ChangeUserEmailRequest request) {
@@ -40,10 +41,10 @@ public class UserController {
     }
 
     @PutMapping("/{userId}/password")
-    @PreAuthorize("#userId == authentication.principal and #request.userId == authentication.principal")
+    @PreAuthorize("#userId == authentication.principal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changePassword(@PathVariable Long userId,
-                               @Valid @RequestBody ChangeUserPasswordRequest request) {
+                            @Valid @RequestBody ChangeUserPasswordRequest request) {
         userFacade.changePassword(request);
     }
 }

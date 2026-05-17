@@ -5,8 +5,8 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Map;
 
+//TODO: мб вынести в константы ограничения
 public record UpdateUserProfileRequest(
-        @NotNull Long userId,
         @Size(max = 150) String firstName,
         @Size(max = 150) String lastName,
         @Size(max = 150) String middleName,
