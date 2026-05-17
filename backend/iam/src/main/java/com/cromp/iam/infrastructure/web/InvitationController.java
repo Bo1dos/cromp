@@ -4,6 +4,7 @@ import com.cromp.iam.api.dto.request.AcceptInvitationRequest;
 import com.cromp.iam.api.dto.request.InviteUserRequest;
 import com.cromp.iam.api.dto.request.RejectInvitationRequest;
 import com.cromp.iam.api.dto.request.RevokeInvitationRequest;
+import com.cromp.iam.api.dto.response.InvitationCreateResponse;
 import com.cromp.iam.api.dto.response.InvitationResponse;
 import com.cromp.iam.api.service.InvitationFacade;
 import jakarta.validation.Valid;
@@ -24,7 +25,7 @@ public class InvitationController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.CREATED)
-    public InvitationResponse invite(@Valid @RequestBody InviteUserRequest request) {
+    public InvitationCreateResponse invite(@Valid @RequestBody InviteUserRequest request) {
         return invitationFacade.invite(request);
     }
 
@@ -51,12 +52,6 @@ public class InvitationController {
     @PreAuthorize("isAuthenticated()")
     public InvitationResponse getById(@PathVariable Long invitationId) {
         return invitationFacade.getById(invitationId);
-    }
-
-    // Эндпоинт для проверки приглашения по токену (может быть без аутентификации)
-    @GetMapping("/by-token")
-    public InvitationResponse getByToken(@RequestParam String token) {
-        return invitationFacade.getByRawToken(token);
     }
 
     @GetMapping("/organization/{organizationId}")

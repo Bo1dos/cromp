@@ -12,6 +12,5 @@ public record InvitationResponse(
         Instant expiresAt,
         Instant createdAt,
         Instant acceptedAt,
-        String status,
-        String invitationToken
+        String status
 ) {}
