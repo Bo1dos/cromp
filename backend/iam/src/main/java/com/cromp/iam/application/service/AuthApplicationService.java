@@ -10,6 +10,7 @@ import com.cromp.iam.api.mapper.AuthApiMapper;
 import com.cromp.iam.api.mapper.OrganizationApiMapper;
 import com.cromp.iam.api.mapper.UserApiMapper;
 import com.cromp.iam.api.service.AuthFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PasswordHasherPort;
 import com.cromp.iam.application.port.TokenIssuerPort;
 import com.cromp.iam.domain.model.*;
@@ -38,6 +39,7 @@ public class AuthApplicationService implements AuthFacade {
     private final OrganizationApiMapper organizationMapper;
     private final AuthApiMapper authApiMapper;
     private final RolePermissionRepositoryPort rolePermissionRepository;
+    private final CurrentActorPort currentActorPort;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -102,9 +104,12 @@ public class AuthApplicationService implements AuthFacade {
     }
 
 
-    @Transactional(readOnly = true)
-    public AuthResponse selectOrganization(Long userId, SelectOrganizationRequest request) {
-        // Проверить членство
+        @Override
+        @Transactional(readOnly = true)
+        public AuthResponse selectOrganization(SelectOrganizationRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
         Membership membership = membershipRepository.findByUserIdAndOrganizationId(userId, request.organizationId())
                 .orElseThrow(() -> new DomainException("User is not a member of this organization"));
 
@@ -113,7 +118,6 @@ public class AuthApplicationService implements AuthFacade {
         Organization org = organizationRepository.findById(request.organizationId())
                 .orElseThrow(() -> new DomainException("Organization not found"));
 
-        // Собрать permissions для этого членства
         List<String> permissions = rolePermissionRepository.findByRoleId(membership.getRoleId()).stream()
                 .map(RolePermission::getPermission)
                 .toList();
@@ -121,5 +125,5 @@ public class AuthApplicationService implements AuthFacade {
         String token = tokenIssuer.issueToken(user, org, permissions);
 
         return authApiMapper.toSelectResponse(token, user, org);
-    }
+        }
 }

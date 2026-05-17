@@ -8,5 +8,5 @@ import com.cromp.iam.api.dto.response.AuthResponse;
 public interface AuthFacade {
     AuthResponse register(RegisterRequest request);
     AuthResponse login(LoginRequest request);
-    AuthResponse selectOrganization(Long userId, SelectOrganizationRequest request);
+    AuthResponse selectOrganization(SelectOrganizationRequest request);
 }
