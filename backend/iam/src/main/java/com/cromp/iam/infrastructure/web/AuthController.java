@@ -4,7 +4,6 @@ import com.cromp.iam.api.dto.request.LoginRequest;
 import com.cromp.iam.api.dto.request.RegisterRequest;
 import com.cromp.iam.api.dto.request.SelectOrganizationRequest;
 import com.cromp.iam.api.dto.response.AuthResponse;
-import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.service.AuthApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthApplicationService authService;
-    private final CurrentActorPort currentActorPort;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -32,8 +30,6 @@ public class AuthController {
 
     @PostMapping("/select-organization")
     public AuthResponse selectOrganization(@Valid @RequestBody SelectOrganizationRequest request) {
-        Long userId = currentActorPort.currentUserId()
-                .orElseThrow(() -> new SecurityException("Not authenticated"));
-        return authService.selectOrganization(userId, request);
+        return authService.selectOrganization(request);
     }
 }
