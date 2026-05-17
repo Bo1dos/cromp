@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -51,5 +52,10 @@ public class MembershipRepositoryAdapter implements MembershipRepositoryPort {
     @Override
     public void deleteById(Long id) {
         repository.deleteById(id);
+    }
+
+    @Override
+    public Optional<Membership> findByMembershipUuid(UUID membershipUuid) {
+        return repository.findByMembershipUuid(membershipUuid);
     }
 }

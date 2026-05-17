@@ -51,12 +51,14 @@ public class InvitationApplicationService implements InvitationFacade {
     public InvitationCreateResponse invite(InviteUserRequest request) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("No organization selected"));
 
-        if (!permissionCheckerPort.hasPermission(currentUserId, request.organizationId(), "org:invite")) {
+        if (!permissionCheckerPort.hasPermission(currentUserId, organizationId, "org:invite")) {
             throw new SecurityException("No permission to invite users to this organization");
         }
 
-        organizationRepository.findById(request.organizationId())
+        organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new DomainException("Organization not found"));
 
         String token = generateToken();
@@ -66,22 +68,22 @@ public class InvitationApplicationService implements InvitationFacade {
                 ? request.expiresAt()
                 : Instant.now().plusSeconds(7 * 24 * 3600);
 
+        Role role = roleRepository.findByName(request.role())
+                .orElseThrow(() -> new DomainException("Role not found"));
+
         Invitation invitation = Invitation.create(
-                request.organizationId(),
+                organizationId,
                 request.email(),
                 tokenHash,
-                request.roleId(),
+                role.getId(),
                 currentUserId,
                 expiresAt
         );
 
         invitation = invitationRepository.save(invitation);
 
-        Role role = roleRepository.findById(request.roleId())
-                .orElse(null);
-
         return new InvitationCreateResponse(
-                invitationMapper.toResponse(invitation, role != null ? role.getName().toString() : null),
+                invitationMapper.toResponse(invitation, role.getName().toString()),
                 token
         );
     }
@@ -138,7 +140,7 @@ public class InvitationApplicationService implements InvitationFacade {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
 
-        Invitation invitation = invitationRepository.findById(request.invitationId())
+        Invitation invitation = invitationRepository.findByInvitationUuid(request.invitationUuid())
                 .orElseThrow(() -> new DomainException("Invitation not found"));
 
         if (!permissionCheckerPort.hasPermission(currentUserId, invitation.getOrganizationId(), "org:invite")) {

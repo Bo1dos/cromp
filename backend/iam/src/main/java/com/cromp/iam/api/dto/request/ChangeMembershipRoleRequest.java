@@ -1,8 +1,9 @@
 package com.cromp.iam.api.dto.request;
 
+import com.cromp.iam.domain.model.enums.UserRole;
+
 import jakarta.validation.constraints.NotNull;
 
 public record ChangeMembershipRoleRequest(
-        @NotNull Long membershipId,
-        @NotNull Long roleId
+        @NotNull UserRole role
 ) {}

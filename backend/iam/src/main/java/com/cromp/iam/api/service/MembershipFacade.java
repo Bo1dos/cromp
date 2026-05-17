@@ -6,10 +6,11 @@ import com.cromp.iam.api.dto.request.RemoveMembershipRequest;
 import com.cromp.iam.api.dto.response.MembershipResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface MembershipFacade {
     MembershipResponse add(AddMembershipRequest request);
-    MembershipResponse changeRole(ChangeMembershipRoleRequest request);
+    MembershipResponse changeRole(UUID membershipUuid, ChangeMembershipRoleRequest request);
     void remove(RemoveMembershipRequest request);
 
     MembershipResponse getById(Long membershipId);

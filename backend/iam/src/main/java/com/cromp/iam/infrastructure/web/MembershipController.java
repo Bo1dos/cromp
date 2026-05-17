@@ -12,7 +12,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
+// TODO: Long убрать нахер 
 @RestController
 @RequestMapping("/api/v1/memberships")
 @RequiredArgsConstructor
@@ -27,11 +29,11 @@ public class MembershipController {
         return membershipFacade.add(request);
     }
 
-    @PutMapping("/{membershipId}/role")
+    @PutMapping("/{membershipUuid}/role")
     @PreAuthorize("isAuthenticated()")
-    public MembershipResponse changeRole(@PathVariable Long membershipId,
-                                         @Valid @RequestBody ChangeMembershipRoleRequest request) {
-        return membershipFacade.changeRole(request);
+    public MembershipResponse changeRole(@PathVariable UUID membershipUuid,
+                                        @Valid @RequestBody ChangeMembershipRoleRequest request) {
+        return membershipFacade.changeRole(membershipUuid, request);
     }
 
     @DeleteMapping("/{membershipId}")
