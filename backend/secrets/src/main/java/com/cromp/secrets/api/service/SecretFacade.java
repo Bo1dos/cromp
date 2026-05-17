@@ -15,6 +15,4 @@ public interface SecretFacade {
     void deleteSecret(Long organizationId, UUID secretUuid);
     SecretResponse rotateSecret(Long organizationId, UUID secretUuid, RotateSecretRequest request);
     List<SecretVersionResponse> getVersions(Long organizationId, UUID secretUuid);
-    /** Внутренний метод для Executor’а – возвращает расшифрованное значение */
-    byte[] resolveSecretForExecution(Long organizationId, UUID secretUuid);
 }
