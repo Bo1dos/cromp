@@ -6,6 +6,7 @@ import com.cromp.iam.api.dto.request.UpdateUserProfileRequest;
 import com.cromp.iam.api.dto.response.UserResponse;
 import com.cromp.iam.api.mapper.UserApiMapper;
 import com.cromp.iam.api.service.UserFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PasswordHasherPort;
 import com.cromp.iam.domain.model.User;
 import com.cromp.iam.domain.model.exceptions.DomainException;
@@ -22,6 +23,7 @@ public class UserApplicationService implements UserFacade {
     private final UserRepositoryPort userRepository;
     private final UserApiMapper userMapper;
     private final PasswordHasherPort passwordHasher;
+    private final CurrentActorPort currentActorPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,9 +43,10 @@ public class UserApplicationService implements UserFacade {
 
     @Override
     public UserResponse updateProfile(UpdateUserProfileRequest request) {
-        User user = userRepository.findById(request.userId())
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DomainException("User not found"));
-
         user.updateName(request.firstName(), request.lastName(), request.middleName(), request.displayName());
         if (request.profile() != null) {
             user.updateProfile(request.profile());
@@ -53,9 +56,10 @@ public class UserApplicationService implements UserFacade {
 
     @Override
     public void changeEmail(ChangeUserEmailRequest request) {
-        User user = userRepository.findById(request.userId())
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DomainException("User not found"));
-        // Проверка уникальности нового email
         if (userRepository.existsByEmail(request.newEmail())) {
             throw new DomainException("Email already in use");
         }
@@ -65,13 +69,14 @@ public class UserApplicationService implements UserFacade {
 
     @Override
     public void changePassword(ChangeUserPasswordRequest request) {
-        User user = userRepository.findById(request.userId())
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DomainException("User not found"));
         if (user.getPasswordHash() == null || !passwordHasher.matches(request.oldPassword(), user.getPasswordHash())) {
             throw new DomainException("Old password is incorrect");
         }
-        String newHash = passwordHasher.hash(request.newPassword());
-        user.changePasswordHash(newHash);
+        user.changePasswordHash(passwordHasher.hash(request.newPassword()));
         userRepository.save(user);
     }
 }
