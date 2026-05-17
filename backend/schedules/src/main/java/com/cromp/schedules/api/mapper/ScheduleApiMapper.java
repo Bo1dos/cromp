@@ -9,8 +9,6 @@ public class ScheduleApiMapper {
 
     public ScheduleResponse toResponse(Schedule schedule) {
         return new ScheduleResponse(
-                schedule.getId(),
-                schedule.getJobId(),
                 schedule.getCronExpression(),
                 schedule.getTimezone(),
                 schedule.getRules(),
