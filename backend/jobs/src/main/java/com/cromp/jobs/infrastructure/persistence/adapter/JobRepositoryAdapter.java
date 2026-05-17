@@ -5,7 +5,6 @@ import com.cromp.jobs.domain.model.enums.JobStatus;
 import com.cromp.jobs.domain.repository.JobRepositoryPort;
 import com.cromp.jobs.infrastructure.persistence.jpa.repository.JobJpaRepository;
 import com.cromp.jobs.infrastructure.persistence.mapper.JobPersistenceMapper;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -48,9 +47,8 @@ public class JobRepositoryAdapter implements JobRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Job> findByOrganizationIdAndStatus(Long organizationId, String status) {
-        JobStatus jobStatus = JobStatus.valueOf(status);
-        return repository.findByOrganizationIdAndStatus(organizationId, jobStatus)
+    public List<Job> findByOrganizationIdAndStatus(Long organizationId, JobStatus status) {
+        return repository.findByOrganizationIdAndStatus(organizationId, status)
                 .stream().map(mapper::toDomain).toList();
     }
 
