@@ -8,14 +8,10 @@ import org.springframework.stereotype.Component;
 public class InvitationApiMapper {
 
     public InvitationResponse toResponse(Invitation invitation) {
-        return toResponse(invitation, null, null);
+        return toResponse(invitation, null);
     }
 
     public InvitationResponse toResponse(Invitation invitation, String roleName) {
-        return toResponse(invitation, roleName, null);
-    }
-
-    public InvitationResponse toResponse(Invitation invitation, String roleName, String invitationToken) {
         return new InvitationResponse(
                 invitation.getId(),
                 invitation.getOrganizationId(),
@@ -26,8 +22,7 @@ public class InvitationApiMapper {
                 invitation.getExpiresAt(),
                 invitation.getCreatedAt(),
                 invitation.getAcceptedAt(),
-                invitation.getStatus().name(),
-                invitationToken
+                invitation.getStatus().name()
         );
     }
 }
