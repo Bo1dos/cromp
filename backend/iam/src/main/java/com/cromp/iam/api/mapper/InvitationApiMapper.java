@@ -13,12 +13,9 @@ public class InvitationApiMapper {
 
     public InvitationResponse toResponse(Invitation invitation, String roleName) {
         return new InvitationResponse(
-                invitation.getId(),
-                invitation.getOrganizationId(),
+                invitation.getInvitationUuid(),
                 invitation.getEmail(),
-                invitation.getRoleId(),
                 roleName,
-                invitation.getInvitedBy(),
                 invitation.getExpiresAt(),
                 invitation.getCreatedAt(),
                 invitation.getAcceptedAt(),

@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -25,6 +26,9 @@ public class MembershipJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "membership_uuid", nullable = false, unique = true, updatable = false)
+    private UUID membershipUuid;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
