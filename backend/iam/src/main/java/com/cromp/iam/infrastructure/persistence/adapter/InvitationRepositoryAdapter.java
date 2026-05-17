@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -52,5 +53,10 @@ public class InvitationRepositoryAdapter implements InvitationRepositoryPort {
     @Override
     public void deleteById(Long id) {
         repository.deleteById(id);
+    }
+
+    @Override
+    public Optional<Invitation> findByInvitationUuid(UUID invitationUuid) {
+        return repository.findByInvitationUuid(invitationUuid);
     }
 }

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,43 +38,43 @@ public class MembershipApplicationService implements MembershipFacade {
     public MembershipResponse add(AddMembershipRequest request) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("No organization selected"));
 
-        // Проверяем право на приглашение в организацию
-        if (!permissionCheckerPort.hasPermission(currentUserId, request.organizationId(), "org:invite")) {
-            throw new SecurityException("No permission to invite users to this organization");
+        if (!permissionCheckerPort.hasPermission(currentUserId, organizationId, "org:invite")) {
+                throw new SecurityException("No permission to invite users to this organization");
         }
 
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new DomainException("User not found"));
-        Role role = roleRepository.findById(request.roleId())
+        Role role = roleRepository.findByName(request.role())
                 .orElseThrow(() -> new DomainException("Role not found"));
 
-        Membership membership = Membership.join(user.getId(), request.organizationId(), role.getId());
+        Membership membership = Membership.join(user.getId(), organizationId, role.getId());
         membership = membershipRepository.save(membership);
         return membershipMapper.toResponse(membership);
     }
 
     @Override
-    public MembershipResponse changeRole(ChangeMembershipRoleRequest request) {
+    public MembershipResponse changeRole(UUID membershipUuid, ChangeMembershipRoleRequest request) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
 
-        Membership membership = membershipRepository.findById(request.membershipId())
+        Membership membership = membershipRepository.findByMembershipUuid(membershipUuid)
                 .orElseThrow(() -> new DomainException("Membership not found"));
 
-        // Проверяем право на управление ролями в организации
         if (!permissionCheckerPort.hasPermission(currentUserId, membership.getOrganizationId(), "org:update")) {
             throw new SecurityException("No permission to change roles in this organization");
         }
 
-        Role role = roleRepository.findById(request.roleId())
+        Role role = roleRepository.findByName(request.role())
                 .orElseThrow(() -> new DomainException("Role not found"));
 
         membership.changeRole(role.getId());
         membershipRepository.save(membership);
         return membershipMapper.toResponse(membership);
     }
-
+    
     @Override
     public void remove(RemoveMembershipRequest request) {
         Long currentUserId = currentActorPort.currentUserId()

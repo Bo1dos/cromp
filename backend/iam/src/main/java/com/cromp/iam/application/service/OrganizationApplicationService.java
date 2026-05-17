@@ -7,6 +7,7 @@ import com.cromp.iam.api.dto.response.OrganizationResponse;
 import com.cromp.iam.api.mapper.MembershipApiMapper;
 import com.cromp.iam.api.mapper.OrganizationApiMapper;
 import com.cromp.iam.api.service.OrganizationFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.domain.model.Membership;
 import com.cromp.iam.domain.model.Organization;
 import com.cromp.iam.domain.model.Role;
@@ -31,6 +32,7 @@ public class OrganizationApplicationService implements OrganizationFacade {
     private final RoleRepositoryPort roleRepository;
     private final OrganizationApiMapper organizationMapper;
     private final MembershipApiMapper membershipMapper;
+    private final CurrentActorPort currentActorPort;
 
     @Override
     public OrganizationResponse create(CreateOrganizationRequest request, Long creatorUserId) {
@@ -48,7 +50,9 @@ public class OrganizationApplicationService implements OrganizationFacade {
 
     @Override
     public OrganizationResponse rename(RenameOrganizationRequest request) {
-        Organization org = organizationRepository.findById(request.organizationId())
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("No organization selected"));
+        Organization org = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new DomainException("Organization not found"));
         org.rename(request.name());
         return organizationMapper.toResponse(organizationRepository.save(org));
