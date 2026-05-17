@@ -4,9 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record JobResponse(
-        Long id,
         UUID jobUuid,
-        Long organizationId,
         String name,
         String description,
         String status,
