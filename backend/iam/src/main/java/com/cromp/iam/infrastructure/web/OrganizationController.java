@@ -30,7 +30,7 @@ public class OrganizationController {
     }
 
     @PutMapping("/{orgUuid}/rename")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'org:update')")
+    @PreAuthorize("isAuthenticated()")
     public OrganizationResponse rename(@PathVariable UUID orgUuid,
                                        @Valid @RequestBody RenameOrganizationRequest request) {
         return organizationFacade.rename(orgUuid, request);

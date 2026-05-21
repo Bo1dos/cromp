@@ -55,9 +55,9 @@ public class InvitationController {
         return invitationFacade.getById(invitationUuid);
     }
 
-    @GetMapping("/organization/{organizationId}")
+    @GetMapping("/organization/{orgUuid}")
     @PreAuthorize("isAuthenticated()")
-    public List<InvitationResponse> getByOrganization(@PathVariable Long organizationId) {
-        return invitationFacade.getByOrganization(organizationId);
+    public List<InvitationResponse> getByOrganization(@PathVariable UUID orgUuid) {
+        return invitationFacade.getByOrganization(orgUuid);
     }
 }

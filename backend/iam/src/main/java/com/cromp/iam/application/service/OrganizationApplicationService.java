@@ -8,6 +8,7 @@ import com.cromp.iam.api.mapper.MembershipApiMapper;
 import com.cromp.iam.api.mapper.OrganizationApiMapper;
 import com.cromp.iam.api.service.OrganizationFacade;
 import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
 import com.cromp.iam.domain.model.Membership;
 import com.cromp.iam.domain.model.Organization;
 import com.cromp.iam.domain.model.Role;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,13 +35,13 @@ public class OrganizationApplicationService implements OrganizationFacade {
     private final OrganizationApiMapper organizationMapper;
     private final MembershipApiMapper membershipMapper;
     private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
 
     @Override
     public OrganizationResponse create(CreateOrganizationRequest request, Long creatorUserId) {
         Organization org = Organization.create(request.name(), request.settings());
         org = organizationRepository.save(org);
 
-        // Создатель становится OWNER
         Role ownerRole = roleRepository.findByName(UserRole.OWNER)
                 .orElseThrow(() -> new IllegalStateException("OWNER role not found"));
         Membership membership = Membership.join(creatorUserId, org.getId(), ownerRole.getId());
@@ -49,29 +51,52 @@ public class OrganizationApplicationService implements OrganizationFacade {
     }
 
     @Override
-    public OrganizationResponse rename(RenameOrganizationRequest request) {
-        Long organizationId = currentActorPort.currentOrganizationId()
-                .orElseThrow(() -> new SecurityException("No organization selected"));
-        Organization org = organizationRepository.findById(organizationId)
+    public OrganizationResponse rename(UUID orgUuid, RenameOrganizationRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Organization organization = organizationRepository.findByOrgUuid(orgUuid)
                 .orElseThrow(() -> new DomainException("Organization not found"));
-        org.rename(request.name());
-        return organizationMapper.toResponse(organizationRepository.save(org));
+        ensureCurrentOrganizationMatches(organization.getId());
+        if (!permissionCheckerPort.hasPermission(currentUserId, organization.getId(), "org:update")) {
+            throw new SecurityException("No permission to update this organization");
+        }
+        organization.rename(request.name());
+        return organizationMapper.toResponse(organizationRepository.save(organization));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public OrganizationResponse getById(Long organizationId) {
-        Organization org = organizationRepository.findById(organizationId)
+    public OrganizationResponse getById(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Organization organization = organizationRepository.findByOrgUuid(orgUuid)
                 .orElseThrow(() -> new DomainException("Organization not found"));
-        return organizationMapper.toResponse(org);
+        if (!permissionCheckerPort.isMember(currentUserId, organization.getId())) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        return organizationMapper.toResponse(organization);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<MembershipResponse> getMembers(Long organizationId) {
-        List<Membership> memberships = membershipRepository.findByOrganizationId(organizationId);
-        return memberships.stream()
-                .map(membershipMapper::toResponse) // TODO: упрощённо, без имени роли (можно позже добавить)
+    public List<MembershipResponse> getMembers(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Organization organization = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"));
+        if (!permissionCheckerPort.isMember(currentUserId, organization.getId())) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        return membershipRepository.findByOrganizationId(organization.getId()).stream()
+                .map(membershipMapper::toResponse)
                 .toList();
+    }
+
+    private void ensureCurrentOrganizationMatches(Long organizationId) {
+        Long currentOrganizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("No organization selected"));
+        if (!currentOrganizationId.equals(organizationId)) {
+            throw new SecurityException("Organization does not match current context");
+        }
     }
 }

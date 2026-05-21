@@ -17,7 +17,7 @@ public class AuditLogController {
     private final AuditLogFacade auditLogFacade;
 
     @GetMapping("/organization/{orgUuid}")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'org:audit')")
+    @PreAuthorize("isAuthenticated()")
     public List<AuditLogResponse> getByOrganization(@PathVariable UUID orgUuid) {
         return auditLogFacade.getByOrganization(orgUuid);
     }

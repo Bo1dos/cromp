@@ -13,6 +13,6 @@ public interface MembershipFacade {
     void remove(UUID membershipUuid);
 
     MembershipResponse getById(UUID membershipUuid);
-    List<MembershipResponse> getByOrganization(Long organizationId);
-    List<MembershipResponse> getByUser(Long userId);
+    List<MembershipResponse> getByOrganization(UUID orgUuid);
+    List<MembershipResponse> getByUser(UUID userUuid);
 }

@@ -2,7 +2,6 @@ package com.cromp.iam.infrastructure.web;
 
 import com.cromp.iam.api.dto.request.AddMembershipRequest;
 import com.cromp.iam.api.dto.request.ChangeMembershipRoleRequest;
-import com.cromp.iam.api.dto.request.RemoveMembershipRequest;
 import com.cromp.iam.api.dto.response.MembershipResponse;
 import com.cromp.iam.api.service.MembershipFacade;
 import jakarta.validation.Valid;
@@ -49,15 +48,15 @@ public class MembershipController {
         return membershipFacade.getById(membershipUuid);
     }
 
-    @GetMapping("/organization/{organizationId}")
+    @GetMapping("/organization/{orgUuid}")
     @PreAuthorize("isAuthenticated()")
-    public List<MembershipResponse> getByOrganization(@PathVariable Long organizationId) {
-        return membershipFacade.getByOrganization(organizationId);
+    public List<MembershipResponse> getByOrganization(@PathVariable UUID orgUuid) {
+        return membershipFacade.getByOrganization(orgUuid);
     }
 
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user/{userUuid}")
     @PreAuthorize("isAuthenticated()")
-    public List<MembershipResponse> getByUser(@PathVariable Long userId) {
-        return membershipFacade.getByUser(userId);
+    public List<MembershipResponse> getByUser(@PathVariable UUID userUuid) {
+        return membershipFacade.getByUser(userUuid);
     }
 }
