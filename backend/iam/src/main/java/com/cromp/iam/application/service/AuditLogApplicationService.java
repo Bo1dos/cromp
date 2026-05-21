@@ -5,14 +5,17 @@ import com.cromp.iam.api.dto.response.AuditLogResponse;
 import com.cromp.iam.api.mapper.AuditLogApiMapper;
 import com.cromp.iam.api.service.AuditLogFacade;
 import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
 import com.cromp.iam.domain.model.AuditLogEntry;
-import com.cromp.iam.domain.model.exceptions.DomainException;
 import com.cromp.iam.domain.repository.AuditLogRepositoryPort;
+import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
+import com.cromp.iam.domain.repository.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,8 +23,11 @@ import java.util.List;
 public class AuditLogApplicationService implements AuditLogFacade {
 
     private final AuditLogRepositoryPort auditLogRepository;
+    private final OrganizationRepositoryPort organizationRepository;
+    private final UserRepositoryPort userRepository;
     private final AuditLogApiMapper mapper;
     private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
 
     @Override
     public void record(RecordAuditLogRequest request) {
@@ -39,7 +45,15 @@ public class AuditLogApplicationService implements AuditLogFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> getByOrganization(Long organizationId) {
+    public List<AuditLogResponse> getByOrganization(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Organization not found"))
+                .getId();
+        if (!permissionCheckerPort.hasPermission(currentUserId, organizationId, "org:audit")) {
+            throw new SecurityException("No permission to view organization audit log");
+        }
         return auditLogRepository.findByOrganizationId(organizationId).stream()
                 .map(mapper::toResponse)
                 .toList();
@@ -47,7 +61,10 @@ public class AuditLogApplicationService implements AuditLogFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> getByActor(Long actorId) {
+    public List<AuditLogResponse> getByActor(UUID userUuid) {
+        Long actorId = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getId();
         return auditLogRepository.findByActorId(actorId).stream()
                 .map(mapper::toResponse)
                 .toList();

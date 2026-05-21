@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -18,33 +20,33 @@ public class UserController {
 
     private final UserFacade userFacade;
 
-    @GetMapping("/{userId}")
-    @PreAuthorize("#userId == authentication.principal")
-    public UserResponse getUser(@PathVariable Long userId) {
-        return userFacade.getById(userId);
+    @GetMapping("/{userUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public UserResponse getUser(@PathVariable UUID userUuid) {
+        return userFacade.getById(userUuid);
     }
 
-    @PutMapping("/{userId}/profile")
-    @PreAuthorize("#userId == authentication.principal")
-    public UserResponse updateProfile(@PathVariable Long userId,
-                                    @Valid @RequestBody UpdateUserProfileRequest request) {
-        return userFacade.updateProfile(request);
+    @PutMapping("/{userUuid}/profile")
+    @PreAuthorize("isAuthenticated()")
+    public UserResponse updateProfile(@PathVariable UUID userUuid,
+                                      @Valid @RequestBody UpdateUserProfileRequest request) {
+        return userFacade.updateProfile(userUuid, request);
     }
 
     
-    @PutMapping("/{userId}/email")
-    @PreAuthorize("#userId == authentication.principal")
+    @PutMapping("/{userUuid}/email")
+    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changeEmail(@PathVariable Long userId,
+    public void changeEmail(@PathVariable UUID userUuid,
                             @Valid @RequestBody ChangeUserEmailRequest request) {
-        userFacade.changeEmail(request);
+        userFacade.changeEmail(userUuid, request);
     }
 
-    @PutMapping("/{userId}/password")
-    @PreAuthorize("#userId == authentication.principal")
+    @PutMapping("/{userUuid}/password")
+    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changePassword(@PathVariable Long userId,
-                            @Valid @RequestBody ChangeUserPasswordRequest request) {
-        userFacade.changePassword(request);
+    public void changePassword(@PathVariable UUID userUuid,
+                               @Valid @RequestBody ChangeUserPasswordRequest request) {
+        userFacade.changePassword(userUuid, request);
     }
 }

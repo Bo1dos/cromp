@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -27,9 +29,10 @@ public class UserApplicationService implements UserFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public UserResponse getById(Long userId) {
-        User user = userRepository.findById(userId)
+    public UserResponse getById(UUID userUuid) {
+        User user = userRepository.findByUserUuid(userUuid)
                 .orElseThrow(() -> new DomainException("User not found"));
+        ensureCurrentUserMatches(user.getId());
         return userMapper.toResponse(user);
     }
 
@@ -42,11 +45,8 @@ public class UserApplicationService implements UserFacade {
     }
 
     @Override
-    public UserResponse updateProfile(UpdateUserProfileRequest request) {
-        Long userId = currentActorPort.currentUserId()
-                .orElseThrow(() -> new SecurityException("Not authenticated"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new DomainException("User not found"));
+    public UserResponse updateProfile(UUID userUuid, UpdateUserProfileRequest request) {
+        User user = resolveCurrentUser(userUuid);
         user.updateName(request.firstName(), request.lastName(), request.middleName(), request.displayName());
         if (request.profile() != null) {
             user.updateProfile(request.profile());
@@ -55,11 +55,8 @@ public class UserApplicationService implements UserFacade {
     }
 
     @Override
-    public void changeEmail(ChangeUserEmailRequest request) {
-        Long userId = currentActorPort.currentUserId()
-                .orElseThrow(() -> new SecurityException("Not authenticated"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new DomainException("User not found"));
+    public void changeEmail(UUID userUuid, ChangeUserEmailRequest request) {
+        User user = resolveCurrentUser(userUuid);
         if (userRepository.existsByEmail(request.newEmail())) {
             throw new DomainException("Email already in use");
         }
@@ -68,15 +65,27 @@ public class UserApplicationService implements UserFacade {
     }
 
     @Override
-    public void changePassword(ChangeUserPasswordRequest request) {
-        Long userId = currentActorPort.currentUserId()
-                .orElseThrow(() -> new SecurityException("Not authenticated"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new DomainException("User not found"));
+    public void changePassword(UUID userUuid, ChangeUserPasswordRequest request) {
+        User user = resolveCurrentUser(userUuid);
         if (user.getPasswordHash() == null || !passwordHasher.matches(request.oldPassword(), user.getPasswordHash())) {
             throw new DomainException("Old password is incorrect");
         }
         user.changePasswordHash(passwordHasher.hash(request.newPassword()));
         userRepository.save(user);
+    }
+
+    private User resolveCurrentUser(UUID userUuid) {
+        User user = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new DomainException("User not found"));
+        ensureCurrentUserMatches(user.getId());
+        return user;
+    }
+
+    private void ensureCurrentUserMatches(Long userId) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!currentUserId.equals(userId)) {
+            throw new SecurityException("You can only access your own user");
+        }
     }
 }

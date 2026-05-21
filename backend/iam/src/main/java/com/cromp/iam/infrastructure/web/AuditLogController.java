@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/audit")
@@ -15,15 +16,15 @@ public class AuditLogController {
 
     private final AuditLogFacade auditLogFacade;
 
-    @GetMapping("/organization/{organizationId}")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'org:audit')")
-    public List<AuditLogResponse> getByOrganization(@PathVariable Long organizationId) {
-        return auditLogFacade.getByOrganization(organizationId);
+    @GetMapping("/organization/{orgUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public List<AuditLogResponse> getByOrganization(@PathVariable UUID orgUuid) {
+        return auditLogFacade.getByOrganization(orgUuid);
     }
 
-    @GetMapping("/actor/{actorId}")
+    @GetMapping("/actor/{userUuid}")
     @PreAuthorize("isAuthenticated()")
-    public List<AuditLogResponse> getByActor(@PathVariable Long actorId) {
-        return auditLogFacade.getByActor(actorId);
+    public List<AuditLogResponse> getByActor(@PathVariable UUID userUuid) {
+        return auditLogFacade.getByActor(userUuid);
     }
 }

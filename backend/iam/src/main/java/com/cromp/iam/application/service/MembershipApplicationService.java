@@ -2,7 +2,6 @@ package com.cromp.iam.application.service;
 
 import com.cromp.iam.api.dto.request.AddMembershipRequest;
 import com.cromp.iam.api.dto.request.ChangeMembershipRoleRequest;
-import com.cromp.iam.api.dto.request.RemoveMembershipRequest;
 import com.cromp.iam.api.dto.response.MembershipResponse;
 import com.cromp.iam.api.mapper.MembershipApiMapper;
 import com.cromp.iam.api.service.MembershipFacade;
@@ -13,6 +12,7 @@ import com.cromp.iam.domain.model.Role;
 import com.cromp.iam.domain.model.User;
 import com.cromp.iam.domain.model.exceptions.DomainException;
 import com.cromp.iam.domain.repository.MembershipRepositoryPort;
+import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
 import com.cromp.iam.domain.repository.RoleRepositoryPort;
 import com.cromp.iam.domain.repository.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +29,7 @@ public class MembershipApplicationService implements MembershipFacade {
 
     private final MembershipRepositoryPort membershipRepository;
     private final UserRepositoryPort userRepository;
+    private final OrganizationRepositoryPort organizationRepository;
     private final RoleRepositoryPort roleRepository;
     private final MembershipApiMapper membershipMapper;
     private final CurrentActorPort currentActorPort;
@@ -42,7 +43,7 @@ public class MembershipApplicationService implements MembershipFacade {
                 .orElseThrow(() -> new SecurityException("No organization selected"));
 
         if (!permissionCheckerPort.hasPermission(currentUserId, organizationId, "org:invite")) {
-                throw new SecurityException("No permission to invite users to this organization");
+            throw new SecurityException("No permission to invite users to this organization");
         }
 
         User user = userRepository.findById(request.userId())
@@ -74,13 +75,13 @@ public class MembershipApplicationService implements MembershipFacade {
         membershipRepository.save(membership);
         return membershipMapper.toResponse(membership);
     }
-    
+
     @Override
-    public void remove(RemoveMembershipRequest request) {
+    public void remove(UUID membershipUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
 
-        Membership membership = membershipRepository.findById(request.membershipId())
+        Membership membership = membershipRepository.findByMembershipUuid(membershipUuid)
                 .orElseThrow(() -> new DomainException("Membership not found"));
 
         if (!permissionCheckerPort.hasPermission(currentUserId, membership.getOrganizationId(), "org:update")) {
@@ -92,14 +93,13 @@ public class MembershipApplicationService implements MembershipFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public MembershipResponse getById(Long membershipId) {
+    public MembershipResponse getById(UUID membershipUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
 
-        Membership membership = membershipRepository.findById(membershipId)
+        Membership membership = membershipRepository.findByMembershipUuid(membershipUuid)
                 .orElseThrow(() -> new DomainException("Membership not found"));
 
-        // Только член организации может видеть членство
         if (!permissionCheckerPort.isMember(currentUserId, membership.getOrganizationId())) {
             throw new SecurityException("You are not a member of this organization");
         }
@@ -109,9 +109,12 @@ public class MembershipApplicationService implements MembershipFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MembershipResponse> getByOrganization(Long organizationId) {
+    public List<MembershipResponse> getByOrganization(UUID orgUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"))
+                .getId();
 
         if (!permissionCheckerPort.isMember(currentUserId, organizationId)) {
             throw new SecurityException("You are not a member of this organization");
@@ -124,12 +127,13 @@ public class MembershipApplicationService implements MembershipFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MembershipResponse> getByUser(Long userId) {
+    public List<MembershipResponse> getByUser(UUID userUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long userId = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new DomainException("User not found"))
+                .getId();
 
-        // Пользователь может видеть только свои членства 
-        // TODO: (админ-логику добавим позже)
         if (!currentUserId.equals(userId)) {
             throw new SecurityException("You can only view your own memberships");
         }

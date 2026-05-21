@@ -33,34 +33,54 @@ public class JobVersionApplicationService implements JobVersionFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<JobVersionResponse> getVersions(Long organizationId, Long jobId) {
-        ensureMembership(organizationId);
-        Job job = checkJobOwnership(organizationId, jobId);
-        return versionRepository.findByJobIdOrderByVersionDesc(jobId).stream()
+    public List<JobVersionResponse> getVersions(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        return versionRepository.findByJobIdOrderByVersionDesc(job.getId()).stream()
                 .map(v -> jobVersionApiMapper.toVersionResponse(job, v))
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public JobVersionResponse getVersion(Long organizationId, Long jobId, int version) {
-        ensureMembership(organizationId);
-        Job job = checkJobOwnership(organizationId, jobId);
-        JobVersion ver = versionRepository.findByJobIdAndVersion(jobId, version)
-                .orElseThrow(() -> new JobVersionNotFoundException(jobId, version));
+    public JobVersionResponse getVersion(UUID jobUuid, int version) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion ver = versionRepository.findByJobIdAndVersion(job.getId(), version)
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), version));
         return jobVersionApiMapper.toVersionResponse(job, ver);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public JobVersionComparisonResponse compareVersions(Long organizationId, Long jobId,
-                                                        int fromVersion, int toVersion) {
-        ensureMembership(organizationId);
-        checkJobOwnership(organizationId, jobId);
-        JobVersion from = versionRepository.findByJobIdAndVersion(jobId, fromVersion)
-                .orElseThrow(() -> new JobVersionNotFoundException(jobId, fromVersion));
-        JobVersion to = versionRepository.findByJobIdAndVersion(jobId, toVersion)
-                .orElseThrow(() -> new JobVersionNotFoundException(jobId, toVersion));
+    public JobVersionComparisonResponse compareVersions(UUID jobUuid, int fromVersion, int toVersion) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion from = versionRepository.findByJobIdAndVersion(job.getId(), fromVersion)
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), fromVersion));
+        JobVersion to = versionRepository.findByJobIdAndVersion(job.getId(), toVersion)
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), toVersion));
 
         List<JobVersionComparisonResponse.JobVersionDiff> diffs = new ArrayList<>();
         try {
@@ -82,14 +102,20 @@ public class JobVersionApplicationService implements JobVersionFacade {
     }
 
     @Override
-    public JobVersionResponse revertToVersion(Long organizationId, Long jobId, int version) {
+    public JobVersionResponse revertToVersion(UUID jobUuid, int version) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
-        ensureMembership(organizationId);
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
             throw new SecurityException("No permission to revert job");
         }
-        Job job = checkJobOwnership(organizationId, jobId);
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
         JobVersion source = versionRepository.findByJobIdAndVersion(jobId, version)
                 .orElseThrow(() -> new JobVersionNotFoundException(jobId, version));
         JobVersion latest = versionRepository.findLatestByJobId(jobId).orElseThrow();
@@ -103,11 +129,18 @@ public class JobVersionApplicationService implements JobVersionFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public JobVersionResponse getCurrentVersion(Long organizationId, Long jobId) {
-        ensureMembership(organizationId);
-        Job job = checkJobOwnership(organizationId, jobId);
-        JobVersion latest = versionRepository.findLatestByJobId(jobId)
-                .orElseThrow(() -> new JobVersionNotFoundException(jobId, -1));
+    public JobVersionResponse getCurrentVersion(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion latest = versionRepository.findLatestByJobId(job.getId())
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), -1));
         return jobVersionApiMapper.toVersionResponse(job, latest);
     }
 

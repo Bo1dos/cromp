@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SecretFacade {
-    SecretResponse createSecret(Long organizationId, CreateSecretRequest request);
-    SecretResponse getSecret(Long organizationId, UUID secretUuid);
-    List<SecretResponse> listSecrets(Long organizationId);
-    void deleteSecret(Long organizationId, UUID secretUuid);
-    SecretResponse rotateSecret(Long organizationId, UUID secretUuid, RotateSecretRequest request);
-    List<SecretVersionResponse> getVersions(Long organizationId, UUID secretUuid);
+    SecretResponse createSecret(CreateSecretRequest request);
+    SecretResponse getSecret(UUID secretUuid);
+    List<SecretResponse> listSecrets();
+    void deleteSecret(UUID secretUuid);
+    SecretResponse rotateSecret(UUID secretUuid, RotateSecretRequest request);
+    List<SecretVersionResponse> getVersions(UUID secretUuid);
 }

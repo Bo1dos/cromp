@@ -57,6 +57,6 @@ public class InvitationRepositoryAdapter implements InvitationRepositoryPort {
 
     @Override
     public Optional<Invitation> findByInvitationUuid(UUID invitationUuid) {
-        return repository.findByInvitationUuid(invitationUuid);
+        return repository.findByInvitationUuid(invitationUuid).map(mapper::toDomain);
     }
 }
