@@ -40,9 +40,11 @@ public class SecretApplicationService implements SecretFacade {
     private final PermissionCheckerPort permissionCheckerPort;
 
     @Override
-    public SecretResponse createSecret(Long organizationId, CreateSecretRequest request) {
+    public SecretResponse createSecret(CreateSecretRequest request) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "secret:create")) {
             throw new SecurityException("No permission to create secret");
         }
@@ -66,9 +68,11 @@ public class SecretApplicationService implements SecretFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public SecretResponse getSecret(Long organizationId, UUID secretUuid) {
+    public SecretResponse getSecret(UUID secretUuid) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.isMember(userId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }
@@ -83,9 +87,11 @@ public class SecretApplicationService implements SecretFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SecretResponse> listSecrets(Long organizationId) {
+    public List<SecretResponse> listSecrets() {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.isMember(userId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }
@@ -98,9 +104,11 @@ public class SecretApplicationService implements SecretFacade {
     }
 
     @Override
-    public void deleteSecret(Long organizationId, UUID secretUuid) {
+    public void deleteSecret(UUID secretUuid) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "secret:delete")) {
             throw new SecurityException("No permission to delete secret");
         }
@@ -116,9 +124,11 @@ public class SecretApplicationService implements SecretFacade {
     }
 
     @Override
-    public SecretResponse rotateSecret(Long organizationId, UUID secretUuid, RotateSecretRequest request) {
+    public SecretResponse rotateSecret(UUID secretUuid, RotateSecretRequest request) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "secret:update")) {
             throw new SecurityException("No permission to rotate secret");
         }
@@ -127,7 +137,6 @@ public class SecretApplicationService implements SecretFacade {
         if (!secret.getOrganizationId().equals(organizationId)) {
             throw new SecurityException("Secret does not belong to organization");
         }
-        // Деактивировать текущую активную версию
         versionRepository.findActiveVersion(secret.getId()).ifPresent(v -> {
             v.deprecate();
             versionRepository.save(v);
@@ -145,9 +154,11 @@ public class SecretApplicationService implements SecretFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SecretVersionResponse> getVersions(Long organizationId, UUID secretUuid) {
+    public List<SecretVersionResponse> getVersions(UUID secretUuid) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.isMember(userId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }

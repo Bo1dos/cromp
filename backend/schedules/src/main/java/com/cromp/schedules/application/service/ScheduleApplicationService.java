@@ -12,6 +12,7 @@ import com.cromp.schedules.domain.model.Schedule;
 import com.cromp.schedules.domain.model.exceptions.ScheduleNotFoundException;
 import com.cromp.schedules.domain.repository.ScheduleRepositoryPort;
 import com.cromp.schedules.domain.service.ScheduleCalculator;
+import com.cromp.jobs.domain.repository.JobRepositoryPort;
 import com.cronutils.model.Cron;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,22 +35,26 @@ public class ScheduleApplicationService implements ScheduleFacade {
     private final AuditPort auditPort;
     private final CurrentActorPort currentActorPort;
     private final PermissionCheckerPort permissionCheckerPort;
+    private final JobRepositoryPort jobRepository;
 
     @Override
-    public ScheduleResponse createOrUpdate(Long organizationId, Long jobId,
-                                           CreateUpdateScheduleRequest request) {
+    public ScheduleResponse createOrUpdate(UUID jobUuid, CreateUpdateScheduleRequest request) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
-        // Проверка прав на управление расписанием
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:manage")) {
             throw new SecurityException("No permission to manage schedules");
         }
-        // Существует ли задача и принадлежит ли организации
+        
+        Long jobId = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"))
+                .getId();
+        
         if (!jobOwnershipPort.jobBelongsToOrganization(jobId, organizationId)) {
             throw new IllegalArgumentException("Job not found or does not belong to organization");
         }
 
-        // Валидация и расчёт следующего запуска
         Cron cron = calculator.validate(request.cronExpression());
         Instant nextRun = calculator.calculateNextRun(cron, request.timezone());
 
@@ -60,7 +66,6 @@ public class ScheduleApplicationService implements ScheduleFacade {
             schedule = existing.get();
             schedule.updateCron(request.cronExpression(), nextRun);
             schedule.updateTimezone(request.timezone(), nextRun);
-            // rules пока не обновляем, оставим на будущее
             action = "SCHEDULE.UPDATE";
         } else {
             schedule = Schedule.create(jobId, request.cronExpression(),
@@ -78,12 +83,19 @@ public class ScheduleApplicationService implements ScheduleFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public ScheduleResponse getSchedule(Long organizationId, Long jobId) {
+    public ScheduleResponse getSchedule(UUID jobUuid) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.isMember(userId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }
+        
+        Long jobId = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"))
+                .getId();
+        
         if (!jobOwnershipPort.jobBelongsToOrganization(jobId, organizationId)) {
             throw new IllegalArgumentException("Job not found or not in organization");
         }
@@ -93,12 +105,19 @@ public class ScheduleApplicationService implements ScheduleFacade {
     }
 
     @Override
-    public void deleteSchedule(Long organizationId, Long jobId) {
+    public void deleteSchedule(UUID jobUuid) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:manage")) {
             throw new SecurityException("No permission to delete schedule");
         }
+        
+        Long jobId = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"))
+                .getId();
+        
         if (!jobOwnershipPort.jobBelongsToOrganization(jobId, organizationId)) {
             throw new IllegalArgumentException("Job not found or not in organization");
         }

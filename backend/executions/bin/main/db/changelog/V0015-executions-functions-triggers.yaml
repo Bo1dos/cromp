@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-execution-triggers-and-functions
+      author: bo1dos
+      changes:
+        - sql:
+            sql: |
+              CREATE OR REPLACE FUNCTION fn_increment_total_attempts() RETURNS TRIGGER AS $$
+              BEGIN
+                UPDATE executions
+                SET total_attempts = total_attempts + 1,
+                    final_status = 'IN_PROGRESS',
+                    started_at = COALESCE(started_at, NOW()),
+                    updated_at = NOW()
+                WHERE id = NEW.execution_id;
+                RETURN NEW;
+              END;
+              $$ LANGUAGE plpgsql;
+        - sql:
+            sql: |
+              CREATE TRIGGER tr_after_attempt_insert AFTER INSERT ON execution_attempts FOR EACH ROW EXECUTE FUNCTION fn_increment_total_attempts();
+        - sql:
+            sql: |
+              CREATE OR REPLACE FUNCTION fn_update_execution_final_status() RETURNS TRIGGER AS $$
+              BEGIN
+                IF NEW.status IN ('SUCCEEDED','FAILED','TIMEOUT','CANCELLED') THEN
+                  UPDATE executions e
+                  SET
+                    final_status = CASE
+                      WHEN NEW.status = 'SUCCEEDED' THEN 'SUCCEEDED'
+                      WHEN NEW.status IN ('FAILED','TIMEOUT') THEN 'FAILED'
+                      WHEN NEW.status = 'CANCELLED' THEN 'CANCELLED'
+                      ELSE e.final_status
+                    END,
+                    finished_at = CASE WHEN NEW.status IN ('SUCCEEDED','FAILED','TIMEOUT','CANCELLED') THEN NOW() ELSE e.finished_at END,
+                    updated_at = NOW()
+                  WHERE e.id = NEW.execution_id;
+                END IF;
+                RETURN NEW;
+              END;
+              $$ LANGUAGE plpgsql;
+        - sql:
+            sql: |
+              CREATE TRIGGER tr_after_attempt_status_update AFTER UPDATE OF status ON execution_attempts
+                FOR EACH ROW WHEN (OLD.status IS DISTINCT FROM NEW.status)
+                EXECUTE FUNCTION fn_update_execution_final_status();
+        - sql:
+            sql: |
+              CREATE OR REPLACE FUNCTION claim_execution_attempt(p_org_id BIGINT)
+              RETURNS TABLE(attempt_id BIGINT, execution_id BIGINT, attempt_uuid UUID, config JSONB) AS $$
+              BEGIN
+                RETURN QUERY
+                WITH cand AS (
+                  SELECT ea.id, ea.execution_id
+                  FROM execution_attempts ea
+                  JOIN executions e ON e.id = ea.execution_id
+                  WHERE ea.organization_id = p_org_id
+                    AND ea.status = 'PENDING'
+                    AND (ea.scheduled_at IS NULL OR ea.scheduled_at <= NOW())
+                  ORDER BY e.priority DESC NULLS LAST, ea.scheduled_at NULLS FIRST, ea.created_at
+                  LIMIT 1
+                  FOR UPDATE SKIP LOCKED
+                )
+                UPDATE execution_attempts ea2
+                SET status = 'DISPATCHED', claimed_at = NOW(), updated_at = NOW()
+                FROM cand
+                WHERE ea2.id = cand.id
+                RETURNING ea2.id, ea2.execution_id, ea2.attempt_uuid, (SELECT jv.config FROM job_versions jv WHERE jv.id = (SELECT job_version_id FROM executions WHERE id = ea2.execution_id));
+              END;
+              $$ LANGUAGE plpgsql;

@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-audit-log-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: audit_log
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: organization_id, type: BIGINT, constraints: { nullable: false, references: organizations(id), foreignKeyName: fk_audit_log_organization_id, deleteCascade: true } }
+              - column: { name: recorded_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: actor_id, type: BIGINT, constraints: { references: users(id), foreignKeyName: fk_audit_log_actor_id } }
+              - column: { name: actor_snapshot, type: JSONB, constraints: { nullable: false } }
+              - column: { name: action, type: VARCHAR(100), constraints: { nullable: false } }
+              - column: { name: resource_type, type: VARCHAR(50) }
+              - column: { name: resource_id, type: BIGINT }
+              - column: { name: changes_diff, type: JSONB }
+        - createIndex:
+            indexName: idx_audit_org_recorded
+            tableName: audit_log
+            columns: [ organization_id, recorded_at ]
+        - createIndex:
+            indexName: idx_audit_actor_recorded
+            tableName: audit_log
+            columns: [ actor_id, recorded_at ]
+        - createIndex:
+            indexName: idx_audit_resource
+            tableName: audit_log
+            columns: [ organization_id, resource_type, resource_id, recorded_at ]

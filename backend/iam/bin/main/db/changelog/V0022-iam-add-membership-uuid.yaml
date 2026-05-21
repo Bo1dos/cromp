@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-membership-uuid
+      author: bo1dos
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE memberships
+                ADD COLUMN membership_uuid UUID NOT NULL DEFAULT gen_random_uuid();
+
+              ALTER TABLE memberships
+                ADD CONSTRAINT ux_memberships_uuid UNIQUE (membership_uuid);

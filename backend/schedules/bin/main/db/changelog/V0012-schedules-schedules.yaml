@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-schedules-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: schedules
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: job_id, type: BIGINT, constraints: { nullable: false, unique: true, references: jobs(id), foreignKeyName: fk_schedules_job_id, deleteCascade: true } }
+              - column: { name: cron_expression, type: VARCHAR(128), constraints: { nullable: false } }
+              - column: { name: timezone, type: VARCHAR(64), defaultValue: UTC, constraints: { nullable: false } }
+              - column: { name: rules, type: JSONB, defaultValue: "{}" }
+              - column: { name: next_run_at, type: TIMESTAMPTZ }
+              - column: { name: status, type: schedule_status, defaultValue: ACTIVE, constraints: { nullable: false } }
+              - column: { name: created_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            indexName: idx_schedules_next_run
+            tableName: schedules
+            columns: [ next_run_at ]
+            where: status = 'ACTIVE'
+        - sql:
+            sql: |
+              CREATE TRIGGER tr_schedules_updated BEFORE UPDATE ON schedules FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

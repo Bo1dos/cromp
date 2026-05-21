@@ -8,6 +8,7 @@ import com.cromp.iam.api.dto.response.InvitationCreateResponse;
 import com.cromp.iam.api.dto.response.InvitationResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface InvitationFacade {
     InvitationCreateResponse invite(InviteUserRequest request);
@@ -15,6 +16,6 @@ public interface InvitationFacade {
     void reject(RejectInvitationRequest request);
     InvitationResponse revoke(RevokeInvitationRequest request);
 
-    InvitationResponse getById(Long invitationId);
+    InvitationResponse getById(UUID invitationUuid);
     List<InvitationResponse> getByOrganization(Long organizationId);
 }

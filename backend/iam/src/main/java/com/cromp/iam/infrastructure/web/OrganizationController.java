@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
@@ -28,22 +29,22 @@ public class OrganizationController {
         return organizationFacade.create(request, userId);
     }
 
-    @PutMapping("/{organizationId}/rename")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'org:update')")
-    public OrganizationResponse rename(@PathVariable Long organizationId,
+    @PutMapping("/{orgUuid}/rename")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'org:update')")
+    public OrganizationResponse rename(@PathVariable UUID orgUuid,
                                        @Valid @RequestBody RenameOrganizationRequest request) {
-        return organizationFacade.rename(request);
+        return organizationFacade.rename(orgUuid, request);
     }
 
-    @GetMapping("/{organizationId}")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public OrganizationResponse get(@PathVariable Long organizationId) {
-        return organizationFacade.getById(organizationId);
+    @GetMapping("/{orgUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public OrganizationResponse get(@PathVariable UUID orgUuid) {
+        return organizationFacade.getById(orgUuid);
     }
 
-    @GetMapping("/{organizationId}/members")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public List<MembershipResponse> getMembers(@PathVariable Long organizationId) {
-        return organizationFacade.getMembers(organizationId);
+    @GetMapping("/{orgUuid}/members")
+    @PreAuthorize("isAuthenticated()")
+    public List<MembershipResponse> getMembers(@PathVariable UUID orgUuid) {
+        return organizationFacade.getMembers(orgUuid);
     }
 }

@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-roles-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: roles
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: name, type: user_role, constraints: { unique: true, nullable: false } }
+              - column: { name: description, type: TEXT }
+        - sql:
+            sql: |
+              INSERT INTO roles (name, description) VALUES
+                ('OWNER', 'Full access, can delete organization'),
+                ('ADMIN', 'Full access except ownership transfer'),
+                ('DEVELOPER', 'Can create and edit jobs, view secrets'),
+                ('VIEWER', 'Read-only access')
+              ON CONFLICT (name) DO NOTHING;

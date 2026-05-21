@@ -33,9 +33,11 @@ public class JobApplicationService implements JobFacade {
     private final JobApiMapper jobApiMapper;
 
     @Override
-    public JobResponse createJob(Long organizationId, CreateJobRequest request) {
+    public JobResponse createJob(CreateJobRequest request) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:create")) {
             throw new SecurityException("No permission to create job in this organization");
         }
@@ -56,15 +58,18 @@ public class JobApplicationService implements JobFacade {
     }
 
     @Override
-    public JobResponse updateJob(Long organizationId, Long jobId, UpdateJobRequest request) {
+    public JobResponse updateJob(UUID jobUuid, UpdateJobRequest request) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
             throw new SecurityException("No permission to update job in this organization");
         }
 
-        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
 
         Map<String, Object> changes = new HashMap<>();
 
@@ -110,25 +115,29 @@ public class JobApplicationService implements JobFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public JobResponse getJob(Long organizationId, Long jobId) {
+    public JobResponse getJob(UUID jobUuid) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.isMember(userId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }
-        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
-        JobVersion version = versionRepository.findLatestByJobId(jobId)
-                .orElseThrow(() -> new JobVersionNotFoundException(jobId, -1));
-        int versionCount = versionRepository.findByJobIdOrderByVersionDesc(jobId).size();
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion version = versionRepository.findLatestByJobId(job.getId())
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), -1));
+        int versionCount = versionRepository.findByJobIdOrderByVersionDesc(job.getId()).size();
         return jobApiMapper.toJobResponse(job, version, versionCount);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<JobResponse> listJobs(Long organizationId, JobStatus status, int limit, int offset) {
+    public List<JobResponse> listJobs(JobStatus status, int limit, int offset) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.isMember(userId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }
@@ -151,15 +160,18 @@ public class JobApplicationService implements JobFacade {
     }
 
     @Override
-    public JobResponse changeStatus(Long organizationId, Long jobId, ChangeJobStatusRequest request) {
+    public JobResponse changeStatus(UUID jobUuid, ChangeJobStatusRequest request) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
             throw new SecurityException("No permission to change job status");
         }
 
-        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
 
         switch (request.status()) {
             case ACTIVE -> job.activate();
@@ -177,15 +189,18 @@ public class JobApplicationService implements JobFacade {
     }
 
     @Override
-    public TriggerResponse triggerJob(Long organizationId, Long jobId, TriggerJobRequest request) {
+    public TriggerResponse triggerJob(UUID jobUuid, TriggerJobRequest request) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:execute")) {
             throw new SecurityException("No permission to execute job");
         }
 
-        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
         if (job.getStatus() != JobStatus.ACTIVE) {
             throw new InvalidJobStateException("Job must be ACTIVE to trigger manually");
         }
@@ -208,14 +223,17 @@ public class JobApplicationService implements JobFacade {
     }
 
     @Override
-    public void deleteJob(Long organizationId, Long jobId) {
+    public void deleteJob(UUID jobUuid) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
         if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:delete")) {
             throw new SecurityException("No permission to delete job");
         }
-        Job job = jobRepository.findByIdAndOrganizationId(jobId, organizationId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
         job.archive();
         jobRepository.save(job);
         auditPort.record("JOB.ARCHIVE", organizationId, userId, "jobs", jobId, Map.of("status", "ARCHIVED"));

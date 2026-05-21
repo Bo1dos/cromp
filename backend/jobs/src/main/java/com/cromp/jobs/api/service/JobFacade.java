@@ -5,13 +5,14 @@ import com.cromp.jobs.api.dto.response.*;
 import com.cromp.jobs.domain.model.enums.JobStatus;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface JobFacade {
-    JobResponse createJob(Long organizationId, CreateJobRequest request);
-    JobResponse updateJob(Long organizationId, Long jobId, UpdateJobRequest request);
-    JobResponse getJob(Long organizationId, Long jobId);
-    List<JobResponse> listJobs(Long organizationId, JobStatus status, int limit, int offset);
-    void deleteJob(Long organizationId, Long jobId);
-    JobResponse changeStatus(Long organizationId, Long jobId, ChangeJobStatusRequest request);
-    TriggerResponse triggerJob(Long organizationId, Long jobId, TriggerJobRequest request);
+    JobResponse createJob(CreateJobRequest request);
+    JobResponse updateJob(UUID jobUuid, UpdateJobRequest request);
+    JobResponse getJob(UUID jobUuid);
+    List<JobResponse> listJobs(JobStatus status, int limit, int offset);
+    void deleteJob(UUID jobUuid);
+    JobResponse changeStatus(UUID jobUuid, ChangeJobStatusRequest request);
+    TriggerResponse triggerJob(UUID jobUuid, TriggerJobRequest request);
 }

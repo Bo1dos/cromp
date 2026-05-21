@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -56,5 +57,11 @@ public class JobRepositoryAdapter implements JobRepositoryPort {
     @Transactional(readOnly = true)
     public boolean existsByNameAndOrganizationId(String name, Long organizationId) {
         return repository.existsByNameAndOrganizationIdAndDeletedAtIsNull(name, organizationId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Job> findByJobUuid(UUID jobUuid) {
+        return repository.findByJobUuid(jobUuid).map(mapper::toDomain);
     }
 }

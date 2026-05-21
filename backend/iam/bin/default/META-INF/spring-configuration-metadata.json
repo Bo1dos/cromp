@@ -1,0 +1,22 @@
+{
+  "groups": [
+    {
+      "name": "iam.jwt",
+      "type": "com.cromp.iam.infrastructure.security.config.JwtConfig",
+      "sourceType": "com.cromp.iam.infrastructure.security.config.JwtConfig"
+    }
+  ],
+  "properties": [
+    {
+      "name": "iam.jwt.expiration-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.cromp.iam.infrastructure.security.config.JwtConfig"
+    },
+    {
+      "name": "iam.jwt.secret",
+      "type": "java.lang.String",
+      "sourceType": "com.cromp.iam.infrastructure.security.config.JwtConfig"
+    }
+  ],
+  "hints": []
+}

@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-role-permissions-table
+      author: bo1dos
+      changes:
+        - createTable:
+            tableName: role_permissions
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: role_id, type: BIGINT, constraints: { nullable: false, references: roles(id), foreignKeyName: fk_rp_role, deleteCascade: true } }
+              - column: { name: permission, type: TEXT, constraints: { nullable: false } }
+        - addUniqueConstraint:
+            constraintName: ux_role_permissions_role_permission
+            tableName: role_permissions
+            columnNames: role_id, permission

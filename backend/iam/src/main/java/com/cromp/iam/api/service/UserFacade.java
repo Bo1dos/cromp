@@ -5,9 +5,11 @@ import com.cromp.iam.api.dto.request.ChangeUserPasswordRequest;
 import com.cromp.iam.api.dto.request.UpdateUserProfileRequest;
 import com.cromp.iam.api.dto.response.UserResponse;
 
+import java.util.UUID;
+
 public interface UserFacade {
 
-    UserResponse getById(Long userId);
+    UserResponse getById(UUID userUuid);
     UserResponse getByEmail(String email);
 
     UserResponse updateProfile(UpdateUserProfileRequest request);

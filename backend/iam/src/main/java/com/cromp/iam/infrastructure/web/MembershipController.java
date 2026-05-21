@@ -36,18 +36,17 @@ public class MembershipController {
         return membershipFacade.changeRole(membershipUuid, request);
     }
 
-    @DeleteMapping("/{membershipId}")
+    @DeleteMapping("/{membershipUuid}")
     @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void remove(@PathVariable Long membershipId) {
-        // Контроллер создаёт RemoveMembershipRequest из path variable
-        membershipFacade.remove(new RemoveMembershipRequest(membershipId));
+    public void remove(@PathVariable UUID membershipUuid) {
+        membershipFacade.remove(membershipUuid);
     }
 
-    @GetMapping("/{membershipId}")
+    @GetMapping("/{membershipUuid}")
     @PreAuthorize("isAuthenticated()")
-    public MembershipResponse getById(@PathVariable Long membershipId) {
-        return membershipFacade.getById(membershipId);
+    public MembershipResponse getById(@PathVariable UUID membershipUuid) {
+        return membershipFacade.getById(membershipUuid);
     }
 
     @GetMapping("/organization/{organizationId}")

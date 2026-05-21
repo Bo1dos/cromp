@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/invitations")
@@ -48,10 +49,10 @@ public class InvitationController {
         return invitationFacade.revoke(request);
     }
 
-    @GetMapping("/{invitationId}")
+    @GetMapping("/{invitationUuid}")
     @PreAuthorize("isAuthenticated()")
-    public InvitationResponse getById(@PathVariable Long invitationId) {
-        return invitationFacade.getById(invitationId);
+    public InvitationResponse getById(@PathVariable UUID invitationUuid) {
+        return invitationFacade.getById(invitationUuid);
     }
 
     @GetMapping("/organization/{organizationId}")
