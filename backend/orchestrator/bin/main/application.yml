@@ -1,4 +1,0 @@
-iam:
-  jwt:
-    secret: ${JWT_SECRET:changeit-changeit-changeit-changeit}
-    expiration-ms: 3600000
