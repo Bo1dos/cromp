@@ -1,0 +1,952 @@
+﻿=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\request\ChangeJobStatusRequest.java ===
+package com.cromp.jobs.api.dto.request;
+
+import com.cromp.jobs.domain.model.enums.JobStatus;
+import jakarta.validation.constraints.NotNull;
+
+public record ChangeJobStatusRequest(
+        @NotNull JobStatus status
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\request\CreateJobRequest.java ===
+package com.cromp.jobs.api.dto.request;
+
+import com.cromp.jobs.domain.model.JobConfig;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.Range;
+
+public record CreateJobRequest(
+        @NotBlank String name,
+        String description,
+        @NotNull JobConfig config,
+        String queueName,
+        @Range(min = -100, max = 100) int priority
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\request\RevertJobRequest.java ===
+package com.cromp.jobs.api.dto.request;
+
+import jakarta.validation.constraints.Min;
+
+public record RevertJobRequest(
+        @Min(1) int version,
+        String reason
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\request\TriggerJobRequest.java ===
+package com.cromp.jobs.api.dto.request;
+
+import jakarta.validation.constraints.Size;
+
+import java.util.Map;
+import java.util.UUID;
+
+//TODO: перевести в константы
+public record TriggerJobRequest(
+        @Size(max = 8192) String payloadOverride,
+        UUID correlationId,
+        @Size(max = 100) Map<String, Object> parameters
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\request\UpdateJobRequest.java ===
+package com.cromp.jobs.api.dto.request;
+
+import com.cromp.jobs.domain.model.JobConfig;
+
+public record UpdateJobRequest(
+        String name,
+        String description,
+        JobConfig config,
+        String queueName,
+        Integer priority
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\JobConfigResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.util.List;
+import java.util.Map;
+
+public record JobConfigResponse(
+        JobTargetResponse target,
+        RetryPolicyResponse retryPolicy,
+        int timeoutMs,
+        List<SecretRefResponse> secrets
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\JobResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record JobResponse(
+        UUID jobUuid,
+        String name,
+        String description,
+        String status,
+        String queueName,
+        int priority,
+        Long createdBy,
+        Instant createdAt,
+        Instant updatedAt,
+        JobConfigResponse currentConfig,
+        int currentVersion,
+        int versionCount
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\JobTargetResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.util.Map;
+
+public record JobTargetResponse(
+        String type,
+        String url,
+        String method,
+        Map<String, String> headers,
+        String body
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\JobVersionComparisonResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.util.List;
+
+public record JobVersionComparisonResponse(
+        int fromVersion,
+        int toVersion,
+        List<JobVersionDiff> diffs,
+        Summary summary
+) {
+    public record JobVersionDiff(String field, String oldValue, String newValue, String type) {}
+    public record Summary(int totalChanges, int breakingChanges, List<String> addedSecrets) {}
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\JobVersionResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record JobVersionResponse(
+        UUID jobUuid,      
+        int version,
+        JobConfigResponse config,
+        Instant createdAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\RetryPolicyResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.util.List;
+
+public record RetryPolicyResponse(
+        int maxAttempts,
+        long backoffMs,
+        double backoffMultiplier,
+        List<String> retryableErrors
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\SecretRefResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.util.UUID;
+
+public record SecretRefResponse(
+        UUID secretId,
+        String envName
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\dto\response\TriggerResponse.java ===
+package com.cromp.jobs.api.dto.response;
+
+import java.util.UUID;
+
+public record TriggerResponse(
+        UUID executionId,
+        String message
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\mapper\JobApiMapper.java ===
+package com.cromp.jobs.api.mapper;
+
+import com.cromp.jobs.api.dto.response.*;
+import com.cromp.jobs.domain.model.Job;
+import com.cromp.jobs.domain.model.JobConfig;
+import com.cromp.jobs.domain.model.JobVersion;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class JobApiMapper {
+
+    public JobResponse toJobResponse(Job job, JobVersion currentVersion, int versionCount) {
+        return new JobResponse(
+                job.getJobUuid(),
+                job.getName(),
+                job.getDescription(),
+                job.getStatus().name(),
+                job.getQueueName(),
+                job.getPriority(),
+                job.getCreatedBy(),
+                job.getCreatedAt(),
+                job.getUpdatedAt(),
+                toConfigResponse(currentVersion != null ? currentVersion.getConfig() : null),
+                currentVersion != null ? currentVersion.getVersion() : 0,
+                versionCount
+        );
+    }
+
+    private JobConfigResponse toConfigResponse(JobConfig config) {
+        if (config == null) return null;
+        return new JobConfigResponse(
+                new JobTargetResponse(
+                        config.target().type(),
+                        config.target().url(),
+                        config.target().method(),
+                        config.target().headers(),
+                        config.target().body()
+                ),
+                new RetryPolicyResponse(
+                        config.retryPolicy().maxAttempts(),
+                        config.retryPolicy().backoffMs(),
+                        config.retryPolicy().backoffMultiplier(),
+                        config.retryPolicy().retryableErrors()
+                ),
+                config.timeoutMs(),
+                config.secrets().stream()
+                        .map(s -> new SecretRefResponse(s.secretId(), s.envName()))
+                        .toList()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\mapper\JobVersionApiMapper.java ===
+package com.cromp.jobs.api.mapper;
+
+import com.cromp.jobs.api.dto.response.*;
+import com.cromp.jobs.domain.model.Job;
+import com.cromp.jobs.domain.model.JobConfig;
+import com.cromp.jobs.domain.model.JobVersion;
+import org.springframework.stereotype.Component;
+
+@Component
+public class JobVersionApiMapper {
+
+    public JobVersionResponse toVersionResponse(Job job, JobVersion version) {
+        return new JobVersionResponse(
+                job.getJobUuid(),
+                version.getVersion(),
+                toConfigResponse(version.getConfig()),
+                version.getCreatedAt()
+        );
+    }
+
+    // TODO: вынести общий маппинг конфига в отдельный ConfigMapper, когда понадобится в других местах
+    private JobConfigResponse toConfigResponse(JobConfig config) {
+        if (config == null) return null;
+        return new JobConfigResponse(
+                new JobTargetResponse(
+                        config.target().type(),
+                        config.target().url(),
+                        config.target().method(),
+                        config.target().headers(),
+                        config.target().body()
+                ),
+                new RetryPolicyResponse(
+                        config.retryPolicy().maxAttempts(),
+                        config.retryPolicy().backoffMs(),
+                        config.retryPolicy().backoffMultiplier(),
+                        config.retryPolicy().retryableErrors()
+                ),
+                config.timeoutMs(),
+                config.secrets().stream()
+                        .map(s -> new SecretRefResponse(s.secretId(), s.envName()))
+                        .toList()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\service\JobFacade.java ===
+package com.cromp.jobs.api.service;
+
+import com.cromp.jobs.api.dto.request.*;
+import com.cromp.jobs.api.dto.response.*;
+import com.cromp.jobs.domain.model.enums.JobStatus;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface JobFacade {
+    JobResponse createJob(CreateJobRequest request);
+    JobResponse updateJob(UUID jobUuid, UpdateJobRequest request);
+    JobResponse getJob(UUID jobUuid);
+    List<JobResponse> listJobs(JobStatus status, int limit, int offset);
+    void deleteJob(UUID jobUuid);
+    JobResponse changeStatus(UUID jobUuid, ChangeJobStatusRequest request);
+    TriggerResponse triggerJob(UUID jobUuid, TriggerJobRequest request);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\api\service\JobVersionFacade.java ===
+package com.cromp.jobs.api.service;
+
+import com.cromp.jobs.api.dto.response.*;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface JobVersionFacade {
+    List<JobVersionResponse> getVersions(UUID jobUuid);
+    JobVersionResponse getVersion(UUID jobUuid, int version);
+    JobVersionComparisonResponse compareVersions(UUID jobUuid, int fromVersion, int toVersion);
+    JobVersionResponse revertToVersion(UUID jobUuid, int version);
+    JobVersionResponse getCurrentVersion(UUID jobUuid);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\application\port\AuditPort.java ===
+package com.cromp.jobs.application.port;
+
+import java.util.Map;
+
+public interface AuditPort {
+    void record(String action, Long organizationId, Long actorId,
+                String resourceType, Long resourceId, Map<String, Object> changesDiff);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\application\port\ExecutionCreationPort.java ===
+package com.cromp.jobs.application.port;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+public interface ExecutionCreationPort {
+    /**
+     * @return execution UUID
+     */
+    UUID createExecution(Long organizationId, Long jobId, Long jobVersionId,
+                         String source, Long triggeredBy,
+                         Map<String, Object> payload, UUID correlationId,
+                         int priority, Instant scheduledAt,
+                         String executionPolicySnapshot);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\application\service\JobApplicationService.java ===
+package com.cromp.jobs.application.service;
+
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.jobs.api.dto.request.*;
+import com.cromp.jobs.api.dto.response.*;
+import com.cromp.jobs.api.mapper.JobApiMapper;
+import com.cromp.jobs.api.service.JobFacade;
+import com.cromp.jobs.application.port.AuditPort;
+import com.cromp.jobs.application.port.ExecutionCreationPort;
+import com.cromp.jobs.domain.model.*;
+import com.cromp.jobs.domain.model.enums.JobStatus;
+import com.cromp.jobs.domain.model.exceptions.*;
+import com.cromp.jobs.domain.repository.JobRepositoryPort;
+import com.cromp.jobs.domain.repository.JobVersionRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class JobApplicationService implements JobFacade {
+
+    private final JobRepositoryPort jobRepository;
+    private final JobVersionRepositoryPort versionRepository;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+    private final AuditPort auditPort;
+    private final ExecutionCreationPort executionCreationPort;
+    private final JobApiMapper jobApiMapper;
+
+    @Override
+    public JobResponse createJob(CreateJobRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:create")) {
+            throw new SecurityException("No permission to create job in this organization");
+        }
+        if (jobRepository.existsByNameAndOrganizationId(request.name(), organizationId)) {
+            throw new InvalidJobStateException("Job with name '" + request.name() + "' already exists in this organization");
+        }
+
+        Job job = Job.create(UUID.randomUUID(), organizationId, request.name(), request.description(),
+                request.queueName() != null ? request.queueName() : "default", request.priority(), userId);
+        job = jobRepository.save(job);
+
+        JobVersion version = JobVersion.create(job.getId(), 1, request.config(), userId);
+        versionRepository.save(version);
+
+        auditPort.record("JOB.CREATE", organizationId, userId, "jobs", job.getId(), Map.of("name", request.name()));
+
+        return jobApiMapper.toJobResponse(job, version, 1);
+    }
+
+    @Override
+    public JobResponse updateJob(UUID jobUuid, UpdateJobRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
+            throw new SecurityException("No permission to update job in this organization");
+        }
+
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
+
+        Map<String, Object> changes = new HashMap<>();
+
+        if (request.name() != null && !request.name().equals(job.getName())) {
+            if (jobRepository.existsByNameAndOrganizationId(request.name(), organizationId)) {
+                throw new InvalidJobStateException("Name already in use");
+            }
+            job.rename(request.name());
+            changes.put("name", request.name());
+        }
+        if (request.description() != null) {
+            job.changeDescription(request.description());
+            changes.put("description", request.description());
+        }
+        if (request.queueName() != null) {
+            job.changeQueue(request.queueName());
+            changes.put("queueName", request.queueName());
+        }
+        if (request.priority() != null) {
+            job.changePriority(request.priority());
+            changes.put("priority", request.priority());
+        }
+        job = jobRepository.save(job);
+
+        JobVersion currentVersion = versionRepository.findLatestByJobId(jobId).orElseThrow();
+        int newVersionNumber = currentVersion.getVersion();
+
+        if (request.config() != null) {
+            newVersionNumber = currentVersion.getVersion() + 1;
+            JobVersion newVersion = JobVersion.create(jobId, newVersionNumber, request.config(), userId);
+            versionRepository.save(newVersion);
+            currentVersion = newVersion;
+            changes.put("config", "updated to version " + newVersionNumber);
+        }
+
+        if (!changes.isEmpty()) {
+            auditPort.record("JOB.UPDATE", organizationId, userId, "jobs", jobId, changes);
+        }
+
+        int versionCount = versionRepository.findByJobIdOrderByVersionDesc(jobId).size();
+        return jobApiMapper.toJobResponse(job, currentVersion, versionCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JobResponse getJob(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion version = versionRepository.findLatestByJobId(job.getId())
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), -1));
+        int versionCount = versionRepository.findByJobIdOrderByVersionDesc(job.getId()).size();
+        return jobApiMapper.toJobResponse(job, version, versionCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<JobResponse> listJobs(JobStatus status, int limit, int offset) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+
+        List<Job> jobs;
+        if (status != null) {
+            jobs = jobRepository.findByOrganizationIdAndStatus(organizationId, status);
+        } else {
+            jobs = jobRepository.findByOrganizationId(organizationId);
+        }
+
+        int toIndex = Math.min(offset + limit, jobs.size());
+        if (offset >= jobs.size()) return List.of();
+
+        return jobs.subList(offset, toIndex).stream().map(job -> {
+            JobVersion ver = versionRepository.findLatestByJobId(job.getId()).orElse(null);
+            int vCount = versionRepository.findByJobIdOrderByVersionDesc(job.getId()).size();
+            return jobApiMapper.toJobResponse(job, ver, vCount);
+        }).toList();
+    }
+
+    @Override
+    public JobResponse changeStatus(UUID jobUuid, ChangeJobStatusRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
+            throw new SecurityException("No permission to change job status");
+        }
+
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
+
+        switch (request.status()) {
+            case ACTIVE -> job.activate();
+            case DISABLED -> job.disable();
+            default -> throw new InvalidJobStateException("Can only change to ACTIVE or DISABLED");
+        }
+
+        jobRepository.save(job);
+        auditPort.record("JOB.STATUS_CHANGE", organizationId, userId, "jobs", jobId,
+                Map.of("status", request.status().name()));
+
+        JobVersion version = versionRepository.findLatestByJobId(jobId).orElseThrow();
+        int vCount = versionRepository.findByJobIdOrderByVersionDesc(jobId).size();
+        return jobApiMapper.toJobResponse(job, version, vCount);
+    }
+
+    @Override
+    public TriggerResponse triggerJob(UUID jobUuid, TriggerJobRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:execute")) {
+            throw new SecurityException("No permission to execute job");
+        }
+
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
+        if (job.getStatus() != JobStatus.ACTIVE) {
+            throw new InvalidJobStateException("Job must be ACTIVE to trigger manually");
+        }
+
+        JobVersion currentVersion = versionRepository.findLatestByJobId(jobId)
+                .orElseThrow(() -> new JobVersionNotFoundException(jobId, -1));
+
+        Map<String, Object> payload = request.parameters() != null ? request.parameters() : Map.of();
+        UUID correlationId = request.correlationId() != null ? request.correlationId() : UUID.randomUUID();
+
+        UUID executionId = executionCreationPort.createExecution(
+                organizationId, jobId, currentVersion.getId(),
+                "MANUAL", userId,
+                payload, correlationId,
+                job.getPriority(),   // priority берём с job
+                null,                // scheduledAt — null для ручного запуска
+                null                 // executionPolicySnapshot — возьмётся из jobVersion в ExecutionService
+        );
+
+        auditPort.record("JOB.TRIGGER", organizationId, userId, "jobs", jobId,
+                Map.of("executionId", executionId.toString()));
+
+        return new TriggerResponse(executionId, "Execution triggered");
+    }
+
+    @Override
+    public void deleteJob(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:delete")) {
+            throw new SecurityException("No permission to delete job");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
+        job.archive();
+        jobRepository.save(job);
+        auditPort.record("JOB.ARCHIVE", organizationId, userId, "jobs", jobId, Map.of("status", "ARCHIVED"));
+    }
+
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\application\service\JobVersionApplicationService.java ===
+package com.cromp.jobs.application.service;
+
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.jobs.api.dto.response.*;
+import com.cromp.jobs.api.mapper.JobVersionApiMapper;
+import com.cromp.jobs.api.service.JobVersionFacade;
+import com.cromp.jobs.application.port.AuditPort;
+import com.cromp.jobs.domain.model.*;
+import com.cromp.jobs.domain.model.exceptions.*;
+import com.cromp.jobs.domain.repository.JobRepositoryPort;
+import com.cromp.jobs.domain.repository.JobVersionRepositoryPort;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class JobVersionApplicationService implements JobVersionFacade {
+
+    private final JobVersionRepositoryPort versionRepository;
+    private final JobRepositoryPort jobRepository;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+    private final AuditPort auditPort;
+    private final JobVersionApiMapper jobVersionApiMapper;
+    private final ObjectMapper objectMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<JobVersionResponse> getVersions(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        return versionRepository.findByJobIdOrderByVersionDesc(job.getId()).stream()
+                .map(v -> jobVersionApiMapper.toVersionResponse(job, v))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JobVersionResponse getVersion(UUID jobUuid, int version) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion ver = versionRepository.findByJobIdAndVersion(job.getId(), version)
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), version));
+        return jobVersionApiMapper.toVersionResponse(job, ver);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JobVersionComparisonResponse compareVersions(UUID jobUuid, int fromVersion, int toVersion) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion from = versionRepository.findByJobIdAndVersion(job.getId(), fromVersion)
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), fromVersion));
+        JobVersion to = versionRepository.findByJobIdAndVersion(job.getId(), toVersion)
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), toVersion));
+
+        List<JobVersionComparisonResponse.JobVersionDiff> diffs = new ArrayList<>();
+        try {
+            String fromJson = objectMapper.writeValueAsString(from.getConfig());
+            String toJson = objectMapper.writeValueAsString(to.getConfig());
+            if (!fromJson.equals(toJson)) {
+                diffs.add(new JobVersionComparisonResponse.JobVersionDiff(
+                        "config", "version " + fromVersion, "version " + toVersion, "MODIFIED"));
+            }
+        } catch (JsonProcessingException e) {
+            diffs.add(new JobVersionComparisonResponse.JobVersionDiff(
+                    "config", "version " + fromVersion, "version " + toVersion, "ERROR"));
+        }
+
+        return new JobVersionComparisonResponse(
+                fromVersion, toVersion, diffs,
+                new JobVersionComparisonResponse.Summary(diffs.size(), 0, List.of())
+        );
+    }
+
+    @Override
+    public JobVersionResponse revertToVersion(UUID jobUuid, int version) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:update")) {
+            throw new SecurityException("No permission to revert job");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        Long jobId = job.getId();
+        JobVersion source = versionRepository.findByJobIdAndVersion(jobId, version)
+                .orElseThrow(() -> new JobVersionNotFoundException(jobId, version));
+        JobVersion latest = versionRepository.findLatestByJobId(jobId).orElseThrow();
+        int newVersion = latest.getVersion() + 1;
+        JobVersion reverted = JobVersion.create(jobId, newVersion, source.getConfig(), userId);
+        versionRepository.save(reverted);
+        auditPort.record("JOB.REVERT", organizationId, userId, "jobs", jobId,
+                Map.of("fromVersion", version, "newVersion", newVersion));
+        return jobVersionApiMapper.toVersionResponse(job, reverted);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JobVersionResponse getCurrentVersion(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        JobVersion latest = versionRepository.findLatestByJobId(job.getId())
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), -1));
+        return jobVersionApiMapper.toVersionResponse(job, latest);
+    }
+
+    private Job checkJobOwnership(Long organizationId, Long jobId) {
+        return jobRepository.findByIdAndOrganizationId(jobId, organizationId)
+                .orElseThrow(() -> new JobNotFoundException(jobId));
+    }
+
+    private void ensureMembership(Long orgId) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.isMember(userId, orgId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\domain\repository\JobRepositoryPort.java ===
+package com.cromp.jobs.domain.repository;
+
+import com.cromp.jobs.domain.model.Job;
+import com.cromp.jobs.domain.model.enums.JobStatus;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface JobRepositoryPort {
+    Job save(Job job);
+    Optional<Job> findById(Long id);
+    Optional<Job> findByJobUuid(UUID jobUuid);
+    Optional<Job> findByIdAndOrganizationId(Long id, Long organizationId);
+    List<Job> findByOrganizationId(Long organizationId);
+    List<Job> findByOrganizationIdAndStatus(Long organizationId, JobStatus status);
+    boolean existsByNameAndOrganizationId(String name, Long organizationId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\domain\repository\JobVersionRepositoryPort.java ===
+package com.cromp.jobs.domain.repository;
+
+import com.cromp.jobs.domain.model.JobVersion;
+import java.util.List;
+import java.util.Optional;
+
+public interface JobVersionRepositoryPort {
+    JobVersion save(JobVersion version);
+    Optional<JobVersion> findById(Long id);
+    Optional<JobVersion> findByJobIdAndVersion(Long jobId, int version);
+    List<JobVersion> findByJobIdOrderByVersionDesc(Long jobId);
+    Optional<JobVersion> findLatestByJobId(Long jobId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\infrastructure\port\AuditPortImpl.java ===
+package com.cromp.jobs.infrastructure.port;
+
+import com.cromp.iam.domain.model.AuditLogEntry;
+import com.cromp.iam.domain.repository.AuditLogRepositoryPort;
+import com.cromp.jobs.application.port.AuditPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+
+@Component
+@RequiredArgsConstructor
+public class AuditPortImpl implements AuditPort {
+
+    private final AuditLogRepositoryPort auditLogRepository;
+
+    @Override
+    public void record(String action, Long organizationId, Long actorId,
+                       String resourceType, Long resourceId, Map<String, Object> changesDiff) {
+        AuditLogEntry entry = AuditLogEntry.record(
+                organizationId, actorId, Map.of(),
+                action, resourceType, resourceId, changesDiff
+        );
+        auditLogRepository.save(entry);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\infrastructure\port\StubExecutionCreationPort.java ===
+package com.cromp.jobs.infrastructure.port;
+
+import com.cromp.jobs.application.port.ExecutionCreationPort;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+@Component
+@Slf4j
+public class StubExecutionCreationPort implements ExecutionCreationPort {
+
+    @Override
+    public UUID createExecution(Long organizationId, Long jobId, Long jobVersionId,
+                                String source, Long triggeredBy,
+                                Map<String, Object> payload, UUID correlationId,
+                                int priority, Instant scheduledAt,
+                                String executionPolicySnapshot) {
+        UUID execId = UUID.randomUUID();
+        log.info("Stub: execution for job {} org {}, execId={}", jobId, organizationId, execId);
+        return execId;
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\jobs\src\main\java\com\cromp\jobs\infrastructure\web\controller\JobController.java ===
+package com.cromp.jobs.infrastructure.web.controller;
+
+import com.cromp.jobs.api.dto.request.*;
+import com.cromp.jobs.api.dto.response.*;
+import com.cromp.jobs.api.service.JobFacade;
+import com.cromp.jobs.api.service.JobVersionFacade;
+import com.cromp.jobs.domain.model.enums.JobStatus;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/jobs")
+@RequiredArgsConstructor
+public class JobController {
+
+    private final JobFacade jobFacade;
+    private final JobVersionFacade jobVersionFacade;
+
+    // ---- CRUD ----
+
+    @PostMapping
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:create')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public JobResponse create(@Valid @RequestBody CreateJobRequest request) {
+        return jobFacade.createJob(request);
+    }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public List<JobResponse> list(@RequestParam(required = false) JobStatus status,
+                                  @RequestParam(defaultValue = "20") int limit,
+                                  @RequestParam(defaultValue = "0") int offset) {
+        return jobFacade.listJobs(status, limit, offset);
+    }
+
+    @GetMapping("/{jobUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public JobResponse get(@PathVariable UUID jobUuid) {
+        return jobFacade.getJob(jobUuid);
+    }
+
+    @PutMapping("/{jobUuid}")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:update')")
+    public JobResponse update(@PathVariable UUID jobUuid,
+                              @Valid @RequestBody UpdateJobRequest request) {
+        return jobFacade.updateJob(jobUuid, request);
+    }
+
+    @DeleteMapping("/{jobUuid}")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:delete')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID jobUuid) {
+        jobFacade.deleteJob(jobUuid);
+    }
+
+    @PatchMapping("/{jobUuid}/status")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:update')")
+    public JobResponse changeStatus(@PathVariable UUID jobUuid,
+                                    @Valid @RequestBody ChangeJobStatusRequest request) {
+        return jobFacade.changeStatus(jobUuid, request);
+    }
+
+    // ---- Manual Trigger ----
+
+    @PostMapping("/{jobUuid}/trigger")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public TriggerResponse trigger(@PathVariable UUID jobUuid,
+                                   @Valid @RequestBody TriggerJobRequest request) {
+        return jobFacade.triggerJob(jobUuid, request);
+    }
+
+    // ---- Versioning ----
+
+    @GetMapping("/{jobUuid}/versions")
+    @PreAuthorize("isAuthenticated()")
+    public List<JobVersionResponse> getVersions(@PathVariable UUID jobUuid) {
+        return jobVersionFacade.getVersions(jobUuid);
+    }
+
+    @GetMapping("/{jobUuid}/versions/{version}")
+    @PreAuthorize("isAuthenticated()")
+    public JobVersionResponse getVersion(@PathVariable UUID jobUuid,
+                                         @PathVariable int version) {
+        return jobVersionFacade.getVersion(jobUuid, version);
+    }
+
+    @GetMapping("/{jobUuid}/versions/compare")
+    @PreAuthorize("isAuthenticated()")
+    public JobVersionComparisonResponse compareVersions(@PathVariable UUID jobUuid,
+                                                        @RequestParam int fromVersion,
+                                                        @RequestParam int toVersion) {
+        return jobVersionFacade.compareVersions(jobUuid, fromVersion, toVersion);
+    }
+
+    @PostMapping("/{jobUuid}/revert")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:update')")
+    public JobVersionResponse revert(@PathVariable UUID jobUuid,
+                                     @Valid @RequestBody RevertJobRequest request) {
+        return jobVersionFacade.revertToVersion(jobUuid, request.version());
+    }
+
+    @GetMapping("/{jobUuid}/current-version")
+    @PreAuthorize("isAuthenticated()")
+    public JobVersionResponse currentVersion(@PathVariable UUID jobUuid) {
+        return jobVersionFacade.getCurrentVersion(jobUuid);
+    }
+}
+

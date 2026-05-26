@@ -212,8 +212,12 @@ public class JobApplicationService implements JobFacade {
         UUID correlationId = request.correlationId() != null ? request.correlationId() : UUID.randomUUID();
 
         UUID executionId = executionCreationPort.createExecution(
-                organizationId, jobId, currentVersion.getId(), "MANUAL", userId,
-                payload, correlationId
+                organizationId, jobId, currentVersion.getId(),
+                "MANUAL", userId,
+                payload, correlationId,
+                job.getPriority(),   // priority берём с job
+                null,                // scheduledAt — null для ручного запуска
+                null                 // executionPolicySnapshot — возьмётся из jobVersion в ExecutionService
         );
 
         auditPort.record("JOB.TRIGGER", organizationId, userId, "jobs", jobId,

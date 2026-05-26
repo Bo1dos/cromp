@@ -1,0 +1,327 @@
+﻿=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\api\dto\request\CreateUpdateScheduleRequest.java ===
+package com.cromp.schedules.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record CreateUpdateScheduleRequest(
+        @NotBlank @Size(max = 128) String cronExpression,
+        @NotBlank @Size(max = 64) String timezone,
+        String rules  // nullable, пока задел без валидации
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\api\dto\response\ScheduleResponse.java ===
+package com.cromp.schedules.api.dto.response;
+
+import java.time.Instant;
+
+public record ScheduleResponse(
+        String cronExpression,
+        String timezone,
+        String rules,
+        Instant nextRunAt,
+        String status,
+        Instant createdAt,
+        Instant updatedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\api\mapper\ScheduleApiMapper.java ===
+package com.cromp.schedules.api.mapper;
+
+import com.cromp.schedules.api.dto.response.ScheduleResponse;
+import com.cromp.schedules.domain.model.Schedule;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ScheduleApiMapper {
+
+    public ScheduleResponse toResponse(Schedule schedule) {
+        return new ScheduleResponse(
+                schedule.getCronExpression(),
+                schedule.getTimezone(),
+                schedule.getRules(),
+                schedule.getNextRunAt(),
+                schedule.getStatus().name(),
+                schedule.getCreatedAt(),
+                schedule.getUpdatedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\api\service\ScheduleFacade.java ===
+package com.cromp.schedules.api.service;
+
+import com.cromp.schedules.api.dto.request.CreateUpdateScheduleRequest;
+import com.cromp.schedules.api.dto.response.ScheduleResponse;
+
+import java.util.UUID;
+
+public interface ScheduleFacade {
+    ScheduleResponse createOrUpdate(UUID jobUuid, CreateUpdateScheduleRequest request);
+    ScheduleResponse getSchedule(UUID jobUuid);
+    void deleteSchedule(UUID jobUuid);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\application\port\AuditPort.java ===
+package com.cromp.schedules.application.port;
+
+import java.util.Map;
+
+// TODO: переписать под 1 атрибут
+public interface AuditPort {
+    void record(String action, Long organizationId, Long actorId,
+                String resourceType, Long resourceId, Map<String, Object> changesDiff);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\application\port\JobOwnershipPort.java ===
+package com.cromp.schedules.application.port;
+
+public interface JobOwnershipPort {
+    boolean jobBelongsToOrganization(Long jobId, Long organizationId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\application\port\ScheduleQueryPort.java ===
+package com.cromp.schedules.application.port;
+
+import java.util.List;
+
+import com.cromp.schedules.domain.model.Schedule;
+
+public interface ScheduleQueryPort {
+    List<Schedule> findActiveSchedulesReadyForRun();
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\application\service\ScheduleApplicationService.java ===
+package com.cromp.schedules.application.service;
+
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.schedules.api.dto.request.CreateUpdateScheduleRequest;
+import com.cromp.schedules.api.dto.response.ScheduleResponse;
+import com.cromp.schedules.api.mapper.ScheduleApiMapper;
+import com.cromp.schedules.api.service.ScheduleFacade;
+import com.cromp.schedules.application.port.AuditPort;
+import com.cromp.schedules.application.port.JobOwnershipPort;
+import com.cromp.schedules.domain.model.Schedule;
+import com.cromp.schedules.domain.model.exceptions.ScheduleNotFoundException;
+import com.cromp.schedules.domain.repository.ScheduleRepositoryPort;
+import com.cromp.schedules.domain.service.ScheduleCalculator;
+import com.cromp.jobs.domain.repository.JobRepositoryPort;
+import com.cronutils.model.Cron;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ScheduleApplicationService implements ScheduleFacade {
+
+    private final ScheduleRepositoryPort scheduleRepository;
+    private final ScheduleCalculator calculator;
+    private final ScheduleApiMapper mapper;
+    private final JobOwnershipPort jobOwnershipPort;
+    private final AuditPort auditPort;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+    private final JobRepositoryPort jobRepository;
+
+    @Override
+    public ScheduleResponse createOrUpdate(UUID jobUuid, CreateUpdateScheduleRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:manage")) {
+            throw new SecurityException("No permission to manage schedules");
+        }
+        
+        Long jobId = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"))
+                .getId();
+        
+        if (!jobOwnershipPort.jobBelongsToOrganization(jobId, organizationId)) {
+            throw new IllegalArgumentException("Job not found or does not belong to organization");
+        }
+
+        Cron cron = calculator.validate(request.cronExpression());
+        Instant nextRun = calculator.calculateNextRun(cron, request.timezone());
+
+        Optional<Schedule> existing = scheduleRepository.findByJobId(jobId);
+        Schedule schedule;
+        String action;
+
+        if (existing.isPresent()) {
+            schedule = existing.get();
+            schedule.updateCron(request.cronExpression(), nextRun);
+            schedule.updateTimezone(request.timezone(), nextRun);
+            action = "SCHEDULE.UPDATE";
+        } else {
+            schedule = Schedule.create(jobId, request.cronExpression(),
+                    request.timezone(), request.rules(), nextRun);
+            action = "SCHEDULE.CREATE";
+        }
+
+        schedule = scheduleRepository.save(schedule);
+
+        auditPort.record(action, organizationId, userId, "schedules",
+                schedule.getId(), Map.of("jobId", jobId));
+
+        return mapper.toResponse(schedule);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ScheduleResponse getSchedule(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        
+        Long jobId = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"))
+                .getId();
+        
+        if (!jobOwnershipPort.jobBelongsToOrganization(jobId, organizationId)) {
+            throw new IllegalArgumentException("Job not found or not in organization");
+        }
+        Schedule schedule = scheduleRepository.findByJobId(jobId)
+                .orElseThrow(() -> new ScheduleNotFoundException(jobId));
+        return mapper.toResponse(schedule);
+    }
+
+    @Override
+    public void deleteSchedule(UUID jobUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:manage")) {
+            throw new SecurityException("No permission to delete schedule");
+        }
+        
+        Long jobId = jobRepository.findByJobUuid(jobUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"))
+                .getId();
+        
+        if (!jobOwnershipPort.jobBelongsToOrganization(jobId, organizationId)) {
+            throw new IllegalArgumentException("Job not found or not in organization");
+        }
+        Schedule schedule = scheduleRepository.findByJobId(jobId)
+                .orElseThrow(() -> new ScheduleNotFoundException(jobId));
+        scheduleRepository.delete(schedule);
+        auditPort.record("SCHEDULE.DELETE", organizationId, userId, "schedules",
+                schedule.getId(), Map.of("jobId", jobId));
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\repository\ScheduleRepositoryPort.java ===
+package com.cromp.schedules.domain.repository;
+
+import com.cromp.schedules.domain.model.Schedule;
+import java.util.Optional;
+
+public interface ScheduleRepositoryPort {
+    Schedule save(Schedule schedule);
+    Optional<Schedule> findByJobId(Long jobId);
+    void delete(Schedule schedule);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\port\AuditPortImpl.java ===
+package com.cromp.schedules.infrastructure.port;
+
+import com.cromp.iam.domain.model.AuditLogEntry;
+import com.cromp.iam.domain.repository.AuditLogRepositoryPort;
+import com.cromp.schedules.application.port.AuditPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+
+@Component
+@RequiredArgsConstructor
+public class AuditPortImpl implements AuditPort {
+
+    private final AuditLogRepositoryPort auditLogRepository;
+
+    @Override
+    public void record(String action, Long organizationId, Long actorId,
+                       String resourceType, Long resourceId, Map<String, Object> changesDiff) {
+        AuditLogEntry entry = AuditLogEntry.record(
+                organizationId, actorId, Map.of(),
+                action, resourceType, resourceId, changesDiff
+        );
+        auditLogRepository.save(entry);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\port\JobOwnershipPortImpl.java ===
+package com.cromp.schedules.infrastructure.port;
+
+import com.cromp.jobs.domain.repository.JobRepositoryPort;
+import com.cromp.schedules.application.port.JobOwnershipPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class JobOwnershipPortImpl implements JobOwnershipPort {
+
+    private final JobRepositoryPort jobRepository;
+
+    @Override
+    public boolean jobBelongsToOrganization(Long jobId, Long organizationId) {
+        return jobRepository.findByIdAndOrganizationId(jobId, organizationId).isPresent();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\web\controller\ScheduleController.java ===
+package com.cromp.schedules.infrastructure.web.controller;
+
+import com.cromp.schedules.api.dto.request.CreateUpdateScheduleRequest;
+import com.cromp.schedules.api.dto.response.ScheduleResponse;
+import com.cromp.schedules.api.service.ScheduleFacade;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/jobs/{jobUuid}/schedule")
+@RequiredArgsConstructor
+public class ScheduleController {
+
+    private final ScheduleFacade scheduleFacade;
+
+    @PutMapping
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:manage')")
+    public ScheduleResponse createOrUpdate(@PathVariable UUID jobUuid,
+                                           @Valid @RequestBody CreateUpdateScheduleRequest request) {
+        return scheduleFacade.createOrUpdate(jobUuid, request);
+    }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ScheduleResponse get(@PathVariable UUID jobUuid) {
+        return scheduleFacade.getSchedule(jobUuid);
+    }
+
+    @DeleteMapping
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:manage')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID jobUuid) {
+        scheduleFacade.deleteSchedule(jobUuid);
+    }
+}
+

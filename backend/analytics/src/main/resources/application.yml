@@ -1,0 +1,14 @@
+ml:
+  service:
+    url: ${ML_SERVICE_URL:http://localhost:8000}
+    timeout-ms: 10000
+
+analytics:
+  # Кэш (Caffeine in-memory)
+  cache:
+    ttl-minutes: 60
+    max-size: 500
+
+  # Обновление материализованного представления
+  mv:
+    refresh-interval-ms: 3600000   # раз в час
