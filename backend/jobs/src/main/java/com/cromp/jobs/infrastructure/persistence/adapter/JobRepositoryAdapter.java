@@ -33,11 +33,6 @@ public class JobRepositoryAdapter implements JobRepositoryPort {
         return repository.findById(id).map(mapper::toDomain);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Job> findByUuid(UUID uuid) {
-        return repository.findByJobUuid(uuid).map(mapper::toDomain);
-    }
 
     @Override
     @Transactional(readOnly = true)
