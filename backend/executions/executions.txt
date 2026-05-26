@@ -1,0 +1,1139 @@
+﻿=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\ExecutionFilter.java ===
+package com.cromp.executions.api.dto;
+
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+
+import java.time.Instant;
+
+public record ExecutionFilter(
+        Long jobId,
+        ExecutionStatus status,
+        ExecutionSource source,
+        Instant from,
+        Instant to,
+        int page,
+        int size
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\request\CompleteAttemptRequest.java ===
+package com.cromp.executions.api.dto.request;
+
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+
+public record CompleteAttemptRequest(
+        AttemptStatus status,       // SUCCEEDED | FAILED | TIMEOUT | CANCELLED
+        String outputSummary,       // JSON-строка, nullable
+        String errorClass,          // nullable
+        String statusReason         // nullable
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\request\CreateExecutionRequest.java ===
+package com.cromp.executions.api.dto.request;
+
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+public record CreateExecutionRequest(
+        Long organizationId,
+        Long jobId,
+        Long jobVersionId,
+        int priority,
+        ExecutionSource source,
+        Long triggeredBy,
+        Instant scheduledAt,
+        UUID correlationId,
+        Map<String, Object> payload,
+        String executionPolicySnapshot
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\request\UploadArtifactRequest.java ===
+package com.cromp.executions.api.dto.request;
+
+import com.cromp.executions.domain.model.enums.ArtifactKind;
+
+public record UploadArtifactRequest(
+        ArtifactKind kind,
+        String contentType,
+        Integer retentionDays       // nullable — использовать дефолт если null
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\response\ArtifactResponse.java ===
+package com.cromp.executions.api.dto.response;
+
+import java.time.Instant;
+
+public record ArtifactResponse(
+        Long id,
+        String kind,
+        String storagePath,
+        Long sizeBytes,
+        String contentType,
+        String checksumSha256,
+        Integer retentionDays,
+        Instant uploadedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\response\AttemptResponse.java ===
+package com.cromp.executions.api.dto.response;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record AttemptResponse(
+        UUID attemptUuid,
+        int attemptNumber,
+        String status,
+        String statusReason,
+        String errorClass,
+        Instant scheduledAt,
+        Instant claimedAt,
+        Instant startedAt,
+        Instant finishedAt,
+        Integer durationMs,
+        UUID traceId,
+        Instant createdAt,
+        Instant updatedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\response\ClaimAttemptResult.java ===
+package com.cromp.executions.api.dto.response;
+
+import java.util.UUID;
+
+/*Возвращается orchestrator'у при захвате попытки*/
+public record ClaimAttemptResult(
+        Long attemptId,
+        UUID attemptUuid,
+        Long executionId,
+        String jobConfig   // JSONB конфиг версии — исполнитель сам десериализует
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\response\ExecutionDetailResponse.java ===
+package com.cromp.executions.api.dto.response;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+public record ExecutionDetailResponse(
+        UUID execUuid,
+        Long jobId,
+        Long jobVersionId,
+        int priority,
+        String source,
+        String finalStatus,
+        int totalAttempts,
+        Instant triggeredAt,
+        Instant scheduledAt,
+        Instant startedAt,
+        Instant finishedAt,
+        UUID correlationId,
+        Instant createdAt,
+        Instant updatedAt,
+        List<AttemptResponse> attempts
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\response\ExecutionResponse.java ===
+package com.cromp.executions.api.dto.response;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record ExecutionResponse(
+        UUID execUuid,
+        Long jobId,
+        Long jobVersionId,
+        int priority,
+        String source,
+        String finalStatus,
+        int totalAttempts,
+        Instant triggeredAt,
+        Instant scheduledAt,
+        Instant startedAt,
+        Instant finishedAt,
+        UUID correlationId,
+        Instant createdAt,
+        Instant updatedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\dto\response\PagedResponse.java ===
+package com.cromp.executions.api.dto.response;
+
+import java.util.List;
+
+public record PagedResponse<T>(
+        List<T> items,
+        int page,
+        int size,
+        long total
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\api\mapper\ExecutionApiMapper.java ===
+package com.cromp.executions.api.mapper;
+
+import com.cromp.executions.api.dto.response.ArtifactResponse;
+import com.cromp.executions.api.dto.response.AttemptResponse;
+import com.cromp.executions.api.dto.response.ExecutionDetailResponse;
+import com.cromp.executions.api.dto.response.ExecutionResponse;
+import com.cromp.executions.domain.model.Execution;
+import com.cromp.executions.domain.model.ExecutionArtifact;
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class ExecutionApiMapper {
+
+    public ExecutionResponse toResponse(Execution e) {
+        return new ExecutionResponse(
+                e.getExecUuid(),
+                e.getJobId(),
+                e.getJobVersionId(),
+                e.getPriority(),
+                e.getSource().name(),
+                e.getFinalStatus().name(),
+                e.getTotalAttempts(),
+                e.getTriggeredAt(),
+                e.getScheduledAt(),
+                e.getStartedAt(),
+                e.getFinishedAt(),
+                e.getCorrelationId(),
+                e.getCreatedAt(),
+                e.getUpdatedAt()
+        );
+    }
+
+    public ExecutionDetailResponse toDetailResponse(Execution e, List<ExecutionAttempt> attempts) {
+        return new ExecutionDetailResponse(
+                e.getExecUuid(),
+                e.getJobId(),
+                e.getJobVersionId(),
+                e.getPriority(),
+                e.getSource().name(),
+                e.getFinalStatus().name(),
+                e.getTotalAttempts(),
+                e.getTriggeredAt(),
+                e.getScheduledAt(),
+                e.getStartedAt(),
+                e.getFinishedAt(),
+                e.getCorrelationId(),
+                e.getCreatedAt(),
+                e.getUpdatedAt(),
+                attempts.stream().map(this::toAttemptResponse).toList()
+        );
+    }
+
+    public AttemptResponse toAttemptResponse(ExecutionAttempt a) {
+        return new AttemptResponse(
+                a.getAttemptUuid(),
+                a.getAttemptNumber(),
+                a.getStatus().name(),
+                a.getStatusReason(),
+                a.getErrorClass(),
+                a.getScheduledAt(),
+                a.getClaimedAt(),
+                a.getStartedAt(),
+                a.getFinishedAt(),
+                a.getDurationMs(),
+                a.getTraceId(),
+                a.getCreatedAt(),
+                a.getUpdatedAt()
+        );
+    }
+
+    public ArtifactResponse toArtifactResponse(ExecutionArtifact a) {
+        return new ArtifactResponse(
+                a.getId(),
+                a.getKind().name(),
+                a.getStoragePath(),
+                a.getSizeBytes(),
+                a.getContentType(),
+                a.getChecksumSha256(),
+                a.getRetentionDays(),
+                a.getUploadedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\ArtifactStoragePort.java ===
+package com.cromp.executions.application.port;
+
+import java.io.InputStream;
+
+public interface ArtifactStoragePort {
+    StoredArtifact store(Long executionId, String filename,
+                         String contentType, InputStream data, long size);
+    String generateDownloadUrl(String storagePath, int expirySeconds);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\AttemptClaimPort.java ===
+package com.cromp.executions.application.port;
+
+import com.cromp.executions.api.dto.response.ClaimAttemptResult;
+
+import java.util.Optional;
+
+// Вызывается executor'ом: захватить следующую PENDING попытку
+public interface AttemptClaimPort {
+    Optional<ClaimAttemptResult> claimNextAttempt(Long organizationId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\AttemptCompletionPort.java ===
+package com.cromp.executions.application.port;
+
+import com.cromp.executions.api.dto.request.CompleteAttemptRequest;
+
+import java.util.UUID;
+
+// Вызывается executor'ом: зафиксировать результат попытки
+public interface AttemptCompletionPort {
+    void completeAttempt(UUID attemptUuid, CompleteAttemptRequest request);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\AuditPort.java ===
+package com.cromp.executions.application.port;
+
+import java.util.Map;
+
+public interface AuditPort {
+    void record(String action, Long organizationId, Long actorId,
+                String resourceType, Long resourceId, Map<String, Object> changesDiff);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\ExecutionCreationPort.java ===
+package com.cromp.executions.application.port;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+// Расширенная версия контракта из jobs — заменяет StubExecutionCreationPort
+public interface ExecutionCreationPort {
+    UUID createExecution(Long organizationId, Long jobId, Long jobVersionId,
+                         String source, Long triggeredBy,
+                         Map<String, Object> payload, UUID correlationId,
+                         int priority, Instant scheduledAt,
+                         String executionPolicySnapshot);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\JobVersionQueryPort.java ===
+package com.cromp.executions.application.port;
+
+import java.util.Optional;
+
+/**
+* Получить сериализованный конфиг версии job — нужен для snapshot и для claim result 
+*/
+public interface JobVersionQueryPort {
+    Optional<String> findConfigJsonByVersionId(Long jobVersionId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\StoredArtifact.java ===
+package com.cromp.executions.application.port;
+
+public record StoredArtifact(
+        String storagePath,
+        long sizeBytes,
+        String checksumSha256
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\service\ArtifactService.java ===
+package com.cromp.executions.application.service;
+
+import com.cromp.executions.api.dto.request.UploadArtifactRequest;
+import com.cromp.executions.api.dto.response.ArtifactResponse;
+import com.cromp.executions.api.mapper.ExecutionApiMapper;
+import com.cromp.executions.application.port.ArtifactStoragePort;
+import com.cromp.executions.application.port.StoredArtifact;
+import com.cromp.executions.domain.model.Execution;
+import com.cromp.executions.domain.model.ExecutionArtifact;
+import com.cromp.executions.domain.model.exceptions.ExecutionNotFoundException;
+import com.cromp.executions.domain.repository.ExecutionArtifactRepositoryPort;
+import com.cromp.executions.domain.repository.ExecutionRepositoryPort;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ArtifactService {
+
+    private final ExecutionRepositoryPort executionRepository;
+    private final ExecutionArtifactRepositoryPort artifactRepository;
+    private final ArtifactStoragePort storagePort;
+    private final ExecutionApiMapper mapper;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+
+    public ArtifactResponse uploadArtifact(Long organizationId, UUID execUuid,
+                                           UploadArtifactRequest request,
+                                           MultipartFile file) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:execute")) {
+            throw new SecurityException("No permission to upload artifacts");
+        }
+
+        Execution execution = executionRepository.findByExecUuid(execUuid)
+                .filter(e -> e.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new ExecutionNotFoundException(execUuid));
+
+        String originalFilename = file.getOriginalFilename() != null
+                ? file.getOriginalFilename()
+                : request.kind().name().toLowerCase();
+
+        StoredArtifact stored;
+        try {
+            stored = storagePort.store(
+                    execution.getId(),
+                    originalFilename,
+                    request.contentType() != null ? request.contentType() : file.getContentType(),
+                    file.getInputStream(),
+                    file.getSize()
+            );
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload artifact", e);
+        }
+
+        ExecutionArtifact artifact = ExecutionArtifact.create(
+                execution.getId(),
+                request.kind(),
+                stored.storagePath(),
+                stored.sizeBytes(),
+                stored.checksumSha256(),
+                request.contentType() != null ? request.contentType() : file.getContentType(),
+                userId
+        );
+        artifact = artifactRepository.save(artifact);
+        return mapper.toArtifactResponse(artifact);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ArtifactResponse> listArtifacts(Long organizationId, UUID execUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+
+        Execution execution = executionRepository.findByExecUuid(execUuid)
+                .filter(e -> e.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new ExecutionNotFoundException(execUuid));
+
+        return artifactRepository.findByExecutionId(execution.getId())
+                .stream()
+                .map(mapper::toArtifactResponse)
+                .toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\service\AttemptService.java ===
+package com.cromp.executions.application.service;
+
+import com.cromp.executions.api.dto.request.CompleteAttemptRequest;
+import com.cromp.executions.api.dto.response.AttemptResponse;
+import com.cromp.executions.api.dto.response.ClaimAttemptResult;
+import com.cromp.executions.api.mapper.ExecutionApiMapper;
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import com.cromp.executions.domain.model.exceptions.AttemptNotFoundException;
+import com.cromp.executions.domain.model.exceptions.InvalidStatusTransitionException;
+import com.cromp.executions.domain.repository.ExecutionAttemptRepositoryPort;
+import com.cromp.executions.domain.service.AttemptStateMachine;
+import com.cromp.executions.infrastructure.persistence.custom.ExecutionAttemptCustomRepository;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class AttemptService {
+
+    // Терминальные статусы — не трогаем при отмене
+    private static final Set<AttemptStatus> TERMINAL =
+            Set.of(AttemptStatus.SUCCEEDED, AttemptStatus.FAILED,
+                   AttemptStatus.TIMEOUT, AttemptStatus.CANCELLED);
+
+    private final ExecutionAttemptRepositoryPort attemptRepository;
+    private final ExecutionAttemptCustomRepository customRepository;
+    private final ExecutionApiMapper mapper;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+
+    // Вызывается через AttemptClaimPort
+    public Optional<ClaimAttemptResult> claimNextAttempt(Long organizationId) {
+        return customRepository.claimAttempt(organizationId);
+    }
+
+    // Вызывается через AttemptCompletionPort
+    public void completeAttempt(UUID attemptUuid, CompleteAttemptRequest request) {
+        AttemptStatus newStatus = request.status();
+        if (!TERMINAL.contains(newStatus)) {
+            throw new InvalidStatusTransitionException(
+                    "completeAttempt accepts only terminal statuses, got: " + newStatus);
+        }
+
+        ExecutionAttempt attempt = attemptRepository.findByAttemptUuid(attemptUuid)
+                .orElseThrow(() -> new AttemptNotFoundException(attemptUuid));
+
+        AttemptStateMachine.assertTransitionAllowed(attempt.getStatus(), newStatus);
+        attempt.complete(newStatus, request.outputSummary(),
+                         request.errorClass(), request.statusReason());
+        attemptRepository.save(attempt);
+        // Обновление finalStatus Execution — через триггер БД (fn_update_execution_final_status)
+    }
+
+    @Transactional(readOnly = true)
+    public List<AttemptResponse> listAttempts(Long organizationId, UUID execUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        // executionId резолвится в репозитории через execUuid + organizationId
+        return customRepository.findAttemptsByExecUuid(organizationId, execUuid)
+                .stream()
+                .map(mapper::toAttemptResponse)
+                .toList();
+    }
+
+    // Для janitor'а (вызывается из orchestrator)
+    @Transactional(readOnly = true)
+    public List<ExecutionAttempt> findStaleAttempts(int olderThanMinutes) {
+        Instant cutoff = Instant.now().minusSeconds((long) olderThanMinutes * 60);
+        return attemptRepository.findByStatusAndUpdatedAtBefore(AttemptStatus.RUNNING, cutoff);
+    }
+
+    public void markStaleAsTimeout(List<ExecutionAttempt> stale) {
+        for (ExecutionAttempt attempt : stale) {
+            AttemptStateMachine.assertTransitionAllowed(attempt.getStatus(), AttemptStatus.TIMEOUT);
+            attempt.markTimeout();
+            attemptRepository.save(attempt);
+            // Триггер обновит Execution.finalStatus = FAILED
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\service\ExecutionService.java ===
+package com.cromp.executions.application.service;
+
+import com.cromp.executions.api.dto.ExecutionFilter;
+import com.cromp.executions.api.dto.request.CreateExecutionRequest;
+import com.cromp.executions.api.dto.response.ExecutionDetailResponse;
+import com.cromp.executions.api.dto.response.ExecutionResponse;
+import com.cromp.executions.api.dto.response.PagedResponse;
+import com.cromp.executions.api.mapper.ExecutionApiMapper;
+import com.cromp.executions.application.port.AuditPort;
+import com.cromp.executions.application.port.JobVersionQueryPort;
+import com.cromp.executions.domain.model.Execution;
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import com.cromp.executions.domain.model.exceptions.ExecutionNotFoundException;
+import com.cromp.executions.domain.repository.ExecutionAttemptRepositoryPort;
+import com.cromp.executions.domain.repository.ExecutionRepositoryPort;
+import com.cromp.executions.domain.service.AttemptStateMachine;
+import com.cromp.executions.domain.service.ExecutionStateMachine;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ExecutionService {
+
+    private final ExecutionRepositoryPort executionRepository;
+    private final ExecutionAttemptRepositoryPort attemptRepository;
+    private final JobVersionQueryPort jobVersionQueryPort;
+    private final AuditPort auditPort;
+    private final ExecutionApiMapper mapper;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+
+    // Вызывается через ExecutionCreationPort (ExecutionCreationPortImpl)
+    public UUID createExecution(CreateExecutionRequest request) {
+        String policySnapshot = request.executionPolicySnapshot() != null
+                ? request.executionPolicySnapshot()
+                : jobVersionQueryPort.findConfigJsonByVersionId(request.jobVersionId())
+                        .orElse(null);
+
+        Execution execution = Execution.create(
+                request.organizationId(),
+                request.jobId(),
+                request.jobVersionId(),
+                request.priority(),
+                request.source(),
+                request.scheduledAt(),
+                request.correlationId(),
+                policySnapshot
+        );
+        execution = executionRepository.save(execution);
+
+        // Первая попытка создаётся сразу - триггер БД обновит totalAttempts и статус
+        int nextAttemptNumber = 1;
+        ExecutionAttempt attempt = ExecutionAttempt.create(
+                execution.getId(),
+                request.organizationId(),
+                nextAttemptNumber,
+                request.scheduledAt() != null ? request.scheduledAt() : Instant.now(),
+                request.correlationId() != null ? request.correlationId() : UUID.randomUUID()
+        );
+        attemptRepository.save(attempt);
+
+        auditPort.record("EXECUTION.CREATE", request.organizationId(),
+                request.triggeredBy(), "executions", execution.getId(),
+                Map.of("jobId", request.jobId(), "source", request.source().name()));
+
+        return execution.getExecUuid();
+    }
+
+    @Transactional(readOnly = true)
+    public ExecutionDetailResponse getExecution(Long organizationId, UUID execUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+
+        Execution execution = executionRepository.findByExecUuid(execUuid)
+                .filter(e -> e.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new ExecutionNotFoundException(execUuid));
+
+        List<ExecutionAttempt> attempts = attemptRepository.findByExecutionId(execution.getId());
+        return mapper.toDetailResponse(execution, attempts);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<ExecutionResponse> listExecutions(Long organizationId, ExecutionFilter filter) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+
+        List<ExecutionResponse> items = executionRepository
+                .findByFilter(organizationId, filter.jobId(), filter.status(),
+                        filter.source(), filter.from(), filter.to(),
+                        filter.page(), filter.size())
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        long total = executionRepository.countByFilter(organizationId, filter.jobId(),
+                filter.status(), filter.source(), filter.from(), filter.to());
+
+        return new PagedResponse<>(items, filter.page(), filter.size(), total);
+    }
+
+    public void cancelExecution(Long organizationId, UUID execUuid) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.hasPermission(userId, organizationId, "job:execute")) {
+            throw new SecurityException("No permission to cancel executions");
+        }
+
+        Execution execution = executionRepository.findByExecUuid(execUuid)
+                .filter(e -> e.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new ExecutionNotFoundException(execUuid));
+
+        ExecutionStateMachine.assertTransitionAllowed(execution.getFinalStatus(), ExecutionStatus.CANCELLED);
+
+        // Отменяем все незавершённые попытки
+        List<ExecutionAttempt> active = attemptRepository.findActiveByExecutionId(execution.getId());
+        for (ExecutionAttempt attempt : active) {
+            AttemptStateMachine.assertTransitionAllowed(attempt.getStatus(), AttemptStatus.CANCELLED);
+            attempt.cancel("Execution cancelled by user");
+            attemptRepository.save(attempt);
+        }
+
+        execution.cancel();
+        executionRepository.save(execution);
+
+        auditPort.record("EXECUTION.CANCEL", organizationId, userId,
+                "executions", execution.getId(), Map.of());
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\repository\ExecutionArtifactRepositoryPort.java ===
+package com.cromp.executions.domain.repository;
+
+import com.cromp.executions.domain.model.ExecutionArtifact;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ExecutionArtifactRepositoryPort {
+    ExecutionArtifact save(ExecutionArtifact artifact);
+    Optional<ExecutionArtifact> findById(Long id);
+    List<ExecutionArtifact> findByExecutionId(Long executionId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\repository\ExecutionAttemptRepositoryPort.java ===
+package com.cromp.executions.domain.repository;
+
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface ExecutionAttemptRepositoryPort {
+    ExecutionAttempt save(ExecutionAttempt attempt);
+    Optional<ExecutionAttempt> findByAttemptUuid(UUID attemptUuid);
+    Optional<ExecutionAttempt> findById(Long id);
+    List<ExecutionAttempt> findByExecutionId(Long executionId);
+    // Для janitor'а: найти зависшие попытки
+    List<ExecutionAttempt> findByStatusAndUpdatedAtBefore(AttemptStatus status, Instant cutoff);
+    // Для cancel: найти все незавершённые попытки execution'а
+    List<ExecutionAttempt> findActiveByExecutionId(Long executionId);
+    int findMaxAttemptNumberByExecutionId(Long executionId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\repository\ExecutionRepositoryPort.java ===
+package com.cromp.executions.domain.repository;
+
+import com.cromp.executions.domain.model.Execution;
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface ExecutionRepositoryPort {
+    Execution save(Execution execution);
+    Optional<Execution> findByExecUuid(UUID execUuid);
+    Optional<Execution> findById(Long id);
+    List<Execution> findByFilter(Long organizationId, Long jobId,
+                                 ExecutionStatus status, ExecutionSource source,
+                                 Instant from, Instant to,
+                                 int page, int size);
+    long countByFilter(Long organizationId, Long jobId,
+                       ExecutionStatus status, ExecutionSource source,
+                       Instant from, Instant to);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\port\AttemptClaimPortImpl.java ===
+package com.cromp.executions.infrastructure.port;
+
+import com.cromp.executions.api.dto.response.ClaimAttemptResult;
+import com.cromp.executions.application.port.AttemptClaimPort;
+import com.cromp.executions.application.service.AttemptService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+public class AttemptClaimPortImpl implements AttemptClaimPort {
+
+    private final AttemptService attemptService;
+
+    @Override
+    public Optional<ClaimAttemptResult> claimNextAttempt(Long organizationId) {
+        return attemptService.claimNextAttempt(organizationId);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\port\AttemptCompletionPortImpl.java ===
+package com.cromp.executions.infrastructure.port;
+
+import com.cromp.executions.api.dto.request.CompleteAttemptRequest;
+import com.cromp.executions.application.port.AttemptCompletionPort;
+import com.cromp.executions.application.service.AttemptService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.UUID;
+
+@Component
+@RequiredArgsConstructor
+public class AttemptCompletionPortImpl implements AttemptCompletionPort {
+
+    private final AttemptService attemptService;
+
+    @Override
+    public void completeAttempt(UUID attemptUuid, CompleteAttemptRequest request) {
+        attemptService.completeAttempt(attemptUuid, request);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\port\AuditPortImpl.java ===
+package com.cromp.executions.infrastructure.port;
+
+import com.cromp.executions.application.port.AuditPort;
+import com.cromp.iam.domain.model.AuditLogEntry;
+import com.cromp.iam.domain.repository.AuditLogRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+
+@Component
+@RequiredArgsConstructor
+public class AuditPortImpl implements AuditPort {
+
+    private final AuditLogRepositoryPort auditLogRepository;
+
+    @Override
+    public void record(String action, Long organizationId, Long actorId,
+                       String resourceType, Long resourceId, Map<String, Object> changesDiff) {
+        AuditLogEntry entry = AuditLogEntry.record(
+                organizationId, actorId, Map.of(),
+                action, resourceType, resourceId, changesDiff
+        );
+        auditLogRepository.save(entry);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\port\ExecutionCreationPortImpl.java ===
+package com.cromp.executions.infrastructure.port;
+
+import com.cromp.executions.api.dto.request.CreateExecutionRequest;
+import com.cromp.executions.application.service.ExecutionService;
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Реализует контракт jobs.application.port.ExecutionCreationPort.
+ * @Primary вытесняет StubExecutionCreationPort из модуля jobs.
+ */
+@Component
+@Primary
+@RequiredArgsConstructor
+public class ExecutionCreationPortImpl
+        implements com.cromp.jobs.application.port.ExecutionCreationPort {
+
+    private final ExecutionService executionService;
+
+    @Override
+    public UUID createExecution(Long organizationId, Long jobId, Long jobVersionId,
+                                String source, Long triggeredBy,
+                                Map<String, Object> payload, UUID correlationId,
+                                int priority, Instant scheduledAt,
+                                String executionPolicySnapshot) {
+        CreateExecutionRequest request = new CreateExecutionRequest(
+                organizationId, jobId, jobVersionId,
+                priority,
+                ExecutionSource.valueOf(source),
+                triggeredBy,
+                scheduledAt,
+                correlationId,
+                payload,
+                executionPolicySnapshot
+        );
+        return executionService.createExecution(request);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\port\JobVersionQueryPortImpl.java ===
+package com.cromp.executions.infrastructure.port;
+
+import com.cromp.executions.application.port.JobVersionQueryPort;
+import com.cromp.jobs.domain.repository.JobVersionRepositoryPort;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+public class JobVersionQueryPortImpl implements JobVersionQueryPort {
+
+    private final JobVersionRepositoryPort jobVersionRepository;
+    private final ObjectMapper objectMapper;
+
+    @Override
+    public Optional<String> findConfigJsonByVersionId(Long jobVersionId) {
+        return jobVersionRepository.findById(jobVersionId)
+                .map(version -> {
+                    try {
+                        return objectMapper.writeValueAsString(version.getConfig());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to serialize JobConfig", e);
+                    }
+                });
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\storage\MinioArtifactStorage.java ===
+package com.cromp.executions.infrastructure.storage;
+
+import com.cromp.executions.application.port.ArtifactStoragePort;
+import com.cromp.executions.application.port.StoredArtifact;
+import com.cromp.executions.infrastructure.storage.config.MinioProperties;
+import io.minio.*;
+import io.minio.http.Method;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+import java.util.concurrent.TimeUnit;
+
+@Component
+@Slf4j
+@RequiredArgsConstructor
+public class MinioArtifactStorage implements ArtifactStoragePort {
+
+    private final MinioClient minioClient;
+    private final MinioProperties properties;
+
+    @Override
+    public StoredArtifact store(Long executionId, String filename,
+                                String contentType, InputStream data, long size) {
+        ensureBucketExists();
+
+        String objectName = "executions/%d/%s".formatted(executionId, filename);
+
+        // Читаем в память для подсчёта чексуммы (файлы артефактов обычно небольшие)
+        byte[] bytes;
+        try {
+            bytes = data.readAllBytes();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read artifact stream", e);
+        }
+
+        String checksum = sha256Hex(bytes);
+
+        try {
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(properties.getBucket())
+                    .object(objectName)
+                    .stream(new java.io.ByteArrayInputStream(bytes), bytes.length, -1)
+                    .contentType(contentType != null ? contentType : "application/octet-stream")
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to store artifact in MinIO", e);
+        }
+
+        return new StoredArtifact(objectName, bytes.length, checksum);
+    }
+
+    @Override
+    public String generateDownloadUrl(String storagePath, int expirySeconds) {
+        try {
+            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .bucket(properties.getBucket())
+                    .object(storagePath)
+                    .method(Method.GET)
+                    .expiry(expirySeconds, TimeUnit.SECONDS)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate download URL", e);
+        }
+    }
+
+    private void ensureBucketExists() {
+        try {
+            boolean exists = minioClient.bucketExists(
+                    BucketExistsArgs.builder().bucket(properties.getBucket()).build());
+            if (!exists) {
+                minioClient.makeBucket(
+                        MakeBucketArgs.builder().bucket(properties.getBucket()).build());
+                log.info("Created MinIO bucket: {}", properties.getBucket());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to ensure bucket exists", e);
+        }
+    }
+
+    private String sha256Hex(byte[] data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(data));
+        } catch (Exception e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\storage\config\MinioConfig.java ===
+package com.cromp.executions.infrastructure.storage.config;
+
+import io.minio.MinioClient;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@EnableConfigurationProperties(MinioProperties.class)
+@RequiredArgsConstructor
+public class MinioConfig {
+
+    private final MinioProperties properties;
+
+    @Bean
+    public MinioClient minioClient() {
+        return MinioClient.builder()
+                .endpoint(properties.getEndpoint())
+                .credentials(properties.getAccessKey(), properties.getSecretKey())
+                .build();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\storage\config\MinioProperties.java ===
+package com.cromp.executions.infrastructure.storage.config;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@Getter
+@Setter
+@ConfigurationProperties(prefix = "cromp.minio")
+public class MinioProperties {
+    private String endpoint;
+    private String accessKey;
+    private String secretKey;
+    private String bucket = "executions";
+    private int downloadUrlExpirySeconds = 3600;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\web\controller\ExecutionController.java ===
+package com.cromp.executions.infrastructure.web.controller;
+
+import com.cromp.executions.api.dto.ExecutionFilter;
+import com.cromp.executions.api.dto.request.UploadArtifactRequest;
+import com.cromp.executions.api.dto.response.*;
+import com.cromp.executions.application.service.ArtifactService;
+import com.cromp.executions.application.service.AttemptService;
+import com.cromp.executions.application.service.ExecutionService;
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/organizations/{organizationId}/executions")
+@RequiredArgsConstructor
+public class ExecutionController {
+
+    private final ExecutionService executionService;
+    private final AttemptService attemptService;
+    private final ArtifactService artifactService;
+
+    // GET /organizations/{organizationId}/executions
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public PagedResponse<ExecutionResponse> list(
+            @PathVariable Long organizationId,
+            @RequestParam(required = false) Long jobId,
+            @RequestParam(required = false) ExecutionStatus status,
+            @RequestParam(required = false) ExecutionSource source,
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        ExecutionFilter filter = new ExecutionFilter(jobId, status, source, from, to, page, size);
+        return executionService.listExecutions(organizationId, filter);
+    }
+
+    // GET /organizations/{organizationId}/executions/{executionId}
+    @GetMapping("/{executionId}")
+    @PreAuthorize("isAuthenticated()")
+    public ExecutionDetailResponse get(
+            @PathVariable Long organizationId,
+            @PathVariable UUID executionId
+    ) {
+        return executionService.getExecution(organizationId, executionId);
+    }
+
+    // POST /organizations/{organizationId}/executions/{executionId}/cancel
+    @PostMapping("/{executionId}/cancel")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancel(
+            @PathVariable Long organizationId,
+            @PathVariable UUID executionId
+    ) {
+        executionService.cancelExecution(organizationId, executionId);
+    }
+
+    // GET /organizations/{organizationId}/executions/{executionId}/attempts
+    @GetMapping("/{executionId}/attempts")
+    @PreAuthorize("isAuthenticated()")
+    public List<AttemptResponse> listAttempts(
+            @PathVariable Long organizationId,
+            @PathVariable UUID executionId
+    ) {
+        return attemptService.listAttempts(organizationId, executionId);
+    }
+
+    // GET /organizations/{organizationId}/executions/{executionId}/artifacts
+    @GetMapping("/{executionId}/artifacts")
+    @PreAuthorize("isAuthenticated()")
+    public List<ArtifactResponse> listArtifacts(
+            @PathVariable Long organizationId,
+            @PathVariable UUID executionId
+    ) {
+        return artifactService.listArtifacts(organizationId, executionId);
+    }
+
+    // POST /organizations/{organizationId}/executions/{executionId}/artifacts
+    @PostMapping(value = "/{executionId}/artifacts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ArtifactResponse uploadArtifact(
+            @PathVariable Long organizationId,
+            @PathVariable UUID executionId,
+            @RequestPart("meta") UploadArtifactRequest request,
+            @RequestPart("file") MultipartFile file
+    ) {
+        return artifactService.uploadArtifact(organizationId, executionId, request, file);
+    }
+}
+
