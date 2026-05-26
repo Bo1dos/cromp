@@ -13,9 +13,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/organizations/{organizationId}/jobs")
+@RequestMapping("/api/v1/jobs")
 @RequiredArgsConstructor
 public class JobController {
 
@@ -25,102 +26,90 @@ public class JobController {
     // ---- CRUD ----
 
     @PostMapping
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:create')")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:create')")
     @ResponseStatus(HttpStatus.CREATED)
-    public JobResponse create(@PathVariable Long organizationId,
-                              @Valid @RequestBody CreateJobRequest request) {
-        return jobFacade.createJob(organizationId, request);
+    public JobResponse create(@Valid @RequestBody CreateJobRequest request) {
+        return jobFacade.createJob(request);
     }
 
     @GetMapping
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public List<JobResponse> list(@PathVariable Long organizationId,
-                                  @RequestParam(required = false) JobStatus status,
+    @PreAuthorize("isAuthenticated()")
+    public List<JobResponse> list(@RequestParam(required = false) JobStatus status,
                                   @RequestParam(defaultValue = "20") int limit,
                                   @RequestParam(defaultValue = "0") int offset) {
-        return jobFacade.listJobs(organizationId, status, limit, offset);
+        return jobFacade.listJobs(status, limit, offset);
     }
 
-    @GetMapping("/{jobId}")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public JobResponse get(@PathVariable Long organizationId,
-                           @PathVariable Long jobId) {
-        return jobFacade.getJob(organizationId, jobId);
+    @GetMapping("/{jobUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public JobResponse get(@PathVariable UUID jobUuid) {
+        return jobFacade.getJob(jobUuid);
     }
 
-    @PutMapping("/{jobId}")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:update')")
-    public JobResponse update(@PathVariable Long organizationId,
-                              @PathVariable Long jobId,
+    @PutMapping("/{jobUuid}")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:update')")
+    public JobResponse update(@PathVariable UUID jobUuid,
                               @Valid @RequestBody UpdateJobRequest request) {
-        return jobFacade.updateJob(organizationId, jobId, request);
+        return jobFacade.updateJob(jobUuid, request);
     }
 
-    @DeleteMapping("/{jobId}")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:delete')")
+    @DeleteMapping("/{jobUuid}")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:delete')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long organizationId,
-                       @PathVariable Long jobId) {
-        jobFacade.deleteJob(organizationId, jobId);
+    public void delete(@PathVariable UUID jobUuid) {
+        jobFacade.deleteJob(jobUuid);
     }
 
-    @PatchMapping("/{jobId}/status")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:update')")
-    public JobResponse changeStatus(@PathVariable Long organizationId,
-                                    @PathVariable Long jobId,
+    @PatchMapping("/{jobUuid}/status")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:update')")
+    public JobResponse changeStatus(@PathVariable UUID jobUuid,
                                     @Valid @RequestBody ChangeJobStatusRequest request) {
-        return jobFacade.changeStatus(organizationId, jobId, request);
+        return jobFacade.changeStatus(jobUuid, request);
     }
 
     // ---- Manual Trigger ----
 
-    @PostMapping("/{jobId}/trigger")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:execute')")
+    @PostMapping("/{jobUuid}/trigger")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public TriggerResponse trigger(@PathVariable Long organizationId,
-                                   @PathVariable Long jobId,
+    public TriggerResponse trigger(@PathVariable UUID jobUuid,
                                    @Valid @RequestBody TriggerJobRequest request) {
-        return jobFacade.triggerJob(organizationId, jobId, request);
+        return jobFacade.triggerJob(jobUuid, request);
     }
 
     // ---- Versioning ----
 
-    @GetMapping("/{jobId}/versions")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public List<JobVersionResponse> getVersions(@PathVariable Long organizationId,
-                                                @PathVariable Long jobId) {
-        return jobVersionFacade.getVersions(organizationId, jobId);
+    @GetMapping("/{jobUuid}/versions")
+    @PreAuthorize("isAuthenticated()")
+    public List<JobVersionResponse> getVersions(@PathVariable UUID jobUuid) {
+        return jobVersionFacade.getVersions(jobUuid);
     }
 
-    @GetMapping("/{jobId}/versions/{version}")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public JobVersionResponse getVersion(@PathVariable Long organizationId,
-                                         @PathVariable Long jobId,
+    @GetMapping("/{jobUuid}/versions/{version}")
+    @PreAuthorize("isAuthenticated()")
+    public JobVersionResponse getVersion(@PathVariable UUID jobUuid,
                                          @PathVariable int version) {
-        return jobVersionFacade.getVersion(organizationId, jobId, version);
+        return jobVersionFacade.getVersion(jobUuid, version);
     }
 
-    @GetMapping("/{jobId}/versions/compare")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public JobVersionComparisonResponse compareVersions(@PathVariable Long organizationId,
-                                                        @PathVariable Long jobId,
+    @GetMapping("/{jobUuid}/versions/compare")
+    @PreAuthorize("isAuthenticated()")
+    public JobVersionComparisonResponse compareVersions(@PathVariable UUID jobUuid,
                                                         @RequestParam int fromVersion,
                                                         @RequestParam int toVersion) {
-        return jobVersionFacade.compareVersions(organizationId, jobId, fromVersion, toVersion);
+        return jobVersionFacade.compareVersions(jobUuid, fromVersion, toVersion);
     }
 
-    @PostMapping("/{jobId}/revert")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:update')")
-    public JobVersionResponse revert(@PathVariable Long organizationId,
-                                     @PathVariable Long jobId,
+    @PostMapping("/{jobUuid}/revert")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:update')")
+    public JobVersionResponse revert(@PathVariable UUID jobUuid,
                                      @Valid @RequestBody RevertJobRequest request) {
-        return jobVersionFacade.revertToVersion(organizationId, jobId, request.version());
+        return jobVersionFacade.revertToVersion(jobUuid, request.version());
     }
 
-    @GetMapping("/{jobId}/current-version")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public JobVersionResponse currentVersion(@PathVariable Long organizationId,
-                                             @PathVariable Long jobId) {
-        return jobVersionFacade.getCurrentVersion(organizationId, jobId);
+    @GetMapping("/{jobUuid}/current-version")
+    @PreAuthorize("isAuthenticated()")
+    public JobVersionResponse currentVersion(@PathVariable UUID jobUuid) {
+        return jobVersionFacade.getCurrentVersion(jobUuid);
     }
 }

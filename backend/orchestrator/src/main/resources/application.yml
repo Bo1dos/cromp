@@ -1,4 +1,66 @@
-iam:
-  jwt:
-    secret: ${JWT_SECRET:changeit-changeit-changeit-changeit}
-    expiration-ms: 3600000
+spring:
+  application:
+    name: cron-as-a-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cromp}
+    username: ${DB_USER:cromp}
+    password: ${DB_PASSWORD:cromp}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: public
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+# ── Orchestrator ────────────────────────────────────────────────────────────
+
+orchestrator:
+  # Планировщик: как часто проверяем расписания, у которых наступило время
+  scheduler:
+    interval-ms: 30000
+
+  # Executor: как часто забираем задачи и параметры выполнения
+  executor:
+    interval-ms: 5000
+    pool-size: 10
+    batch-size: 20
+    http-timeout-ms: 30000
+
+  # Janitor: как часто ищем зависшие попытки
+  janitor:
+    interval-ms: 60000
+    stuck-threshold-minutes: 5
+
+  # Dry-run: true — HTTP-запросы не отправляются (для отладки)
+  dry-run: false
+
+# ── Actuator ────────────────────────────────────────────────────────────────
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ── Logging ─────────────────────────────────────────────────────────────────
+
+logging:
+  level:
+    com.cromp.orchestrator: DEBUG
+    com.cromp: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} [traceId=%X{traceId}] - %msg%n"

@@ -15,53 +15,48 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/organizations/{organizationId}/secrets")
+@RequestMapping("/api/v1/secrets")
 @RequiredArgsConstructor
 public class SecretController {
 
     private final SecretFacade secretFacade;
 
     @PostMapping
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'secret:create')")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'secret:create')")
     @ResponseStatus(HttpStatus.CREATED)
-    public SecretResponse create(@PathVariable Long organizationId,
-                                 @Valid @RequestBody CreateSecretRequest request) {
-        return secretFacade.createSecret(organizationId, request);
+    public SecretResponse create(@Valid @RequestBody CreateSecretRequest request) {
+        return secretFacade.createSecret(request);
     }
 
     @GetMapping
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public List<SecretResponse> list(@PathVariable Long organizationId) {
-        return secretFacade.listSecrets(organizationId);
+    @PreAuthorize("isAuthenticated()")
+    public List<SecretResponse> list() {
+        return secretFacade.listSecrets();
     }
 
     @GetMapping("/{secretUuid}")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public SecretResponse get(@PathVariable Long organizationId,
-                              @PathVariable UUID secretUuid) {
-        return secretFacade.getSecret(organizationId, secretUuid);
+    @PreAuthorize("isAuthenticated()")
+    public SecretResponse get(@PathVariable UUID secretUuid) {
+        return secretFacade.getSecret(secretUuid);
     }
 
     @DeleteMapping("/{secretUuid}")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'secret:delete')")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'secret:delete')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long organizationId,
-                       @PathVariable UUID secretUuid) {
-        secretFacade.deleteSecret(organizationId, secretUuid);
+    public void delete(@PathVariable UUID secretUuid) {
+        secretFacade.deleteSecret(secretUuid);
     }
 
     @PostMapping("/{secretUuid}/rotate")
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'secret:update')")
-    public SecretResponse rotate(@PathVariable Long organizationId,
-                                 @PathVariable UUID secretUuid,
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'secret:update')")
+    public SecretResponse rotate(@PathVariable UUID secretUuid,
                                  @Valid @RequestBody RotateSecretRequest request) {
-        return secretFacade.rotateSecret(organizationId, secretUuid, request);
+        return secretFacade.rotateSecret(secretUuid, request);
     }
 
     @GetMapping("/{secretUuid}/versions")
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public List<SecretVersionResponse> getVersions(@PathVariable Long organizationId,
-                                                   @PathVariable UUID secretUuid) {
-        return secretFacade.getVersions(organizationId, secretUuid);
+    @PreAuthorize("isAuthenticated()")
+    public List<SecretVersionResponse> getVersions(@PathVariable UUID secretUuid) {
+        return secretFacade.getVersions(secretUuid);
     }
 }

@@ -6,10 +6,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface JobJpaRepository extends JpaRepository<JobJpaEntity, Long> {
     Optional<JobJpaEntity> findByIdAndOrganizationId(Long id, Long organizationId);
     List<JobJpaEntity> findByOrganizationIdOrderByCreatedAtDesc(Long organizationId);
     List<JobJpaEntity> findByOrganizationIdAndStatus(Long organizationId, JobStatus status);
     boolean existsByNameAndOrganizationIdAndDeletedAtIsNull(String name, Long organizationId);
+    Optional<JobJpaEntity> findByJobUuid(UUID jobUuid);
 }

@@ -4,6 +4,7 @@ import com.cromp.jobs.application.port.ExecutionCreationPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -13,10 +14,12 @@ public class StubExecutionCreationPort implements ExecutionCreationPort {
 
     @Override
     public UUID createExecution(Long organizationId, Long jobId, Long jobVersionId,
-                                String source, Long triggeredBy, Map<String, Object> payload,
-                                UUID correlationId) {
+                                String source, Long triggeredBy,
+                                Map<String, Object> payload, UUID correlationId,
+                                int priority, Instant scheduledAt,
+                                String executionPolicySnapshot) {
         UUID execId = UUID.randomUUID();
-        log.info("Stub: Execution requested for job {} in org {}, execId={}", jobId, organizationId, execId);
+        log.info("Stub: execution for job {} org {}, execId={}", jobId, organizationId, execId);
         return execId;
     }
 }

@@ -9,33 +9,32 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
-@RequestMapping("/api/v1/organizations/{organizationId}/jobs/{jobId}/schedule")
+@RequestMapping("/api/v1/jobs/{jobUuid}/schedule")
 @RequiredArgsConstructor
 public class ScheduleController {
 
     private final ScheduleFacade scheduleFacade;
 
     @PutMapping
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:manage')")
-    public ScheduleResponse createOrUpdate(@PathVariable Long organizationId,
-                                           @PathVariable Long jobId,
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:manage')")
+    public ScheduleResponse createOrUpdate(@PathVariable UUID jobUuid,
                                            @Valid @RequestBody CreateUpdateScheduleRequest request) {
-        return scheduleFacade.createOrUpdate(organizationId, jobId, request);
+        return scheduleFacade.createOrUpdate(jobUuid, request);
     }
 
     @GetMapping
-    @PreAuthorize("@permissionCheckerPort.isMember(authentication.principal, #organizationId)")
-    public ScheduleResponse get(@PathVariable Long organizationId,
-                                @PathVariable Long jobId) {
-        return scheduleFacade.getSchedule(organizationId, jobId);
+    @PreAuthorize("isAuthenticated()")
+    public ScheduleResponse get(@PathVariable UUID jobUuid) {
+        return scheduleFacade.getSchedule(jobUuid);
     }
 
     @DeleteMapping
-    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, #organizationId, 'job:manage')")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:manage')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long organizationId,
-                       @PathVariable Long jobId) {
-        scheduleFacade.deleteSchedule(organizationId, jobId);
+    public void delete(@PathVariable UUID jobUuid) {
+        scheduleFacade.deleteSchedule(jobUuid);
     }
 }
