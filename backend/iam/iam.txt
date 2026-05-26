@@ -1,0 +1,4423 @@
+﻿=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\AcceptInvitationRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record AcceptInvitationRequest(
+        @NotBlank String token
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\AddMembershipRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import com.cromp.iam.domain.model.enums.UserRole;
+
+import jakarta.validation.constraints.NotNull;
+
+// TODO:  возможно, нужно огранизацию вернуть
+public record AddMembershipRequest(
+        @NotNull Long userId,
+        @NotNull UserRole role
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\AddRolePermissionRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+public record AddRolePermissionRequest(
+        @NotNull Long roleId,
+        @NotBlank String permission
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\ChangeMembershipRoleRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import com.cromp.iam.domain.model.enums.UserRole;
+
+import jakarta.validation.constraints.NotNull;
+
+public record ChangeMembershipRoleRequest(
+        @NotNull UserRole role
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\ChangeUserEmailRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.Email;
+
+public record ChangeUserEmailRequest(
+        @Email String newEmail
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\ChangeUserPasswordRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record ChangeUserPasswordRequest(
+        @NotBlank String oldPassword,
+        @NotBlank @Size(min = 8, max = 255) String newPassword
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\CreateOrganizationRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+import java.util.Map;
+
+public record CreateOrganizationRequest(
+        @NotBlank @Size(max = 255) String name,
+        Map<String, Object> settings
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\InviteUserRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.Instant;
+
+import com.cromp.iam.domain.model.enums.UserRole;
+
+public record InviteUserRequest(
+        @Email @NotBlank String email,
+        @NotNull UserRole role,
+        Instant expiresAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\LoginRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginRequest(
+        @Email @NotBlank String email,
+        @NotBlank String password
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\RecordAuditLogRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.Map;
+
+public record RecordAuditLogRequest(
+        @NotNull Long organizationId,
+        Long actorId,
+        Map<String, Object> actorSnapshot,
+        @NotBlank String action,
+        String resourceType,
+        Long resourceId,
+        Map<String, Object> changesDiff
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\RegisterRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record RegisterRequest(
+        @Email @NotBlank String email,
+        @NotBlank @Size(min = 8, max = 255) String password,
+        @NotBlank @Size(max = 255) String organizationName,
+        @Size(max = 150) String firstName,
+        @Size(max = 150) String lastName,
+        @Size(max = 150) String middleName,
+        @Size(max = 255) String displayName
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\RejectInvitationRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record RejectInvitationRequest(
+        @NotBlank String token
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\RemoveMembershipRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+
+public record RemoveMembershipRequest(
+        @NotNull Long membershipId
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\RenameOrganizationRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record RenameOrganizationRequest(
+        @NotBlank @Size(max = 255) String name
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\RevokeInvitationRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import java.util.UUID;
+
+import jakarta.validation.constraints.NotNull;
+
+public record RevokeInvitationRequest(
+        @NotNull UUID invitationUuid
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\SelectOrganizationRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+
+public record SelectOrganizationRequest(
+        @NotNull Long organizationId
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\request\UpdateUserProfileRequest.java ===
+package com.cromp.iam.api.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.util.Map;
+
+//TODO: мб вынести в константы ограничения
+public record UpdateUserProfileRequest(
+        @Size(max = 150) String firstName,
+        @Size(max = 150) String lastName,
+        @Size(max = 150) String middleName,
+        @Size(max = 255) String displayName,
+        Map<String, Object> profile
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\AuditLogResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+import java.time.Instant;
+import java.util.Map;
+
+public record AuditLogResponse(
+        Long id,
+        Long organizationId,
+        Instant recordedAt,
+        Long actorId,
+        Map<String, Object> actorSnapshot,
+        String action,
+        String resourceType,
+        Long resourceId,
+        Map<String, Object> changesDiff
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\AuthResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+import java.util.List;
+
+public record AuthResponse(
+        String tokenType,
+        String accessToken,
+        UserResponse user,
+        List<OrganizationResponse> organizations, // список доступных организаций (может быть пустым)
+        OrganizationResponse activeOrganization   // null при логине, заполняется при выборе
+) { }
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\InvitationCreateResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+public record InvitationCreateResponse(
+        InvitationResponse invitation,
+        String invitationToken
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\InvitationResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record InvitationResponse(
+        UUID invitationUuid,
+        String email,
+        String roleName,
+        Instant expiresAt,
+        Instant createdAt,
+        Instant acceptedAt,
+        String status
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\MembershipResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record MembershipResponse(
+        UUID membershipUuid,
+        String roleName,
+        Instant joinedAt,
+        Instant updatedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\OrganizationResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+public record OrganizationResponse(
+        Long id,
+        UUID orgUuid,
+        String name,
+        Map<String, Object> settings,
+        Instant createdAt,
+        Instant updatedAt,
+        Instant deletedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\RolePermissionResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+public record RolePermissionResponse(
+        Long id,
+        Long roleId,
+        String permission
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\dto\response\UserResponse.java ===
+package com.cromp.iam.api.dto.response;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+public record UserResponse(
+        Long id,
+        UUID userUuid,
+        String email,
+        String firstName,
+        String lastName,
+        String middleName,
+        String displayName,
+        Map<String, Object> profile,
+        Instant createdAt,
+        Instant updatedAt,
+        Instant deletedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\mapper\AuditLogApiMapper.java ===
+package com.cromp.iam.api.mapper;
+
+import com.cromp.iam.api.dto.response.AuditLogResponse;
+import com.cromp.iam.domain.model.AuditLogEntry;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AuditLogApiMapper {
+
+    public AuditLogResponse toResponse(AuditLogEntry entry) {
+        return new AuditLogResponse(
+                entry.getId(),
+                entry.getOrganizationId(),
+                entry.getRecordedAt(),
+                entry.getActorId(),
+                entry.getActorSnapshot(),
+                entry.getAction(),
+                entry.getResourceType(),
+                entry.getResourceId(),
+                entry.getChangesDiff()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\mapper\AuthApiMapper.java ===
+package com.cromp.iam.api.mapper;
+
+import com.cromp.iam.api.dto.response.AuthResponse;
+import com.cromp.iam.api.dto.response.OrganizationResponse;
+import com.cromp.iam.api.dto.response.UserResponse;
+import com.cromp.iam.domain.model.Organization;
+import com.cromp.iam.domain.model.User;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class AuthApiMapper {
+
+    private final UserApiMapper userApiMapper;
+    private final OrganizationApiMapper organizationApiMapper;
+
+    public AuthApiMapper(UserApiMapper userApiMapper, OrganizationApiMapper organizationApiMapper) {
+        this.userApiMapper = userApiMapper;
+        this.organizationApiMapper = organizationApiMapper;
+    }
+
+    public AuthResponse toLoginResponse(String accessToken, User user, List<Organization> organizations) {
+        UserResponse userResponse = userApiMapper.toResponse(user);
+        List<OrganizationResponse> orgs = organizations.stream()
+                .map(organizationApiMapper::toResponse)
+                .toList();
+        return new AuthResponse("Bearer", accessToken, userResponse, orgs, null);
+    }
+
+    public AuthResponse toSelectResponse(String accessToken, User user, Organization organization) {
+        UserResponse userResponse = userApiMapper.toResponse(user);
+        OrganizationResponse orgResponse = organizationApiMapper.toResponse(organization);
+        return new AuthResponse("Bearer", accessToken, userResponse, null, orgResponse);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\mapper\InvitationApiMapper.java ===
+package com.cromp.iam.api.mapper;
+
+import com.cromp.iam.api.dto.response.InvitationResponse;
+import com.cromp.iam.domain.model.Invitation;
+import org.springframework.stereotype.Component;
+
+@Component
+public class InvitationApiMapper {
+
+    public InvitationResponse toResponse(Invitation invitation) {
+        return toResponse(invitation, null);
+    }
+
+    public InvitationResponse toResponse(Invitation invitation, String roleName) {
+        return new InvitationResponse(
+                invitation.getInvitationUuid(),
+                invitation.getEmail(),
+                roleName,
+                invitation.getExpiresAt(),
+                invitation.getCreatedAt(),
+                invitation.getAcceptedAt(),
+                invitation.getStatus().name()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\mapper\MembershipApiMapper.java ===
+package com.cromp.iam.api.mapper;
+
+import com.cromp.iam.api.dto.response.MembershipResponse;
+import com.cromp.iam.domain.model.Membership;
+import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+
+@Component
+public class MembershipApiMapper {
+
+    public MembershipResponse toResponse(Membership membership) {
+        return toResponse(membership, null, membership.getCreatedAt());
+    }
+
+    public MembershipResponse toResponse(Membership membership, String roleName) {
+        return toResponse(membership, roleName, membership.getCreatedAt());
+    }
+
+    public MembershipResponse toResponse(Membership membership, String roleName, Instant joinedAt) {
+        return new MembershipResponse(
+                membership.getMembershipUuid(),
+                roleName,
+                joinedAt,
+                membership.getUpdatedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\mapper\OrganizationApiMapper.java ===
+package com.cromp.iam.api.mapper;
+
+import com.cromp.iam.api.dto.response.OrganizationResponse;
+import com.cromp.iam.domain.model.Organization;
+import org.springframework.stereotype.Component;
+
+@Component
+public class OrganizationApiMapper {
+
+    public OrganizationResponse toResponse(Organization organization) {
+        return new OrganizationResponse(
+                organization.getId(),
+                organization.getOrgUuid(),
+                organization.getName(),
+                organization.getSettings(),
+                organization.getCreatedAt(),
+                organization.getUpdatedAt(),
+                organization.getDeletedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\mapper\RolePermissionApiMapper.java ===
+package com.cromp.iam.api.mapper;
+
+import com.cromp.iam.api.dto.response.RolePermissionResponse;
+import com.cromp.iam.domain.model.RolePermission;
+import org.springframework.stereotype.Component;
+
+@Component
+public class RolePermissionApiMapper {
+
+    public RolePermissionResponse toResponse(RolePermission rolePermission) {
+        return new RolePermissionResponse(
+                rolePermission.getId(),
+                rolePermission.getRoleId(),
+                rolePermission.getPermission()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\mapper\UserApiMapper.java ===
+package com.cromp.iam.api.mapper;
+
+import com.cromp.iam.api.dto.response.UserResponse;
+import com.cromp.iam.domain.model.User;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UserApiMapper {
+
+    public UserResponse toResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getUserUuid(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMiddleName(),
+                user.getDisplayName(),
+                user.getProfile(),
+                user.getCreatedAt(),
+                user.getUpdatedAt(),
+                user.getDeletedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\service\AuditLogFacade.java ===
+package com.cromp.iam.api.service;
+
+import com.cromp.iam.api.dto.request.RecordAuditLogRequest;
+import com.cromp.iam.api.dto.response.AuditLogResponse;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface AuditLogFacade {
+
+    void record(RecordAuditLogRequest request);
+
+    List<AuditLogResponse> getByOrganization(UUID orgUuid);
+    List<AuditLogResponse> getByActor(UUID userUuid);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\service\AuthFacade.java ===
+package com.cromp.iam.api.service;
+
+import com.cromp.iam.api.dto.request.LoginRequest;
+import com.cromp.iam.api.dto.request.RegisterRequest;
+import com.cromp.iam.api.dto.request.SelectOrganizationRequest;
+import com.cromp.iam.api.dto.response.AuthResponse;
+
+public interface AuthFacade {
+    AuthResponse register(RegisterRequest request);
+    AuthResponse login(LoginRequest request);
+    AuthResponse selectOrganization(SelectOrganizationRequest request);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\service\InvitationFacade.java ===
+package com.cromp.iam.api.service;
+
+import com.cromp.iam.api.dto.request.AcceptInvitationRequest;
+import com.cromp.iam.api.dto.request.InviteUserRequest;
+import com.cromp.iam.api.dto.request.RejectInvitationRequest;
+import com.cromp.iam.api.dto.request.RevokeInvitationRequest;
+import com.cromp.iam.api.dto.response.InvitationCreateResponse;
+import com.cromp.iam.api.dto.response.InvitationResponse;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface InvitationFacade {
+    InvitationCreateResponse invite(InviteUserRequest request);
+    InvitationResponse accept(AcceptInvitationRequest request);
+    void reject(RejectInvitationRequest request);
+    InvitationResponse revoke(RevokeInvitationRequest request);
+
+    InvitationResponse getById(UUID invitationUuid);
+    List<InvitationResponse> getByOrganization(UUID orgUuid);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\service\MembershipFacade.java ===
+package com.cromp.iam.api.service;
+
+import com.cromp.iam.api.dto.request.AddMembershipRequest;
+import com.cromp.iam.api.dto.request.ChangeMembershipRoleRequest;
+import com.cromp.iam.api.dto.response.MembershipResponse;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface MembershipFacade {
+    MembershipResponse add(AddMembershipRequest request);
+    MembershipResponse changeRole(UUID membershipUuid, ChangeMembershipRoleRequest request);
+    void remove(UUID membershipUuid);
+
+    MembershipResponse getById(UUID membershipUuid);
+    List<MembershipResponse> getByOrganization(UUID orgUuid);
+    List<MembershipResponse> getByUser(UUID userUuid);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\service\OrganizationFacade.java ===
+package com.cromp.iam.api.service;
+
+import com.cromp.iam.api.dto.request.CreateOrganizationRequest;
+import com.cromp.iam.api.dto.request.RenameOrganizationRequest;
+import com.cromp.iam.api.dto.response.OrganizationResponse;
+import com.cromp.iam.api.dto.response.MembershipResponse;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface OrganizationFacade {
+    OrganizationResponse create(CreateOrganizationRequest request, Long creatorUserId);
+    OrganizationResponse rename(UUID orgUuid, RenameOrganizationRequest request);
+    OrganizationResponse getById(UUID orgUuid);
+    List<MembershipResponse> getMembers(UUID orgUuid);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\service\RolePermissionFacade.java ===
+package com.cromp.iam.api.service;
+
+import com.cromp.iam.api.dto.request.AddRolePermissionRequest;
+import com.cromp.iam.api.dto.response.RolePermissionResponse;
+
+import java.util.List;
+
+public interface RolePermissionFacade {
+
+    RolePermissionResponse add(AddRolePermissionRequest request);
+    void remove(Long rolePermissionId);
+
+    List<RolePermissionResponse> getByRoleId(Long roleId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\api\service\UserFacade.java ===
+package com.cromp.iam.api.service;
+
+import com.cromp.iam.api.dto.request.ChangeUserEmailRequest;
+import com.cromp.iam.api.dto.request.ChangeUserPasswordRequest;
+import com.cromp.iam.api.dto.request.UpdateUserProfileRequest;
+import com.cromp.iam.api.dto.response.UserResponse;
+
+import java.util.UUID;
+
+public interface UserFacade {
+
+    UserResponse getById(UUID userUuid);
+    UserResponse getByEmail(String email);
+
+    UserResponse updateProfile(UUID userUuid, UpdateUserProfileRequest request);
+
+    void changeEmail(UUID userUuid, ChangeUserEmailRequest request);
+    void changePassword(UUID userUuid, ChangeUserPasswordRequest request);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\port\CurrentActorPort.java ===
+package com.cromp.iam.application.port;
+
+import java.util.Map;
+import java.util.Optional;
+
+public interface CurrentActorPort {
+    Optional<Long> currentUserId();
+    Optional<Long> currentOrganizationId();
+    Optional<Map<String, Object>> currentActorSnapshot();
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\port\OrganizationContextPort.java ===
+package com.cromp.iam.application.port;
+
+import java.util.Optional;
+
+public interface OrganizationContextPort {
+    Optional<Long> currentOrganizationId();
+    void setCurrentOrganizationId(Long organizationId);
+    void clear();
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\port\PasswordHasherPort.java ===
+package com.cromp.iam.application.port;
+
+public interface PasswordHasherPort {
+    String hash(String rawPassword);
+    boolean matches(String rawPassword, String hashedPassword);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\port\PermissionCheckerPort.java ===
+package com.cromp.iam.application.port;
+
+public interface PermissionCheckerPort {
+    boolean hasPermission(Long userId, Long organizationId, String permission);
+    boolean isMember(Long userId, Long organizationId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\port\TokenIssuerPort.java ===
+package com.cromp.iam.application.port;
+
+import com.cromp.iam.domain.model.User;
+import com.cromp.iam.domain.model.Organization;
+
+import java.util.Collection;
+
+public interface TokenIssuerPort {
+    String issueToken(User user, Organization activeOrganization, Collection<String> permissions);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\service\AuditLogApplicationService.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.RecordAuditLogRequest;
+import com.cromp.iam.api.dto.response.AuditLogResponse;
+import com.cromp.iam.api.mapper.AuditLogApiMapper;
+import com.cromp.iam.api.service.AuditLogFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.iam.domain.model.AuditLogEntry;
+import com.cromp.iam.domain.repository.AuditLogRepositoryPort;
+import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
+import com.cromp.iam.domain.repository.UserRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class AuditLogApplicationService implements AuditLogFacade {
+
+    private final AuditLogRepositoryPort auditLogRepository;
+    private final OrganizationRepositoryPort organizationRepository;
+    private final UserRepositoryPort userRepository;
+    private final AuditLogApiMapper mapper;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+
+    @Override
+    public void record(RecordAuditLogRequest request) {
+        AuditLogEntry entry = AuditLogEntry.record(
+                request.organizationId(),
+                request.actorId() != null ? request.actorId() : currentActorPort.currentUserId().orElse(null),
+                request.actorSnapshot(),
+                request.action(),
+                request.resourceType(),
+                request.resourceId(),
+                request.changesDiff()
+        );
+        auditLogRepository.save(entry);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AuditLogResponse> getByOrganization(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Organization not found"))
+                .getId();
+        if (!permissionCheckerPort.hasPermission(currentUserId, organizationId, "org:audit")) {
+            throw new SecurityException("No permission to view organization audit log");
+        }
+        return auditLogRepository.findByOrganizationId(organizationId).stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AuditLogResponse> getByActor(UUID userUuid) {
+        Long actorId = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getId();
+        return auditLogRepository.findByActorId(actorId).stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\service\AuthApplicationService.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.LoginRequest;
+import com.cromp.iam.api.dto.request.RegisterRequest;
+import com.cromp.iam.api.dto.request.SelectOrganizationRequest;
+import com.cromp.iam.api.dto.response.AuthResponse;
+import com.cromp.iam.api.dto.response.OrganizationResponse;
+import com.cromp.iam.api.dto.response.UserResponse;
+import com.cromp.iam.api.mapper.AuthApiMapper;
+import com.cromp.iam.api.mapper.OrganizationApiMapper;
+import com.cromp.iam.api.mapper.UserApiMapper;
+import com.cromp.iam.api.service.AuthFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PasswordHasherPort;
+import com.cromp.iam.application.port.TokenIssuerPort;
+import com.cromp.iam.domain.model.*;
+import com.cromp.iam.domain.model.enums.UserRole;
+import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.iam.domain.repository.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class AuthApplicationService implements AuthFacade {
+
+    private final UserRepositoryPort userRepository;
+    private final OrganizationRepositoryPort organizationRepository;
+    private final RoleRepositoryPort roleRepository;
+    private final MembershipRepositoryPort membershipRepository;
+    private final PasswordHasherPort passwordHasher;
+    private final TokenIssuerPort tokenIssuer;
+    private final UserApiMapper userMapper;
+    private final OrganizationApiMapper organizationMapper;
+    private final AuthApiMapper authApiMapper;
+    private final RolePermissionRepositoryPort rolePermissionRepository;
+    private final CurrentActorPort currentActorPort;
+
+    @Override
+    public AuthResponse register(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new DomainException("User with email " + request.email() + " already exists");
+        }
+
+        String passwordHash = passwordHasher.hash(request.password());
+        User user = User.register(
+                request.email(),
+                passwordHash,
+                request.firstName(),
+                request.lastName(),
+                request.middleName(),
+                request.displayName(),
+                java.util.Map.of()
+        );
+        user = userRepository.save(user);
+
+        Organization organization = Organization.create(request.organizationName());
+        organization = organizationRepository.save(organization);
+
+        Role ownerRole = roleRepository.findByName(UserRole.OWNER)
+                .orElseThrow(() -> new IllegalStateException("OWNER role not found in database"));
+
+        Membership membership = Membership.join(user.getId(), organization.getId(), ownerRole.getId());
+        membershipRepository.save(membership);
+
+        // После регистрации сразу даём токен с этой организацией
+        List<String> permissions = rolePermissionRepository.findByRoleId(ownerRole.getId()).stream()
+                .map(RolePermission::getPermission)
+                .toList();
+        String token = tokenIssuer.issueToken(user, organization, permissions);
+
+        return authApiMapper.toSelectResponse(token, user, organization);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.email().toLowerCase())
+                .orElseThrow(() -> new DomainException("Invalid email or password"));
+
+        if (user.getPasswordHash() == null || !passwordHasher.matches(request.password(), user.getPasswordHash())) {
+            throw new DomainException("Invalid email or password");
+        }
+
+        List<Membership> memberships = membershipRepository.findByUserId(user.getId());
+        if (memberships.isEmpty()) {
+            throw new DomainException("User has no organization membership");
+        }
+
+        // Собрать список организаций пользователя
+        List<Organization> orgs = memberships.stream()
+                .map(m -> organizationRepository.findById(m.getOrganizationId()).orElseThrow())
+                .toList();
+
+        // Выпустить токен без организации
+        String token = tokenIssuer.issueToken(user, null, List.of()); // пустой список прав
+
+        return authApiMapper.toLoginResponse(token, user, orgs);
+    }
+
+
+        @Override
+        @Transactional(readOnly = true)
+        public AuthResponse selectOrganization(SelectOrganizationRequest request) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Membership membership = membershipRepository.findByUserIdAndOrganizationId(userId, request.organizationId())
+                .orElseThrow(() -> new DomainException("User is not a member of this organization"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new DomainException("User not found"));
+        Organization org = organizationRepository.findById(request.organizationId())
+                .orElseThrow(() -> new DomainException("Organization not found"));
+
+        List<String> permissions = rolePermissionRepository.findByRoleId(membership.getRoleId()).stream()
+                .map(RolePermission::getPermission)
+                .toList();
+
+        String token = tokenIssuer.issueToken(user, org, permissions);
+
+        return authApiMapper.toSelectResponse(token, user, org);
+        }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\service\InvitationApplicationService.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.AcceptInvitationRequest;
+import com.cromp.iam.api.dto.request.InviteUserRequest;
+import com.cromp.iam.api.dto.request.RejectInvitationRequest;
+import com.cromp.iam.api.dto.request.RevokeInvitationRequest;
+import com.cromp.iam.api.dto.response.InvitationCreateResponse;
+import com.cromp.iam.api.dto.response.InvitationResponse;
+import com.cromp.iam.api.mapper.InvitationApiMapper;
+import com.cromp.iam.api.service.InvitationFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.iam.domain.model.Invitation;
+import com.cromp.iam.domain.model.Membership;
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.domain.model.User;
+import com.cromp.iam.domain.model.enums.InvitationStatus;
+import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.iam.domain.repository.InvitationRepositoryPort;
+import com.cromp.iam.domain.repository.MembershipRepositoryPort;
+import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
+import com.cromp.iam.domain.repository.RoleRepositoryPort;
+import com.cromp.iam.domain.repository.UserRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class InvitationApplicationService implements InvitationFacade {
+
+    private final InvitationRepositoryPort invitationRepository;
+    private final OrganizationRepositoryPort organizationRepository;
+    private final UserRepositoryPort userRepository;
+    private final RoleRepositoryPort roleRepository;
+    private final MembershipRepositoryPort membershipRepository;
+    private final InvitationApiMapper invitationMapper;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    @Override
+    public InvitationCreateResponse invite(InviteUserRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("No organization selected"));
+
+        if (!permissionCheckerPort.hasPermission(currentUserId, organizationId, "org:invite")) {
+            throw new SecurityException("No permission to invite users to this organization");
+        }
+
+        organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new DomainException("Organization not found"));
+
+        String token = generateToken();
+        String tokenHash = hashToken(token);
+
+        Instant expiresAt = request.expiresAt() != null
+                ? request.expiresAt()
+                : Instant.now().plusSeconds(7 * 24 * 3600);
+
+        Role role = roleRepository.findByName(request.role())
+                .orElseThrow(() -> new DomainException("Role not found"));
+
+        Invitation invitation = Invitation.create(
+                organizationId,
+                request.email(),
+                tokenHash,
+                role.getId(),
+                currentUserId,
+                expiresAt
+        );
+
+        invitation = invitationRepository.save(invitation);
+
+        return new InvitationCreateResponse(
+                invitationMapper.toResponse(invitation, role.getName().toString()),
+                token
+        );
+    }
+
+    @Override
+    public InvitationResponse accept(AcceptInvitationRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Invitation invitation = findInvitationByToken(request.token());
+
+        ensurePendingAndNotExpired(invitation);
+
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new DomainException("User not found"));
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getEmail())) {
+            throw new SecurityException("Invitation is not addressed to current user");
+        }
+
+        invitation.accept();
+        invitation = invitationRepository.save(invitation);
+
+        Role role = roleRepository.findById(invitation.getRoleId())
+                .orElseThrow(() -> new DomainException("Role not found"));
+
+        Membership membership = Membership.join(currentUserId, invitation.getOrganizationId(), role.getId());
+        membershipRepository.save(membership);
+
+        return invitationMapper.toResponse(invitation, role.getName().toString());
+    }
+
+    @Override
+    public void reject(RejectInvitationRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Invitation invitation = findInvitationByToken(request.token());
+
+        ensurePendingAndNotExpired(invitation);
+
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new DomainException("User not found"));
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getEmail())) {
+            throw new SecurityException("Invitation is not addressed to current user");
+        }
+
+        invitationRepository.deleteById(invitation.getId());
+    }
+
+    @Override
+    public InvitationResponse revoke(RevokeInvitationRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Invitation invitation = invitationRepository.findByInvitationUuid(request.invitationUuid())
+                .orElseThrow(() -> new DomainException("Invitation not found"));
+
+        if (!permissionCheckerPort.hasPermission(currentUserId, invitation.getOrganizationId(), "org:invite")) {
+            throw new SecurityException("No permission to revoke invitations in this organization");
+        }
+
+        invitation.revoke();
+        invitation = invitationRepository.save(invitation);
+        Role role = roleRepository.findById(invitation.getRoleId()).orElse(null);
+        return invitationMapper.toResponse(invitation, role != null ? role.getName().toString() : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public InvitationResponse getById(UUID invitationUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Invitation invitation = invitationRepository.findByInvitationUuid(invitationUuid)
+                .orElseThrow(() -> new DomainException("Invitation not found"));
+
+        if (!permissionCheckerPort.isMember(currentUserId, invitation.getOrganizationId())) {
+            throw new SecurityException("Not a member of this organization");
+        }
+
+        Role role = roleRepository.findById(invitation.getRoleId()).orElse(null);
+        return invitationMapper.toResponse(invitation, role != null ? role.getName().toString() : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InvitationResponse> getByOrganization(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"))
+                .getId();
+
+        if (!permissionCheckerPort.isMember(currentUserId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+
+        return invitationRepository.findByOrganizationId(organizationId).stream()
+                .map(invitation -> {
+                    Role role = roleRepository.findById(invitation.getRoleId()).orElse(null);
+                    return invitationMapper.toResponse(invitation, role != null ? role.getName().toString() : null);
+                })
+                .toList();
+    }
+
+    private Invitation findInvitationByToken(String rawToken) {
+        String tokenHash = hashToken(rawToken);
+        return invitationRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new DomainException("Invalid invitation token"));
+    }
+
+    private void ensurePendingAndNotExpired(Invitation invitation) {
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
+            throw new DomainException("Invitation is no longer valid");
+        }
+        if (Instant.now().isAfter(invitation.getExpiresAt())) {
+            invitation.expire();
+            invitationRepository.save(invitation);
+            throw new DomainException("Invitation has expired");
+        }
+    }
+
+    private String generateToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private String hashToken(String token) {
+        return DigestUtils.sha256Hex(token);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\service\MembershipApplicationService.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.AddMembershipRequest;
+import com.cromp.iam.api.dto.request.ChangeMembershipRoleRequest;
+import com.cromp.iam.api.dto.response.MembershipResponse;
+import com.cromp.iam.api.mapper.MembershipApiMapper;
+import com.cromp.iam.api.service.MembershipFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.iam.domain.model.Membership;
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.domain.model.User;
+import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.iam.domain.repository.MembershipRepositoryPort;
+import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
+import com.cromp.iam.domain.repository.RoleRepositoryPort;
+import com.cromp.iam.domain.repository.UserRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class MembershipApplicationService implements MembershipFacade {
+
+    private final MembershipRepositoryPort membershipRepository;
+    private final UserRepositoryPort userRepository;
+    private final OrganizationRepositoryPort organizationRepository;
+    private final RoleRepositoryPort roleRepository;
+    private final MembershipApiMapper membershipMapper;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+
+    @Override
+    public MembershipResponse add(AddMembershipRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("No organization selected"));
+
+        if (!permissionCheckerPort.hasPermission(currentUserId, organizationId, "org:invite")) {
+            throw new SecurityException("No permission to invite users to this organization");
+        }
+
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new DomainException("User not found"));
+        Role role = roleRepository.findByName(request.role())
+                .orElseThrow(() -> new DomainException("Role not found"));
+
+        Membership membership = Membership.join(user.getId(), organizationId, role.getId());
+        membership = membershipRepository.save(membership);
+        return membershipMapper.toResponse(membership);
+    }
+
+    @Override
+    public MembershipResponse changeRole(UUID membershipUuid, ChangeMembershipRoleRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Membership membership = membershipRepository.findByMembershipUuid(membershipUuid)
+                .orElseThrow(() -> new DomainException("Membership not found"));
+
+        if (!permissionCheckerPort.hasPermission(currentUserId, membership.getOrganizationId(), "org:update")) {
+            throw new SecurityException("No permission to change roles in this organization");
+        }
+
+        Role role = roleRepository.findByName(request.role())
+                .orElseThrow(() -> new DomainException("Role not found"));
+
+        membership.changeRole(role.getId());
+        membershipRepository.save(membership);
+        return membershipMapper.toResponse(membership);
+    }
+
+    @Override
+    public void remove(UUID membershipUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Membership membership = membershipRepository.findByMembershipUuid(membershipUuid)
+                .orElseThrow(() -> new DomainException("Membership not found"));
+
+        if (!permissionCheckerPort.hasPermission(currentUserId, membership.getOrganizationId(), "org:update")) {
+            throw new SecurityException("No permission to remove members from this organization");
+        }
+
+        membershipRepository.deleteById(membership.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MembershipResponse getById(UUID membershipUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+
+        Membership membership = membershipRepository.findByMembershipUuid(membershipUuid)
+                .orElseThrow(() -> new DomainException("Membership not found"));
+
+        if (!permissionCheckerPort.isMember(currentUserId, membership.getOrganizationId())) {
+            throw new SecurityException("You are not a member of this organization");
+        }
+
+        return membershipMapper.toResponse(membership);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MembershipResponse> getByOrganization(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"))
+                .getId();
+
+        if (!permissionCheckerPort.isMember(currentUserId, organizationId)) {
+            throw new SecurityException("You are not a member of this organization");
+        }
+
+        return membershipRepository.findByOrganizationId(organizationId).stream()
+                .map(membershipMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MembershipResponse> getByUser(UUID userUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long userId = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new DomainException("User not found"))
+                .getId();
+
+        if (!currentUserId.equals(userId)) {
+            throw new SecurityException("You can only view your own memberships");
+        }
+
+        return membershipRepository.findByUserId(userId).stream()
+                .map(membershipMapper::toResponse)
+                .toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\service\OrganizationApplicationService.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.CreateOrganizationRequest;
+import com.cromp.iam.api.dto.request.RenameOrganizationRequest;
+import com.cromp.iam.api.dto.response.MembershipResponse;
+import com.cromp.iam.api.dto.response.OrganizationResponse;
+import com.cromp.iam.api.mapper.MembershipApiMapper;
+import com.cromp.iam.api.mapper.OrganizationApiMapper;
+import com.cromp.iam.api.service.OrganizationFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.iam.domain.model.Membership;
+import com.cromp.iam.domain.model.Organization;
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.domain.model.enums.UserRole;
+import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.iam.domain.repository.MembershipRepositoryPort;
+import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
+import com.cromp.iam.domain.repository.RoleRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class OrganizationApplicationService implements OrganizationFacade {
+
+    private final OrganizationRepositoryPort organizationRepository;
+    private final MembershipRepositoryPort membershipRepository;
+    private final RoleRepositoryPort roleRepository;
+    private final OrganizationApiMapper organizationMapper;
+    private final MembershipApiMapper membershipMapper;
+    private final CurrentActorPort currentActorPort;
+    private final PermissionCheckerPort permissionCheckerPort;
+
+    @Override
+    public OrganizationResponse create(CreateOrganizationRequest request, Long creatorUserId) {
+        Organization org = Organization.create(request.name(), request.settings());
+        org = organizationRepository.save(org);
+
+        Role ownerRole = roleRepository.findByName(UserRole.OWNER)
+                .orElseThrow(() -> new IllegalStateException("OWNER role not found"));
+        Membership membership = Membership.join(creatorUserId, org.getId(), ownerRole.getId());
+        membershipRepository.save(membership);
+
+        return organizationMapper.toResponse(org);
+    }
+
+    @Override
+    public OrganizationResponse rename(UUID orgUuid, RenameOrganizationRequest request) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Organization organization = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"));
+        ensureCurrentOrganizationMatches(organization.getId());
+        if (!permissionCheckerPort.hasPermission(currentUserId, organization.getId(), "org:update")) {
+            throw new SecurityException("No permission to update this organization");
+        }
+        organization.rename(request.name());
+        return organizationMapper.toResponse(organizationRepository.save(organization));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrganizationResponse getById(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Organization organization = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"));
+        if (!permissionCheckerPort.isMember(currentUserId, organization.getId())) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        return organizationMapper.toResponse(organization);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MembershipResponse> getMembers(UUID orgUuid) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Organization organization = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"));
+        if (!permissionCheckerPort.isMember(currentUserId, organization.getId())) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        return membershipRepository.findByOrganizationId(organization.getId()).stream()
+                .map(membershipMapper::toResponse)
+                .toList();
+    }
+
+    private void ensureCurrentOrganizationMatches(Long organizationId) {
+        Long currentOrganizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("No organization selected"));
+        if (!currentOrganizationId.equals(organizationId)) {
+            throw new SecurityException("Organization does not match current context");
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\service\RolePermissionApplicationService.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.AddRolePermissionRequest;
+import com.cromp.iam.api.dto.response.RolePermissionResponse;
+import com.cromp.iam.api.mapper.RolePermissionApiMapper;
+import com.cromp.iam.api.service.RolePermissionFacade;
+import com.cromp.iam.domain.model.RolePermission;
+import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.iam.domain.repository.RolePermissionRepositoryPort;
+import com.cromp.iam.domain.repository.RoleRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class RolePermissionApplicationService implements RolePermissionFacade {
+
+    private final RolePermissionRepositoryPort rolePermissionRepository;
+    private final RoleRepositoryPort roleRepository;
+    private final RolePermissionApiMapper mapper;
+
+    @Override
+    public RolePermissionResponse add(AddRolePermissionRequest request) {
+        roleRepository.findById(request.roleId())
+                .orElseThrow(() -> new DomainException("Role not found"));
+        RolePermission rp = RolePermission.of(request.roleId(), request.permission());
+        rp = rolePermissionRepository.save(rp);
+        return mapper.toResponse(rp);
+    }
+
+    @Override
+    public void remove(Long rolePermissionId) {
+        rolePermissionRepository.deleteById(rolePermissionId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RolePermissionResponse> getByRoleId(Long roleId) {
+        return rolePermissionRepository.findByRoleId(roleId).stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\application\service\UserApplicationService.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.ChangeUserEmailRequest;
+import com.cromp.iam.api.dto.request.ChangeUserPasswordRequest;
+import com.cromp.iam.api.dto.request.UpdateUserProfileRequest;
+import com.cromp.iam.api.dto.response.UserResponse;
+import com.cromp.iam.api.mapper.UserApiMapper;
+import com.cromp.iam.api.service.UserFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.PasswordHasherPort;
+import com.cromp.iam.domain.model.User;
+import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.iam.domain.repository.UserRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class UserApplicationService implements UserFacade {
+
+    private final UserRepositoryPort userRepository;
+    private final UserApiMapper userMapper;
+    private final PasswordHasherPort passwordHasher;
+    private final CurrentActorPort currentActorPort;
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getById(UUID userUuid) {
+        User user = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new DomainException("User not found"));
+        ensureCurrentUserMatches(user.getId());
+        return userMapper.toResponse(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new DomainException("User not found"));
+        return userMapper.toResponse(user);
+    }
+
+    @Override
+    public UserResponse updateProfile(UUID userUuid, UpdateUserProfileRequest request) {
+        User user = resolveCurrentUser(userUuid);
+        user.updateName(request.firstName(), request.lastName(), request.middleName(), request.displayName());
+        if (request.profile() != null) {
+            user.updateProfile(request.profile());
+        }
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    public void changeEmail(UUID userUuid, ChangeUserEmailRequest request) {
+        User user = resolveCurrentUser(userUuid);
+        if (userRepository.existsByEmail(request.newEmail())) {
+            throw new DomainException("Email already in use");
+        }
+        user.changeEmail(request.newEmail());
+        userRepository.save(user);
+    }
+
+    @Override
+    public void changePassword(UUID userUuid, ChangeUserPasswordRequest request) {
+        User user = resolveCurrentUser(userUuid);
+        if (user.getPasswordHash() == null || !passwordHasher.matches(request.oldPassword(), user.getPasswordHash())) {
+            throw new DomainException("Old password is incorrect");
+        }
+        user.changePasswordHash(passwordHasher.hash(request.newPassword()));
+        userRepository.save(user);
+    }
+
+    private User resolveCurrentUser(UUID userUuid) {
+        User user = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new DomainException("User not found"));
+        ensureCurrentUserMatches(user.getId());
+        return user;
+    }
+
+    private void ensureCurrentUserMatches(Long userId) {
+        Long currentUserId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!currentUserId.equals(userId)) {
+            throw new SecurityException("You can only access your own user");
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\AuditLogEntry.java ===
+package com.cromp.iam.domain.model;
+
+import com.cromp.iam.domain.model.support.SchemaLimits;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.Map;
+
+import static com.cromp.iam.domain.model.support.DomainChecks.*;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class AuditLogEntry {
+
+    private Long id;
+
+    @EqualsAndHashCode.Include
+    private Long organizationId;
+
+    private Instant recordedAt;
+    private Long actorId;
+    private Map<String, Object> actorSnapshot;
+    private String action;
+    private String resourceType;
+    private Long resourceId;
+    private Map<String, Object> changesDiff;
+
+    private AuditLogEntry(Long id,
+                          Long organizationId,
+                          Instant recordedAt,
+                          Long actorId,
+                          Map<String, Object> actorSnapshot,
+                          String action,
+                          String resourceType,
+                          Long resourceId,
+                          Map<String, Object> changesDiff) {
+        this.id = id;
+        this.organizationId = requireNonNullValue(organizationId, "organizationId");
+        this.recordedAt = recordedAt == null ? Instant.now() : recordedAt;
+        this.actorId = actorId;
+        this.actorSnapshot = safeMap(actorSnapshot);
+        this.action = requireMaxLength(
+                requireText(action, "action"),
+                SchemaLimits.ACTION_MAX_LENGTH,
+                "action"
+        );
+        this.resourceType = normalizeResourceType(resourceType);
+        this.resourceId = resourceId;
+        this.changesDiff = safeMap(changesDiff);
+    }
+
+    private static String normalizeResourceType(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return requireMaxLength(trimmed, SchemaLimits.RESOURCE_TYPE_MAX_LENGTH, "resourceType");
+    }
+
+    public static AuditLogEntry record(Long organizationId,
+                                       Long actorId,
+                                       Map<String, Object> actorSnapshot,
+                                       String action,
+                                       String resourceType,
+                                       Long resourceId,
+                                       Map<String, Object> changesDiff) {
+        return new AuditLogEntry(
+                null,
+                organizationId,
+                Instant.now(),
+                actorId,
+                actorSnapshot,
+                action,
+                resourceType,
+                resourceId,
+                changesDiff
+        );
+    }
+
+    public static AuditLogEntry reconstitute(Long id,
+                                             Long organizationId,
+                                             Instant recordedAt,
+                                             Long actorId,
+                                             Map<String, Object> actorSnapshot,
+                                             String action,
+                                             String resourceType,
+                                             Long resourceId,
+                                             Map<String, Object> changesDiff) {
+        return new AuditLogEntry(
+                id,
+                organizationId,
+                recordedAt,
+                actorId,
+                actorSnapshot,
+                action,
+                resourceType,
+                resourceId,
+                changesDiff
+        );
+    }
+
+    public void validate() {
+        requireNonNullValue(organizationId, "organizationId");
+        requireNonNullValue(recordedAt, "recordedAt");
+        requireText(action, "action");
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\Invitation.java ===
+package com.cromp.iam.domain.model;
+
+import com.cromp.iam.domain.model.enums.InvitationStatus;
+import com.cromp.iam.domain.model.exceptions.DomainException;
+
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import static com.cromp.iam.domain.model.support.DomainChecks.normalizeEmail;
+import static com.cromp.iam.domain.model.support.DomainChecks.requireNonNullValue;
+import static com.cromp.iam.domain.model.support.DomainChecks.requireText;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class Invitation {
+
+    private Long id;
+
+    @EqualsAndHashCode.Include
+    private UUID invitationUuid;
+
+    private Long organizationId;
+    private String email;
+    private String tokenHash;
+    private Long roleId;
+    private Long invitedBy;
+    private Instant expiresAt;
+    private Instant createdAt;
+    private Instant acceptedAt;
+    private InvitationStatus status;
+
+    private Invitation(Long id,
+                       UUID invitationUuid,
+                       Long organizationId,
+                       String email,
+                       String tokenHash,
+                       Long roleId,
+                       Long invitedBy,
+                       Instant expiresAt,
+                       Instant createdAt,
+                       Instant acceptedAt,
+                       InvitationStatus status) {
+        this.id = id;
+        this.invitationUuid = invitationUuid == null ? UUID.randomUUID() : invitationUuid;
+        this.organizationId = requireNonNullValue(organizationId, "organizationId");
+        this.email = normalizeEmail(email);
+        this.tokenHash = requireText(tokenHash, "tokenHash");
+        this.roleId = requireNonNullValue(roleId, "roleId");
+        this.invitedBy = invitedBy;
+        this.expiresAt = requireNonNullValue(expiresAt, "expiresAt");
+        this.createdAt = createdAt == null ? Instant.now() : createdAt;
+        this.acceptedAt = acceptedAt;
+        this.status = requireNonNullValue(status, "status");
+    }
+
+    public static Invitation create(Long organizationId,
+                                    String email,
+                                    String tokenHash,
+                                    Long roleId,
+                                    Long invitedBy,
+                                    Instant expiresAt) {
+        return new Invitation(
+                null,
+                UUID.randomUUID(),
+                organizationId,
+                email,
+                tokenHash,
+                roleId,
+                invitedBy,
+                expiresAt,
+                Instant.now(),
+                null,
+                InvitationStatus.PENDING
+        );
+    }
+
+    public static Invitation reconstitute(Long id,
+                                          UUID invitationUuid,
+                                          Long organizationId,
+                                          String email,
+                                          String tokenHash,
+                                          Long roleId,
+                                          Long invitedBy,
+                                          Instant expiresAt,
+                                          Instant createdAt,
+                                          Instant acceptedAt,
+                                          InvitationStatus status) {
+        return new Invitation(
+                id,
+                invitationUuid,
+                organizationId,
+                email,
+                tokenHash,
+                roleId,
+                invitedBy,
+                expiresAt,
+                createdAt,
+                acceptedAt,
+                status
+        );
+    }
+
+    public void accept() {
+        ensurePending();
+        if (Instant.now().isAfter(expiresAt)) {
+            this.status = InvitationStatus.EXPIRED;
+            throw new DomainException("Invitation is expired");
+        }
+        this.status = InvitationStatus.ACCEPTED;
+        this.acceptedAt = Instant.now();
+    }
+
+    public void revoke() {
+        ensureNotAccepted();
+        this.status = InvitationStatus.REVOKED;
+    }
+
+    public void expire() {
+        ensureNotAccepted();
+        this.status = InvitationStatus.EXPIRED;
+    }
+
+    public void validate() {
+        requireNonNullValue(invitationUuid, "invitationUuid");
+        requireNonNullValue(organizationId, "organizationId");
+        requireText(email, "email");
+        requireText(tokenHash, "tokenHash");
+        requireNonNullValue(roleId, "roleId");
+        requireNonNullValue(expiresAt, "expiresAt");
+        requireNonNullValue(status, "status");
+    }
+
+    private void ensurePending() {
+        if (status != InvitationStatus.PENDING) {
+            throw new DomainException("Only pending invitation can be accepted");
+        }
+    }
+
+    private void ensureNotAccepted() {
+        if (status == InvitationStatus.ACCEPTED) {
+            throw new DomainException("Accepted invitation cannot be changed");
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\Membership.java ===
+package com.cromp.iam.domain.model;
+
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import com.cromp.iam.domain.model.support.AbstractAuditableDomainEntity;
+
+import static com.cromp.iam.domain.model.support.DomainChecks.requireNonNullValue;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
+public class Membership extends AbstractAuditableDomainEntity {
+
+    @EqualsAndHashCode.Include
+    private UUID membershipUuid;
+
+    private Long userId;
+    private Long organizationId;
+    private Long roleId;
+
+    private Membership(Long id,
+                       Instant createdAt,
+                       Instant updatedAt,
+                       Instant deletedAt,
+                       UUID membershipUuid,
+                       Long userId,
+                       Long organizationId,
+                       Long roleId) {
+        super(id, createdAt, updatedAt, null);
+        this.membershipUuid = membershipUuid == null ? UUID.randomUUID() : membershipUuid;
+        this.userId = requireNonNullValue(userId, "userId");
+        this.organizationId = requireNonNullValue(organizationId, "organizationId");
+        this.roleId = requireNonNullValue(roleId, "roleId");
+    }
+
+    public static Membership join(Long userId, Long organizationId, Long roleId) {
+        return new Membership(null, Instant.now(), Instant.now(), null,
+                UUID.randomUUID(), userId, organizationId, roleId);
+    }
+
+    public static Membership reconstitute(Long id,
+                                          UUID membershipUuid,
+                                          Long userId,
+                                          Long organizationId,
+                                          Long roleId,
+                                          Instant createdAt,
+                                          Instant updatedAt,
+                                          Instant deletedAt) {
+        return new Membership(id, createdAt, updatedAt, deletedAt,
+                membershipUuid, userId, organizationId, roleId);
+    }
+
+    public void changeRole(Long roleId) {
+        this.roleId = requireNonNullValue(roleId, "roleId");
+        touch();
+    }
+
+    public void validate() {
+        requireNonNullValue(membershipUuid, "membershipUuid");
+        requireNonNullValue(userId, "userId");
+        requireNonNullValue(organizationId, "organizationId");
+        requireNonNullValue(roleId, "roleId");
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\Organization.java ===
+package com.cromp.iam.domain.model;
+
+import com.cromp.iam.domain.model.support.AbstractAuditableDomainEntity;
+import com.cromp.iam.domain.model.support.SchemaLimits;
+
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+import static com.cromp.iam.domain.model.support.DomainChecks.requireMaxLength;
+import static com.cromp.iam.domain.model.support.DomainChecks.requireNonNullValue;
+import static com.cromp.iam.domain.model.support.DomainChecks.requireText;
+import static com.cromp.iam.domain.model.support.DomainChecks.safeMap;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
+public class Organization extends AbstractAuditableDomainEntity {
+
+    @EqualsAndHashCode.Include
+    private UUID orgUuid;
+
+    private String name;
+
+    private Map<String, Object> settings;
+
+    private Organization(Long id,
+                         Instant createdAt,
+                         Instant updatedAt,
+                         Instant deletedAt,
+                         UUID orgUuid,
+                         String name,
+                         Map<String, Object> settings) {
+        super(id, createdAt, updatedAt, deletedAt);
+        this.orgUuid = orgUuid == null ? UUID.randomUUID() : orgUuid;
+        this.name = requireMaxLength(requireText(name, "name"), SchemaLimits.ORG_NAME_MAX_LENGTH, "name");
+        this.settings = safeMap(settings);
+    }
+
+    public static Organization create(String name) {
+        return create(name, Map.of());
+    }
+
+    public static Organization create(String name, Map<String, Object> settings) {
+        return new Organization(
+                null,
+                Instant.now(),
+                Instant.now(),
+                null,
+                UUID.randomUUID(),
+                name,
+                settings
+        );
+    }
+
+    public static Organization reconstitute(Long id,
+                                            UUID orgUuid,
+                                            String name,
+                                            Map<String, Object> settings,
+                                            Instant createdAt,
+                                            Instant updatedAt,
+                                            Instant deletedAt) {
+        return new Organization(
+                id,
+                createdAt,
+                updatedAt,
+                deletedAt,
+                orgUuid,
+                name,
+                settings
+        );
+    }
+
+    public void rename(String name) {
+        this.name = requireMaxLength(requireText(name, "name"), SchemaLimits.ORG_NAME_MAX_LENGTH, "name");
+        touch();
+    }
+
+    public void updateSettings(Map<String, Object> settings) {
+        this.settings = safeMap(settings);
+        touch();
+    }
+
+    public void validate() {
+        requireNonNullValue(orgUuid, "orgUuid");
+        requireText(name, "name");
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\Role.java ===
+package com.cromp.iam.domain.model;
+
+import com.cromp.iam.domain.model.support.SchemaLimits;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import static com.cromp.iam.domain.model.support.DomainChecks.*;
+
+import com.cromp.iam.domain.model.enums.UserRole;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class Role {
+
+    private Long id;
+
+    @EqualsAndHashCode.Include
+    private UserRole name;
+
+    private String description;
+
+    private Role(Long id, UserRole name, String description) {
+        this.id = id;
+        this.name = requireNonNullValue(name, "name");
+        this.description = normalizeDescription(description);
+    }
+
+    public static Role of(UserRole name, String description) {
+        return new Role(null, name, description);
+    }
+
+    public static Role reconstitute(Long id, UserRole name, String description) {
+        return new Role(id, name, description);
+    }
+
+    public void changeDescription(String description) {
+        this.description = normalizeDescription(description);
+    }
+
+    private String normalizeDescription(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return requireMaxLength(trimmed, SchemaLimits.ROLE_DESCRIPTION_MAX_LENGTH, "description");
+    }
+
+    public void validate() {
+        requireNonNullValue(name, "name");
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\RolePermission.java ===
+package com.cromp.iam.domain.model;
+
+import com.cromp.iam.domain.model.support.SchemaLimits;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import static com.cromp.iam.domain.model.support.DomainChecks.*;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class RolePermission {
+
+    private Long id;
+
+    @EqualsAndHashCode.Include
+    private Long roleId;
+
+    @EqualsAndHashCode.Include
+    private String permission;
+
+    private RolePermission(Long id, Long roleId, String permission) {
+        this.id = id;
+        this.roleId = requireNonNullValue(roleId, "roleId");
+        this.permission = requireMaxLength(
+                requireText(permission, "permission"),
+                SchemaLimits.ACTION_MAX_LENGTH,
+                "permission"
+        );
+    }
+
+    public static RolePermission of(Long roleId, String permission) {
+        return new RolePermission(null, roleId, permission);
+    }
+
+    public static RolePermission reconstitute(Long id, Long roleId, String permission) {
+        return new RolePermission(id, roleId, permission);
+    }
+
+    public void changePermission(String permission) {
+        this.permission = requireMaxLength(
+                requireText(permission, "permission"),
+                SchemaLimits.ACTION_MAX_LENGTH,
+                "permission"
+        );
+    }
+
+    public void validate() {
+        requireNonNullValue(roleId, "roleId");
+        requireText(permission, "permission");
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\User.java ===
+package com.cromp.iam.domain.model;
+
+import com.cromp.iam.domain.model.support.AbstractAuditableDomainEntity;
+import com.cromp.iam.domain.model.support.SchemaLimits;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+import static com.cromp.iam.domain.model.support.DomainChecks.*;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)  
+@EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
+public class User extends AbstractAuditableDomainEntity {
+
+    @EqualsAndHashCode.Include
+    private UUID userUuid;
+
+    private String email;
+    private String lastName;
+    private String firstName;
+    private String middleName;
+    private String displayName;
+    private String passwordHash;
+    private Map<String, Object> profile;
+
+    private User(Long id,
+                 Instant createdAt,
+                 Instant updatedAt,
+                 Instant deletedAt,
+                 UUID userUuid,
+                 String email,
+                 String lastName,
+                 String firstName,
+                 String middleName,
+                 String displayName,
+                 String passwordHash,
+                 Map<String, Object> profile) {
+        super(id, createdAt, updatedAt, deletedAt);
+        this.userUuid = userUuid == null ? UUID.randomUUID() : userUuid;
+        this.email = normalizeEmail(email);
+        this.lastName = requireNonBlankMaxLength(lastName, SchemaLimits.USER_LAST_NAME_MAX_LENGTH, "lastName");
+        this.firstName = requireNonBlankMaxLength(firstName, SchemaLimits.USER_FIRST_NAME_MAX_LENGTH, "firstName");
+        this.middleName = requireNonBlankMaxLength(middleName, SchemaLimits.USER_MIDDLE_NAME_MAX_LENGTH, "middleName");
+        this.displayName = requireNonBlankMaxLength(displayName, SchemaLimits.USER_DISPLAY_NAME_MAX_LENGTH, "displayName");
+        this.passwordHash = passwordHash == null ? null : requireText(passwordHash, "passwordHash");
+        this.profile = safeMap(profile);
+    }
+
+    public static User register(String email, String passwordHash) {
+        return register(email, passwordHash, null, null, null, null, Map.of());
+    }
+
+    public static User register(String email,
+                                String passwordHash,
+                                String firstName,
+                                String lastName,
+                                String middleName,
+                                String displayName,
+                                Map<String, Object> profile) {
+        return new User(
+                null,
+                Instant.now(),
+                Instant.now(),
+                null,
+                UUID.randomUUID(),
+                email,
+                lastName,
+                firstName,
+                middleName,
+                displayName,
+                passwordHash,   
+                profile
+        );
+    }
+
+    public static User registerExternal(String email,
+                                        String firstName,
+                                        String lastName,
+                                        String middleName,
+                                        String displayName,
+                                        Map<String, Object> profile) {
+        return new User(
+                null,
+                Instant.now(),
+                Instant.now(),
+                null,
+                UUID.randomUUID(),
+                email,
+                lastName,
+                firstName,
+                middleName,
+                displayName,
+                null,
+                profile
+        );
+    }
+
+    public static User reconstitute(Long id,
+                                    UUID userUuid,
+                                    String email,
+                                    String lastName,
+                                    String firstName,
+                                    String middleName,
+                                    String displayName,
+                                    String passwordHash,
+                                    Map<String, Object> profile,
+                                    Instant createdAt,
+                                    Instant updatedAt,
+                                    Instant deletedAt) {
+        return new User(
+                id,
+                createdAt,
+                updatedAt,
+                deletedAt,
+                userUuid,
+                email,
+                lastName,
+                firstName,
+                middleName,
+                displayName,
+                passwordHash,
+                profile
+        );
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = requireText(passwordHash, "passwordHash");
+        touch();
+    }
+
+    public void updateName(String firstName, String lastName, String middleName, String displayName) {
+        this.firstName = requireNonBlankMaxLength(firstName, SchemaLimits.USER_FIRST_NAME_MAX_LENGTH, "firstName");
+        this.lastName = requireNonBlankMaxLength(lastName, SchemaLimits.USER_LAST_NAME_MAX_LENGTH, "lastName");
+        this.middleName = requireNonBlankMaxLength(middleName, SchemaLimits.USER_MIDDLE_NAME_MAX_LENGTH, "middleName");
+        this.displayName = requireNonBlankMaxLength(displayName, SchemaLimits.USER_DISPLAY_NAME_MAX_LENGTH, "displayName");
+        touch();
+    }
+
+    public void updateProfile(Map<String, Object> profile) {
+        this.profile = safeMap(profile);
+        touch();
+    }
+
+    public void changeEmail(String email) {
+        this.email = normalizeEmail(email);
+        touch();
+    }
+
+    public void validate() {
+        requireNonNullValue(userUuid, "userUuid");
+        requireText(email, "email");
+        if (passwordHash != null) {
+            requireText(passwordHash, "passwordHash");
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\enums\InvitationStatus.java ===
+package com.cromp.iam.domain.model.enums;
+
+public enum InvitationStatus {
+    PENDING,
+    ACCEPTED,
+    EXPIRED,
+    REVOKED
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\enums\UserRole.java ===
+package com.cromp.iam.domain.model.enums;
+
+public enum UserRole {
+    OWNER,
+    ADMIN,
+    DEVELOPER,
+    VIEWER
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\exceptions\DomainException.java ===
+package com.cromp.iam.domain.model.exceptions;
+
+public class DomainException extends RuntimeException {
+    public DomainException(String message) {
+        super(message);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\support\AbstractAuditableDomainEntity.java ===
+package com.cromp.iam.domain.model.support;
+
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class AbstractAuditableDomainEntity {
+
+    private Long id;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private Instant deletedAt;
+
+    protected AbstractAuditableDomainEntity(Long id,
+                                            Instant createdAt,
+                                            Instant updatedAt,
+                                            Instant deletedAt) {
+        this.id = id;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.deletedAt = deletedAt;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void markDeleted() {
+        this.deletedAt = Instant.now();
+        touch();
+    }
+
+    public void restore() {
+        this.deletedAt = null;
+        touch();
+    }
+
+    protected void touch() {
+        this.updatedAt = Instant.now();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\support\DomainChecks.java ===
+package com.cromp.iam.domain.model.support;
+
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+
+public final class DomainChecks {
+
+    private DomainChecks() {
+    }
+
+    public static <T> T requireNonNullValue(T value, String fieldName) {
+        return Objects.requireNonNull(value, fieldName + " must not be null");
+    }
+
+    public static String requireText(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        return value.trim();
+    }
+
+    public static String requireMaxLength(String value, int maxLength, String fieldName) {
+        if (value != null && value.length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + " must not exceed " + maxLength + " characters");
+        }
+        return value;
+    }
+
+    /**
+     * Проверяет длину и возвращает значение.
+     * Если после trim() строка становится пустой — возвращает null.
+     * Используется для необязательных полей, где пустая строка не должна сохраняться.
+     */
+    public static String requireNonBlankMaxLength(String value, int maxLength, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + " must not exceed " + maxLength + " characters");
+        }
+        return trimmed;
+    }
+
+    public static String normalizeEmail(String email) {
+        return requireText(email, "email").toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Создаёт неизменяемую копию переданного Map.
+     * <p>
+     * Важно: если в исходном Map присутствуют значения null,
+     * будет выброшено {@link NullPointerException}, так как {@link Map#copyOf}
+     * не допускает null-значений. Убедитесь, что входные данные очищены от null.
+     * </p>
+     */
+    public static Map<String, Object> safeMap(Map<String, Object> value) {
+        return value == null ? Map.of() : Map.copyOf(value);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\model\support\SchemaLimits.java ===
+package com.cromp.iam.domain.model.support;
+
+public final class SchemaLimits {
+
+    private SchemaLimits() {
+    }
+
+    public static final int ORG_NAME_MAX_LENGTH = 255;
+
+    public static final int USER_LAST_NAME_MAX_LENGTH = 150;
+    public static final int USER_FIRST_NAME_MAX_LENGTH = 150;
+    public static final int USER_MIDDLE_NAME_MAX_LENGTH = 150;
+    public static final int USER_DISPLAY_NAME_MAX_LENGTH = 255;
+
+    public static final int ROLE_DESCRIPTION_MAX_LENGTH = 2048; // если захочу ограничить в домене
+    public static final int ACTION_MAX_LENGTH = 100;
+    public static final int RESOURCE_TYPE_MAX_LENGTH = 50;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\repository\AuditLogRepositoryPort.java ===
+package com.cromp.iam.domain.repository;
+
+import com.cromp.iam.domain.model.AuditLogEntry;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface AuditLogRepositoryPort {
+    AuditLogEntry save(AuditLogEntry entry);
+    Optional<AuditLogEntry> findById(Long id);
+    List<AuditLogEntry> findByOrganizationId(Long organizationId);
+    List<AuditLogEntry> findByActorId(Long actorId);
+    List<AuditLogEntry> findByOrganizationIdAndResourceTypeAndResourceId(Long organizationId, String resourceType, Long resourceId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\repository\InvitationRepositoryPort.java ===
+package com.cromp.iam.domain.repository;
+
+import com.cromp.iam.domain.model.Invitation;
+import com.cromp.iam.domain.model.enums.InvitationStatus;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface InvitationRepositoryPort {
+    Invitation save(Invitation invitation);
+    Optional<Invitation> findById(Long id);
+    Optional<Invitation> findByTokenHash(String tokenHash);
+    Optional<Invitation> findByInvitationUuid(UUID invitationUuid);
+    List<Invitation> findByOrganizationId(Long organizationId);
+    List<Invitation> findByOrganizationIdAndStatus(Long organizationId, InvitationStatus status);
+    void deleteById(Long id);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\repository\MembershipRepositoryPort.java ===
+package com.cromp.iam.domain.repository;
+
+import com.cromp.iam.domain.model.Membership;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface MembershipRepositoryPort {
+    Membership save(Membership membership);
+    Optional<Membership> findById(Long id);
+    Optional<Membership> findByMembershipUuid(UUID membershipUuid);
+    Optional<Membership> findByUserIdAndOrganizationId(Long userId, Long organizationId);
+    List<Membership> findByOrganizationId(Long organizationId);
+    List<Membership> findByUserId(Long userId);
+    void deleteById(Long id);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\repository\OrganizationRepositoryPort.java ===
+package com.cromp.iam.domain.repository;
+
+import com.cromp.iam.domain.model.Organization;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface OrganizationRepositoryPort {
+    Organization save(Organization organization);
+    Optional<Organization> findById(Long id);
+    Optional<Organization> findByOrgUuid(UUID orgUuid);
+    Optional<Organization> findByName(String name);
+    boolean existsByName(String name);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\repository\RolePermissionRepositoryPort.java ===
+package com.cromp.iam.domain.repository;
+
+import com.cromp.iam.domain.model.RolePermission;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface RolePermissionRepositoryPort {
+    RolePermission save(RolePermission rolePermission);
+    Optional<RolePermission> findById(Long id);
+    List<RolePermission> findByRoleId(Long roleId);
+    void deleteById(Long id);
+    void deleteByRoleId(Long roleId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\repository\RoleRepositoryPort.java ===
+package com.cromp.iam.domain.repository;
+
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.domain.model.enums.UserRole;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface RoleRepositoryPort {
+    Role save(Role role);
+    Optional<Role> findById(Long id);
+    Optional<Role> findByName(UserRole name);
+    List<Role> findAll();
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\domain\repository\UserRepositoryPort.java ===
+package com.cromp.iam.domain.repository;
+
+import com.cromp.iam.domain.model.User;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface UserRepositoryPort {
+    User save(User user);
+    Optional<User> findById(Long id);
+    Optional<User> findByUserUuid(UUID userUuid);
+    Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\adapter\AuditLogRepositoryAdapter.java ===
+package com.cromp.iam.infrastructure.persistence.adapter;
+
+import com.cromp.iam.domain.model.AuditLogEntry;
+import com.cromp.iam.domain.repository.AuditLogRepositoryPort;
+import com.cromp.iam.infrastructure.persistence.jpa.repository.AuditLogJpaRepository;
+import com.cromp.iam.infrastructure.persistence.mapper.AuditLogPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class AuditLogRepositoryAdapter implements AuditLogRepositoryPort {
+
+    private final AuditLogJpaRepository repository;
+    private final AuditLogPersistenceMapper mapper;
+
+    @Override
+    public AuditLogEntry save(AuditLogEntry entry) {
+        return mapper.toDomain(repository.save(mapper.toJpa(entry)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<AuditLogEntry> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AuditLogEntry> findByOrganizationId(Long organizationId) {
+        return repository.findByOrganizationIdOrderByRecordedAtDesc(organizationId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AuditLogEntry> findByActorId(Long actorId) {
+        return repository.findByActorIdOrderByRecordedAtDesc(actorId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AuditLogEntry> findByOrganizationIdAndResourceTypeAndResourceId(Long organizationId, String resourceType, Long resourceId) {
+        return repository.findByOrganizationIdAndResourceTypeAndResourceIdOrderByRecordedAtDesc(organizationId, resourceType, resourceId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\adapter\InvitationRepositoryAdapter.java ===
+package com.cromp.iam.infrastructure.persistence.adapter;
+
+import com.cromp.iam.domain.model.Invitation;
+import com.cromp.iam.domain.model.enums.InvitationStatus;
+import com.cromp.iam.domain.repository.InvitationRepositoryPort;
+import com.cromp.iam.infrastructure.persistence.jpa.repository.InvitationJpaRepository;
+import com.cromp.iam.infrastructure.persistence.mapper.InvitationPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class InvitationRepositoryAdapter implements InvitationRepositoryPort {
+
+    private final InvitationJpaRepository repository;
+    private final InvitationPersistenceMapper mapper;
+
+    @Override
+    public Invitation save(Invitation invitation) {
+        return mapper.toDomain(repository.save(mapper.toJpa(invitation)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Invitation> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Invitation> findByTokenHash(String tokenHash) {
+        return repository.findByTokenHash(tokenHash).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Invitation> findByOrganizationId(Long organizationId) {
+        return repository.findByOrganizationId(organizationId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Invitation> findByOrganizationIdAndStatus(Long organizationId, InvitationStatus status) {
+        return repository.findByOrganizationIdAndStatus(organizationId, status).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        repository.deleteById(id);
+    }
+
+    @Override
+    public Optional<Invitation> findByInvitationUuid(UUID invitationUuid) {
+        return repository.findByInvitationUuid(invitationUuid).map(mapper::toDomain);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\adapter\MembershipRepositoryAdapter.java ===
+package com.cromp.iam.infrastructure.persistence.adapter;
+
+import com.cromp.iam.domain.model.Membership;
+import com.cromp.iam.domain.repository.MembershipRepositoryPort;
+import com.cromp.iam.infrastructure.persistence.jpa.repository.MembershipJpaRepository;
+import com.cromp.iam.infrastructure.persistence.mapper.MembershipPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class MembershipRepositoryAdapter implements MembershipRepositoryPort {
+
+    private final MembershipJpaRepository repository;
+    private final MembershipPersistenceMapper mapper;
+
+    @Override
+    public Membership save(Membership membership) {
+        return mapper.toDomain(repository.save(mapper.toJpa(membership)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Membership> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Membership> findByUserIdAndOrganizationId(Long userId, Long organizationId) {
+        return repository.findByUserIdAndOrganizationId(userId, organizationId).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Membership> findByOrganizationId(Long organizationId) {
+        return repository.findByOrganizationId(organizationId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Membership> findByUserId(Long userId) {
+        return repository.findByUserId(userId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        repository.deleteById(id);
+    }
+
+    @Override
+    public Optional<Membership> findByMembershipUuid(UUID membershipUuid) {
+        return repository.findByMembershipUuid(membershipUuid).map(mapper::toDomain);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\adapter\OrganizationRepositoryAdapter.java ===
+package com.cromp.iam.infrastructure.persistence.adapter;
+
+import com.cromp.iam.domain.model.Organization;
+import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
+import com.cromp.iam.infrastructure.persistence.jpa.repository.OrganizationJpaRepository;
+import com.cromp.iam.infrastructure.persistence.mapper.OrganizationPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class OrganizationRepositoryAdapter implements OrganizationRepositoryPort {
+
+    private final OrganizationJpaRepository repository;
+    private final OrganizationPersistenceMapper mapper;
+
+    @Override
+    public Organization save(Organization organization) {
+        return mapper.toDomain(repository.save(mapper.toJpa(organization)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Organization> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Organization> findByOrgUuid(UUID orgUuid) {
+        return repository.findByOrgUuid(orgUuid).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Organization> findByName(String name) {
+        return repository.findByName(name).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByName(String name) {
+        return repository.existsByName(name);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\adapter\RolePermissionRepositoryAdapter.java ===
+package com.cromp.iam.infrastructure.persistence.adapter;
+
+import com.cromp.iam.domain.model.RolePermission;
+import com.cromp.iam.domain.repository.RolePermissionRepositoryPort;
+import com.cromp.iam.infrastructure.persistence.jpa.repository.RolePermissionJpaRepository;
+import com.cromp.iam.infrastructure.persistence.mapper.RolePermissionPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class RolePermissionRepositoryAdapter implements RolePermissionRepositoryPort {
+
+    private final RolePermissionJpaRepository repository;
+    private final RolePermissionPersistenceMapper mapper;
+
+    @Override
+    public RolePermission save(RolePermission rolePermission) {
+        return mapper.toDomain(repository.save(mapper.toJpa(rolePermission)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<RolePermission> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RolePermission> findByRoleId(Long roleId) {
+        return repository.findByRoleId(roleId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        repository.deleteById(id);
+    }
+
+    @Override
+    public void deleteByRoleId(Long roleId) {
+        repository.deleteByRoleId(roleId);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\adapter\RoleRepositoryAdapter.java ===
+package com.cromp.iam.infrastructure.persistence.adapter;
+
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.domain.model.enums.UserRole;
+import com.cromp.iam.domain.repository.RoleRepositoryPort;
+import com.cromp.iam.infrastructure.persistence.jpa.repository.RoleJpaRepository;
+import com.cromp.iam.infrastructure.persistence.mapper.RolePersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class RoleRepositoryAdapter implements RoleRepositoryPort {
+
+    private final RoleJpaRepository repository;
+    private final RolePersistenceMapper mapper;
+
+    @Override
+    public Role save(Role role) {
+        return mapper.toDomain(repository.save(mapper.toJpa(role)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Role> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Role> findByName(UserRole name) {
+        return repository.findByName(name).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Role> findAll() {
+        return repository.findAll().stream().map(mapper::toDomain).toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\adapter\UserRepositoryAdapter.java ===
+package com.cromp.iam.infrastructure.persistence.adapter;
+
+import com.cromp.iam.domain.model.User;
+import com.cromp.iam.domain.repository.UserRepositoryPort;
+import com.cromp.iam.infrastructure.persistence.jpa.repository.UserJpaRepository;
+import com.cromp.iam.infrastructure.persistence.mapper.UserPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class UserRepositoryAdapter implements UserRepositoryPort {
+
+    private final UserJpaRepository repository;
+    private final UserPersistenceMapper mapper;
+
+    @Override
+    public User save(User user) {
+        return mapper.toDomain(repository.save(mapper.toJpa(user)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findByUserUuid(UUID userUuid) {
+        return repository.findByUserUuid(userUuid).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findByEmail(String email) {
+        return repository.findByEmail(email).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return repository.existsByEmail(email);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\entity\AuditLogJpaEntity.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Immutable;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@Entity
+@Table(name = "audit_log")
+@Immutable
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AuditLogJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "organization_id", nullable = false)
+    private Long organizationId;
+
+    @Column(name = "recorded_at", nullable = false)
+    private Instant recordedAt;
+
+    @Column(name = "actor_id")
+    private Long actorId;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Builder.Default
+    @Column(name = "actor_snapshot", columnDefinition = "jsonb", nullable = false)
+    private Map<String, Object> actorSnapshot = new HashMap<>();
+
+    @Column(name = "action", nullable = false, length = 100)
+    private String action;
+
+    @Column(name = "resource_type", length = 50)
+    private String resourceType;
+
+    @Column(name = "resource_id")
+    private Long resourceId;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Builder.Default
+    @Column(name = "changes_diff", columnDefinition = "jsonb")
+    private Map<String, Object> changesDiff = new HashMap<>();
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\entity\InvitationJpaEntity.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.entity;
+
+import com.cromp.iam.domain.model.enums.InvitationStatus;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "invitations")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class InvitationJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "invitation_uuid", nullable = false, unique = true, updatable = false)
+    private UUID invitationUuid;
+
+    @Column(name = "organization_id", nullable = false)
+    private Long organizationId;
+
+    @Column(name = "email", nullable = false, columnDefinition = "citext")
+    private String email;
+
+    @Column(name = "token_hash", nullable = false)
+    private String tokenHash;
+
+    @Column(name = "role_id", nullable = false)
+    private Long roleId;
+
+    @Column(name = "invited_by")
+    private Long invitedBy;
+
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "accepted_at")
+    private Instant acceptedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, columnDefinition = "invitation_status")
+    private InvitationStatus status;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\entity\MembershipJpaEntity.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.DynamicInsert;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(
+        name = "memberships",
+        uniqueConstraints = @UniqueConstraint(
+                name = "ux_memberships_user_org",
+                columnNames = {"user_id", "organization_id"}
+        )
+)
+@DynamicInsert
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class MembershipJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "membership_uuid", nullable = false, unique = true, updatable = false)
+    private UUID membershipUuid;
+
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Column(name = "organization_id", nullable = false)
+    private Long organizationId;
+
+    @Column(name = "role_id", nullable = false)
+    private Long roleId;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "is_deleted", insertable = false, updatable = false)
+    private Boolean isDeleted;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\entity\OrganizationJpaEntity.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.entity;
+
+import com.cromp.iam.domain.model.support.SchemaLimits;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+@Entity
+@Table(name = "organizations")
+@DynamicInsert
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrganizationJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "org_uuid", nullable = false, unique = true, updatable = false)
+    private UUID orgUuid;
+
+    @Column(name = "name", nullable = false, length = SchemaLimits.ORG_NAME_MAX_LENGTH)
+    private String name;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Builder.Default
+    @Column(name = "settings", columnDefinition = "jsonb", nullable = false)
+    private Map<String, Object> settings = new HashMap<>();
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "is_deleted", insertable = false, updatable = false)
+    private Boolean isDeleted;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\entity\RoleJpaEntity.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.entity;
+
+import com.cromp.iam.domain.model.enums.UserRole;
+import com.cromp.iam.domain.model.support.SchemaLimits;
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "roles")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RoleJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "name", nullable = false, unique = true, columnDefinition = "user_role")
+    private UserRole name;
+
+
+    @Column(name = "description", length = SchemaLimits.ROLE_DESCRIPTION_MAX_LENGTH)
+    private String description;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\entity\RolePermissionJpaEntity.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "role_permissions",
+       uniqueConstraints = @UniqueConstraint(name = "ux_role_permissions_role_permission", columnNames = {"role_id", "permission"}))
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RolePermissionJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "role_id", nullable = false)
+    private Long roleId;
+
+    @Column(name = "permission", nullable = false)
+    private String permission;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\entity\UserJpaEntity.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.entity;
+
+import com.cromp.iam.domain.model.support.SchemaLimits;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+@Entity
+@Table(name = "users")
+@DynamicInsert
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_uuid", nullable = false, unique = true, updatable = false)
+    private UUID userUuid;
+
+    @Column(name = "email", nullable = false, columnDefinition = "citext")
+    private String email;
+
+    @Column(name = "last_name", length = SchemaLimits.USER_LAST_NAME_MAX_LENGTH)
+    private String lastName;
+
+    @Column(name = "first_name", length = SchemaLimits.USER_FIRST_NAME_MAX_LENGTH)
+    private String firstName;
+
+    @Column(name = "middle_name", length = SchemaLimits.USER_MIDDLE_NAME_MAX_LENGTH)
+    private String middleName;
+
+    @Column(name = "display_name", length = SchemaLimits.USER_DISPLAY_NAME_MAX_LENGTH)
+    private String displayName;
+
+    @Column(name = "password_hash", columnDefinition = "text")
+    private String passwordHash;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Builder.Default
+    @Column(name = "profile", columnDefinition = "jsonb", nullable = false)
+    private Map<String, Object> profile = new HashMap<>();
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "is_deleted", insertable = false, updatable = false)
+    private Boolean isDeleted;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\repository\AuditLogJpaRepository.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.repository;
+
+import com.cromp.iam.infrastructure.persistence.jpa.entity.AuditLogJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface AuditLogJpaRepository extends JpaRepository<AuditLogJpaEntity, Long> {
+    List<AuditLogJpaEntity> findByOrganizationIdOrderByRecordedAtDesc(Long organizationId);
+    List<AuditLogJpaEntity> findByActorIdOrderByRecordedAtDesc(Long actorId);
+    List<AuditLogJpaEntity> findByOrganizationIdAndResourceTypeAndResourceIdOrderByRecordedAtDesc(Long organizationId, String resourceType, Long resourceId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\repository\InvitationJpaRepository.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.repository;
+
+import com.cromp.iam.domain.model.enums.InvitationStatus;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.InvitationJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface InvitationJpaRepository extends JpaRepository<InvitationJpaEntity, Long> {
+    Optional<InvitationJpaEntity> findByInvitationUuid(UUID invitationUuid);
+    Optional<InvitationJpaEntity> findByTokenHash(String tokenHash);
+    List<InvitationJpaEntity> findByOrganizationId(Long organizationId);
+    List<InvitationJpaEntity> findByOrganizationIdAndStatus(Long organizationId, InvitationStatus status);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\repository\MembershipJpaRepository.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.repository;
+
+import com.cromp.iam.infrastructure.persistence.jpa.entity.MembershipJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface MembershipJpaRepository extends JpaRepository<MembershipJpaEntity, Long> {
+
+    Optional<MembershipJpaEntity> findByMembershipUuid(UUID membershipUuid);
+    Optional<MembershipJpaEntity> findByUserIdAndOrganizationId(Long userId, Long organizationId);
+    List<MembershipJpaEntity> findByOrganizationId(Long organizationId);
+    List<MembershipJpaEntity> findByUserId(Long userId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\repository\OrganizationJpaRepository.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.repository;
+
+import com.cromp.iam.infrastructure.persistence.jpa.entity.OrganizationJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface OrganizationJpaRepository extends JpaRepository<OrganizationJpaEntity, Long> {
+    Optional<OrganizationJpaEntity> findByOrgUuid(UUID orgUuid);
+    Optional<OrganizationJpaEntity> findByName(String name);
+    boolean existsByName(String name);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\repository\RoleJpaRepository.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.repository;
+
+import com.cromp.iam.domain.model.enums.UserRole;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.RoleJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface RoleJpaRepository extends JpaRepository<RoleJpaEntity, Long> {
+    Optional<RoleJpaEntity> findByName(UserRole name);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\repository\RolePermissionJpaRepository.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.repository;
+
+import com.cromp.iam.infrastructure.persistence.jpa.entity.RolePermissionJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface RolePermissionJpaRepository extends JpaRepository<RolePermissionJpaEntity, Long> {
+    List<RolePermissionJpaEntity> findByRoleId(Long roleId);
+    void deleteByRoleId(Long roleId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\jpa\repository\UserJpaRepository.java ===
+package com.cromp.iam.infrastructure.persistence.jpa.repository;
+
+import com.cromp.iam.infrastructure.persistence.jpa.entity.UserJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
+    Optional<UserJpaEntity> findByUserUuid(UUID userUuid);
+    Optional<UserJpaEntity> findByEmail(String email);
+    boolean existsByEmail(String email);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\mapper\AuditLogPersistenceMapper.java ===
+package com.cromp.iam.infrastructure.persistence.mapper;
+
+import com.cromp.iam.domain.model.AuditLogEntry;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.AuditLogJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AuditLogPersistenceMapper {
+
+    public AuditLogJpaEntity toJpa(AuditLogEntry entry) {
+        return AuditLogJpaEntity.builder()
+                .id(entry.getId())
+                .organizationId(entry.getOrganizationId())
+                .recordedAt(entry.getRecordedAt())
+                .actorId(entry.getActorId())
+                .actorSnapshot(entry.getActorSnapshot())
+                .action(entry.getAction())
+                .resourceType(entry.getResourceType())
+                .resourceId(entry.getResourceId())
+                .changesDiff(entry.getChangesDiff())
+                .build();
+    }
+
+    public AuditLogEntry toDomain(AuditLogJpaEntity entity) {
+        return AuditLogEntry.reconstitute(
+                entity.getId(),
+                entity.getOrganizationId(),
+                entity.getRecordedAt(),
+                entity.getActorId(),
+                entity.getActorSnapshot(),
+                entity.getAction(),
+                entity.getResourceType(),
+                entity.getResourceId(),
+                entity.getChangesDiff()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\mapper\InvitationPersistenceMapper.java ===
+package com.cromp.iam.infrastructure.persistence.mapper;
+
+import com.cromp.iam.domain.model.Invitation;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.InvitationJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class InvitationPersistenceMapper {
+
+    public InvitationJpaEntity toJpa(Invitation invitation) {
+        return InvitationJpaEntity.builder()
+                .id(invitation.getId())
+                .invitationUuid(invitation.getInvitationUuid())
+                .organizationId(invitation.getOrganizationId())
+                .email(invitation.getEmail())
+                .tokenHash(invitation.getTokenHash())
+                .roleId(invitation.getRoleId())
+                .invitedBy(invitation.getInvitedBy())
+                .expiresAt(invitation.getExpiresAt())
+                .createdAt(invitation.getCreatedAt())
+                .acceptedAt(invitation.getAcceptedAt())
+                .status(invitation.getStatus())
+                .build();
+    }
+
+    public Invitation toDomain(InvitationJpaEntity entity) {
+        return Invitation.reconstitute(
+                entity.getId(),
+                entity.getInvitationUuid(),
+                entity.getOrganizationId(),
+                entity.getEmail(),
+                entity.getTokenHash(),
+                entity.getRoleId(),
+                entity.getInvitedBy(),
+                entity.getExpiresAt(),
+                entity.getCreatedAt(),
+                entity.getAcceptedAt(),
+                entity.getStatus()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\mapper\MembershipPersistenceMapper.java ===
+package com.cromp.iam.infrastructure.persistence.mapper;
+
+import com.cromp.iam.domain.model.Membership;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.MembershipJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MembershipPersistenceMapper {
+
+    public MembershipJpaEntity toJpa(Membership membership) {
+        return MembershipJpaEntity.builder()
+                .id(membership.getId())
+                .membershipUuid(membership.getMembershipUuid())
+                .userId(membership.getUserId())
+                .organizationId(membership.getOrganizationId())
+                .roleId(membership.getRoleId())
+                .createdAt(membership.getCreatedAt())
+                .updatedAt(membership.getUpdatedAt())
+                .deletedAt(membership.getDeletedAt())
+                .build();
+    }
+
+    public Membership toDomain(MembershipJpaEntity entity) {
+        return Membership.reconstitute(
+                entity.getId(),
+                entity.getMembershipUuid(),
+                entity.getUserId(),
+                entity.getOrganizationId(),
+                entity.getRoleId(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.getDeletedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\mapper\OrganizationPersistenceMapper.java ===
+package com.cromp.iam.infrastructure.persistence.mapper;
+
+import com.cromp.iam.domain.model.Organization;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.OrganizationJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class OrganizationPersistenceMapper {
+
+    public OrganizationJpaEntity toJpa(Organization organization) {
+        return OrganizationJpaEntity.builder()
+                .id(organization.getId())
+                .orgUuid(organization.getOrgUuid())
+                .name(organization.getName())
+                .settings(organization.getSettings())
+                .createdAt(organization.getCreatedAt())
+                .updatedAt(organization.getUpdatedAt())
+                .deletedAt(organization.getDeletedAt())
+                .build();
+    }
+
+    public Organization toDomain(OrganizationJpaEntity entity) {
+        return Organization.reconstitute(
+                entity.getId(),
+                entity.getOrgUuid(),
+                entity.getName(),
+                entity.getSettings(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.getDeletedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\mapper\RolePermissionPersistenceMapper.java ===
+package com.cromp.iam.infrastructure.persistence.mapper;
+
+import com.cromp.iam.domain.model.RolePermission;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.RolePermissionJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class RolePermissionPersistenceMapper {
+
+    public RolePermissionJpaEntity toJpa(RolePermission rolePermission) {
+        return RolePermissionJpaEntity.builder()
+                .id(rolePermission.getId())
+                .roleId(rolePermission.getRoleId())
+                .permission(rolePermission.getPermission())
+                .build();
+    }
+
+    public RolePermission toDomain(RolePermissionJpaEntity entity) {
+        return RolePermission.reconstitute(
+                entity.getId(),
+                entity.getRoleId(),
+                entity.getPermission()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\mapper\RolePersistenceMapper.java ===
+package com.cromp.iam.infrastructure.persistence.mapper;
+
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.RoleJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class RolePersistenceMapper {
+
+    public RoleJpaEntity toJpa(Role role) {
+        return RoleJpaEntity.builder()
+                .id(role.getId())
+                .name(role.getName())
+                .description(role.getDescription())
+                .build();
+    }
+
+    public Role toDomain(RoleJpaEntity entity) {
+        return Role.reconstitute(
+                entity.getId(),
+                entity.getName(),
+                entity.getDescription()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\persistence\mapper\UserPersistenceMapper.java ===
+package com.cromp.iam.infrastructure.persistence.mapper;
+
+import com.cromp.iam.domain.model.User;
+import com.cromp.iam.infrastructure.persistence.jpa.entity.UserJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UserPersistenceMapper {
+
+    public UserJpaEntity toJpa(User user) {
+        return UserJpaEntity.builder()
+                .id(user.getId())
+                .userUuid(user.getUserUuid())
+                .email(user.getEmail())
+                .lastName(user.getLastName())
+                .firstName(user.getFirstName())
+                .middleName(user.getMiddleName())
+                .displayName(user.getDisplayName())
+                .passwordHash(user.getPasswordHash())
+                .profile(user.getProfile())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .deletedAt(user.getDeletedAt())
+                .build();
+    }
+
+    public User toDomain(UserJpaEntity entity) {
+        return User.reconstitute(
+                entity.getId(),
+                entity.getUserUuid(),
+                entity.getEmail(),
+                entity.getLastName(),
+                entity.getFirstName(),
+                entity.getMiddleName(),
+                entity.getDisplayName(),
+                entity.getPasswordHash(),
+                entity.getProfile(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.getDeletedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\security\BCryptPasswordHasher.java ===
+package com.cromp.iam.infrastructure.security;
+
+import com.cromp.iam.application.port.PasswordHasherPort;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+@Component
+public class BCryptPasswordHasher implements PasswordHasherPort {
+
+    private final PasswordEncoder encoder = new BCryptPasswordEncoder();
+
+    @Override
+    public String hash(String rawPassword) {
+        return encoder.encode(rawPassword);
+    }
+
+    @Override
+    public boolean matches(String rawPassword, String hashedPassword) {
+        return encoder.matches(rawPassword, hashedPassword);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\security\JwtTokenIssuer.java ===
+package com.cromp.iam.infrastructure.security;
+
+import com.cromp.iam.application.port.TokenIssuerPort;
+import com.cromp.iam.domain.model.Organization;
+import com.cromp.iam.domain.model.User;
+import com.cromp.iam.infrastructure.security.config.JwtConfig;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Date;
+
+@Component
+public class JwtTokenIssuer implements TokenIssuerPort {
+
+    private final JwtConfig jwtConfig;
+    private final SecretKey signingKey;
+
+    public JwtTokenIssuer(JwtConfig jwtConfig) {
+        this.jwtConfig = jwtConfig;
+        this.signingKey = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public String issueToken(User user, Organization activeOrganization, Collection<String> permissions) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + jwtConfig.getExpirationMs());
+
+        return Jwts.builder()
+                .subject(user.getId().toString())
+                .claim("org_id", activeOrganization != null ? activeOrganization.getId().toString() : "")
+                .claim("permissions", permissions)
+                .issuedAt(now)
+                .expiration(expiration)
+                .signWith(signingKey)
+                .compact();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\security\PermissionCheckerPortImpl.java ===
+package com.cromp.iam.infrastructure.security;
+
+import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.iam.domain.model.Membership;
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.domain.model.RolePermission;
+import com.cromp.iam.domain.model.enums.UserRole;
+import com.cromp.iam.domain.repository.MembershipRepositoryPort;
+import com.cromp.iam.domain.repository.RolePermissionRepositoryPort;
+import com.cromp.iam.domain.repository.RoleRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+public class PermissionCheckerPortImpl implements PermissionCheckerPort {
+
+    private final MembershipRepositoryPort membershipRepository;
+    private final RolePermissionRepositoryPort rolePermissionRepository;
+    private final RoleRepositoryPort roleRepository;
+
+    @Override
+    public boolean hasPermission(Long userId, 
+                                Long organizationId, 
+                                String permission) {
+
+        Optional<Membership> membershipOpt = membershipRepository.findByUserIdAndOrganizationId(userId, organizationId);
+        if (membershipOpt.isEmpty()) {
+            return false;
+        }
+        Membership membership = membershipOpt.get();
+
+        Optional<Role> roleOpt = roleRepository.findById(membership.getRoleId());
+        if (roleOpt.isPresent() && roleOpt.get().getName() == UserRole.OWNER) {
+            return true; 
+        }
+
+        return rolePermissionRepository.findByRoleId(membership.getRoleId()).stream()
+                .map(RolePermission::getPermission)
+                .anyMatch(p -> p.equals(permission));
+    }
+
+    @Override
+    public boolean isMember(Long userId, Long organizationId) {
+        return membershipRepository.findByUserIdAndOrganizationId(userId, organizationId).isPresent();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\security\SpringSecurityCurrentActorPort.java ===
+package com.cromp.iam.infrastructure.security;
+
+import com.cromp.iam.application.port.CurrentActorPort;
+import com.cromp.iam.application.port.OrganizationContextPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+public class SpringSecurityCurrentActorPort implements CurrentActorPort {
+
+    private final OrganizationContextPort organizationContextPort;
+
+    @Override
+    public Optional<Long> currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof Long userId) {
+            return Optional.of(userId);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Long> currentOrganizationId() {
+        return organizationContextPort.currentOrganizationId();
+    }
+
+    @Override
+    public Optional<Map<String, Object>> currentActorSnapshot() {
+        // Пока заглушка, но можно расширить
+        return Optional.empty();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\security\ThreadLocalOrganizationContextPort.java ===
+package com.cromp.iam.infrastructure.security;
+
+import com.cromp.iam.application.port.OrganizationContextPort;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+@Component
+public class ThreadLocalOrganizationContextPort implements OrganizationContextPort {
+
+    private final ThreadLocal<Long> organizationIdHolder = new ThreadLocal<>();
+
+    @Override
+    public Optional<Long> currentOrganizationId() {
+        return Optional.ofNullable(organizationIdHolder.get());
+    }
+
+    @Override
+    public void setCurrentOrganizationId(Long organizationId) {
+        organizationIdHolder.set(organizationId);
+    }
+
+    @Override
+    public void clear() {
+        organizationIdHolder.remove();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\security\config\JwtConfig.java ===
+package com.cromp.iam.infrastructure.security.config;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Getter
+@Setter
+@Component
+@ConfigurationProperties(prefix = "iam.jwt")
+public class JwtConfig {
+    //TODO: Нужна конфигурация для секрета и expiration. В application.yml добавить надо бы или еще куда
+    private String secret = "changeit-changeit-changeit-changeit"; // минимум 256 бит
+    private long expirationMs = 3600_000; // 1 час
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\security\config\SecurityConfig.java ===
+package com.cromp.iam.infrastructure.security.config;
+
+import com.cromp.iam.infrastructure.web.filter.JwtAuthenticationFilter;
+import com.cromp.iam.infrastructure.web.filter.OrganizationContextFilter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final OrganizationContextFilter organizationContextFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/auth/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(organizationContextFilter, JwtAuthenticationFilter.class);
+        return http.build();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\AuditLogController.java ===
+package com.cromp.iam.infrastructure.web;
+
+import com.cromp.iam.api.dto.response.AuditLogResponse;
+import com.cromp.iam.api.service.AuditLogFacade;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/audit")
+@RequiredArgsConstructor
+public class AuditLogController {
+
+    private final AuditLogFacade auditLogFacade;
+
+    @GetMapping("/organization/{orgUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public List<AuditLogResponse> getByOrganization(@PathVariable UUID orgUuid) {
+        return auditLogFacade.getByOrganization(orgUuid);
+    }
+
+    @GetMapping("/actor/{userUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public List<AuditLogResponse> getByActor(@PathVariable UUID userUuid) {
+        return auditLogFacade.getByActor(userUuid);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\AuthController.java ===
+package com.cromp.iam.infrastructure.web;
+
+import com.cromp.iam.api.dto.request.LoginRequest;
+import com.cromp.iam.api.dto.request.RegisterRequest;
+import com.cromp.iam.api.dto.request.SelectOrganizationRequest;
+import com.cromp.iam.api.dto.response.AuthResponse;
+import com.cromp.iam.application.service.AuthApplicationService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthApplicationService authService;
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
+        return authService.register(request);
+    }
+
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
+    }
+
+    @PostMapping("/select-organization")
+    public AuthResponse selectOrganization(@Valid @RequestBody SelectOrganizationRequest request) {
+        return authService.selectOrganization(request);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\InvitationController.java ===
+package com.cromp.iam.infrastructure.web;
+
+import com.cromp.iam.api.dto.request.AcceptInvitationRequest;
+import com.cromp.iam.api.dto.request.InviteUserRequest;
+import com.cromp.iam.api.dto.request.RejectInvitationRequest;
+import com.cromp.iam.api.dto.request.RevokeInvitationRequest;
+import com.cromp.iam.api.dto.response.InvitationCreateResponse;
+import com.cromp.iam.api.dto.response.InvitationResponse;
+import com.cromp.iam.api.service.InvitationFacade;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/invitations")
+@RequiredArgsConstructor
+public class InvitationController {
+
+    private final InvitationFacade invitationFacade;
+
+    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.CREATED)
+    public InvitationCreateResponse invite(@Valid @RequestBody InviteUserRequest request) {
+        return invitationFacade.invite(request);
+    }
+
+    @PostMapping("/accept")
+    @PreAuthorize("isAuthenticated()")
+    public InvitationResponse accept(@Valid @RequestBody AcceptInvitationRequest request) {
+        return invitationFacade.accept(request);
+    }
+
+    @PostMapping("/reject")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reject(@Valid @RequestBody RejectInvitationRequest request) {
+        invitationFacade.reject(request);
+    }
+
+    @PostMapping("/revoke")
+    @PreAuthorize("isAuthenticated()")
+    public InvitationResponse revoke(@Valid @RequestBody RevokeInvitationRequest request) {
+        return invitationFacade.revoke(request);
+    }
+
+    @GetMapping("/{invitationUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public InvitationResponse getById(@PathVariable UUID invitationUuid) {
+        return invitationFacade.getById(invitationUuid);
+    }
+
+    @GetMapping("/organization/{orgUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public List<InvitationResponse> getByOrganization(@PathVariable UUID orgUuid) {
+        return invitationFacade.getByOrganization(orgUuid);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\MembershipController.java ===
+package com.cromp.iam.infrastructure.web;
+
+import com.cromp.iam.api.dto.request.AddMembershipRequest;
+import com.cromp.iam.api.dto.request.ChangeMembershipRoleRequest;
+import com.cromp.iam.api.dto.response.MembershipResponse;
+import com.cromp.iam.api.service.MembershipFacade;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+// TODO: Long убрать нахер 
+@RestController
+@RequestMapping("/api/v1/memberships")
+@RequiredArgsConstructor
+public class MembershipController {
+
+    private final MembershipFacade membershipFacade;
+
+    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MembershipResponse add(@Valid @RequestBody AddMembershipRequest request) {
+        return membershipFacade.add(request);
+    }
+
+    @PutMapping("/{membershipUuid}/role")
+    @PreAuthorize("isAuthenticated()")
+    public MembershipResponse changeRole(@PathVariable UUID membershipUuid,
+                                        @Valid @RequestBody ChangeMembershipRoleRequest request) {
+        return membershipFacade.changeRole(membershipUuid, request);
+    }
+
+    @DeleteMapping("/{membershipUuid}")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void remove(@PathVariable UUID membershipUuid) {
+        membershipFacade.remove(membershipUuid);
+    }
+
+    @GetMapping("/{membershipUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public MembershipResponse getById(@PathVariable UUID membershipUuid) {
+        return membershipFacade.getById(membershipUuid);
+    }
+
+    @GetMapping("/organization/{orgUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public List<MembershipResponse> getByOrganization(@PathVariable UUID orgUuid) {
+        return membershipFacade.getByOrganization(orgUuid);
+    }
+
+    @GetMapping("/user/{userUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public List<MembershipResponse> getByUser(@PathVariable UUID userUuid) {
+        return membershipFacade.getByUser(userUuid);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\OrganizationController.java ===
+package com.cromp.iam.infrastructure.web;
+
+import com.cromp.iam.api.dto.request.CreateOrganizationRequest;
+import com.cromp.iam.api.dto.request.RenameOrganizationRequest;
+import com.cromp.iam.api.dto.response.MembershipResponse;
+import com.cromp.iam.api.dto.response.OrganizationResponse;
+import com.cromp.iam.api.service.OrganizationFacade;
+import com.cromp.iam.application.port.CurrentActorPort;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/organizations")
+@RequiredArgsConstructor
+public class OrganizationController {
+
+    private final OrganizationFacade organizationFacade;
+    private final CurrentActorPort currentActorPort;
+
+    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    public OrganizationResponse create(@Valid @RequestBody CreateOrganizationRequest request) {
+        Long userId = currentActorPort.currentUserId().orElseThrow();
+        return organizationFacade.create(request, userId);
+    }
+
+    @PutMapping("/{orgUuid}/rename")
+    @PreAuthorize("isAuthenticated()")
+    public OrganizationResponse rename(@PathVariable UUID orgUuid,
+                                       @Valid @RequestBody RenameOrganizationRequest request) {
+        return organizationFacade.rename(orgUuid, request);
+    }
+
+    @GetMapping("/{orgUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public OrganizationResponse get(@PathVariable UUID orgUuid) {
+        return organizationFacade.getById(orgUuid);
+    }
+
+    @GetMapping("/{orgUuid}/members")
+    @PreAuthorize("isAuthenticated()")
+    public List<MembershipResponse> getMembers(@PathVariable UUID orgUuid) {
+        return organizationFacade.getMembers(orgUuid);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\RolePermissionController.java ===
+package com.cromp.iam.infrastructure.web;
+
+import com.cromp.iam.api.dto.request.AddRolePermissionRequest;
+import com.cromp.iam.api.dto.response.RolePermissionResponse;
+import com.cromp.iam.api.service.RolePermissionFacade;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/role-permissions")
+@RequiredArgsConstructor
+public class RolePermissionController {
+
+    private final RolePermissionFacade facade;
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('role:manage')")  // т.к. управление пермиссиями требует админских прав
+    @ResponseStatus(HttpStatus.CREATED)
+    public RolePermissionResponse add(@Valid @RequestBody AddRolePermissionRequest request) {
+        return facade.add(request);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('role:manage')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void remove(@PathVariable Long id) {
+        facade.remove(id);
+    }
+
+    @GetMapping("/role/{roleId}")
+    @PreAuthorize("hasAuthority('role:manage')")
+    public List<RolePermissionResponse> getByRoleId(@PathVariable Long roleId) {
+        return facade.getByRoleId(roleId);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\UserController.java ===
+package com.cromp.iam.infrastructure.web;
+
+import com.cromp.iam.api.dto.request.ChangeUserEmailRequest;
+import com.cromp.iam.api.dto.request.ChangeUserPasswordRequest;
+import com.cromp.iam.api.dto.request.UpdateUserProfileRequest;
+import com.cromp.iam.api.dto.response.UserResponse;
+import com.cromp.iam.api.service.UserFacade;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserFacade userFacade;
+
+    @GetMapping("/{userUuid}")
+    @PreAuthorize("isAuthenticated()")
+    public UserResponse getUser(@PathVariable UUID userUuid) {
+        return userFacade.getById(userUuid);
+    }
+
+    @PutMapping("/{userUuid}/profile")
+    @PreAuthorize("isAuthenticated()")
+    public UserResponse updateProfile(@PathVariable UUID userUuid,
+                                      @Valid @RequestBody UpdateUserProfileRequest request) {
+        return userFacade.updateProfile(userUuid, request);
+    }
+
+    
+    @PutMapping("/{userUuid}/email")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changeEmail(@PathVariable UUID userUuid,
+                            @Valid @RequestBody ChangeUserEmailRequest request) {
+        userFacade.changeEmail(userUuid, request);
+    }
+
+    @PutMapping("/{userUuid}/password")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@PathVariable UUID userUuid,
+                               @Valid @RequestBody ChangeUserPasswordRequest request) {
+        userFacade.changePassword(userUuid, request);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\filter\JwtAuthenticationFilter.java ===
+package com.cromp.iam.infrastructure.web.filter;
+
+import com.cromp.iam.infrastructure.security.config.JwtConfig;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final SecretKey signingKey;
+
+    public JwtAuthenticationFilter(JwtConfig jwtConfig) {
+        this.signingKey = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            try {
+                Claims claims = Jwts.parser()
+                        .verifyWith(signingKey)
+                        .build()
+                        .parseSignedClaims(token)
+                        .getPayload();
+
+                Long userId = Long.parseLong(claims.getSubject());
+                Long orgId = claims.get("org_id", String.class) != null
+                        ? Long.parseLong(claims.get("org_id", String.class))
+                        : null;
+                List<String> permissions = claims.get("permissions", List.class);
+
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                if (permissions != null) {
+                    permissions.forEach(p -> authorities.add(new SimpleGrantedAuthority(p)));
+                }
+
+                // Устанавливаем аутентификацию
+                Authentication auth = new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+                // Сохраняем organizationId в атрибуты запроса для OrganizationContextFilter
+                if (orgId != null) {
+                    request.setAttribute("organizationId", orgId);
+                }
+            } catch (Exception e) {
+                // Токен невалидный, просто не устанавливаем аутентификацию
+                logger.debug("JWT parsing failed: " + e.getMessage());
+            }
+        }
+        filterChain.doFilter(request, response);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\main\java\com\cromp\iam\infrastructure\web\filter\OrganizationContextFilter.java ===
+package com.cromp.iam.infrastructure.web.filter;
+
+import com.cromp.iam.application.port.OrganizationContextPort;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+@RequiredArgsConstructor
+public class OrganizationContextFilter extends OncePerRequestFilter {
+
+    private final OrganizationContextPort organizationContextPort;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        Long orgId = (Long) request.getAttribute("organizationId");
+        if (orgId != null) {
+            organizationContextPort.setCurrentOrganizationId(orgId);
+        } else {
+            organizationContextPort.clear();
+        }
+        filterChain.doFilter(request, response);
+        organizationContextPort.clear(); // очистка после запроса
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\iam\src\test\java\com\cromp\iam\application\service\AuthIntegrationTest.java ===
+package com.cromp.iam.application.service;
+
+import com.cromp.iam.api.dto.request.LoginRequest;
+import com.cromp.iam.api.dto.request.RegisterRequest;
+import com.cromp.iam.api.dto.request.SelectOrganizationRequest;
+import com.cromp.iam.api.dto.response.AuthResponse;
+import com.cromp.iam.api.dto.response.UserResponse;
+import com.cromp.iam.domain.model.Role;
+import com.cromp.iam.domain.model.enums.UserRole;
+import com.cromp.iam.domain.repository.RoleRepositoryPort;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.*;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.client.RestTemplate;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+public class AuthIntegrationTest {
+
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
+            .withDatabaseName("testdb")
+            .withUsername("test")
+            .withPassword("test");
+
+    @LocalServerPort
+    private int port;
+
+    @Autowired
+    private RoleRepositoryPort roleRepository;
+
+    private RestTemplate restTemplate = new RestTemplate();
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        // Liquibase/Flyway запустятся автоматически, если они есть в classpath
+    }
+
+    @BeforeEach
+    void setUp() {
+        // Убедимся, что роль OWNER существует в БД
+        if (roleRepository.findByName(UserRole.OWNER).isEmpty()) {
+            roleRepository.save(Role.of(UserRole.OWNER, "Organization owner"));
+        }
+    }
+
+    private String baseUrl() {
+        return "http://localhost:" + port;
+    }
+
+    @Test
+    void shouldRegisterLoginSelectOrganizationAndAccessProtectedEndpoint() {
+        // 1. Регистрация
+        RegisterRequest regReq = new RegisterRequest(
+                "new@example.com", "password123", "NewOrg",
+                "John", "Doe", null, "John Doe"
+        );
+        ResponseEntity<AuthResponse> regResp = restTemplate.postForEntity(
+                baseUrl() + "/api/v1/auth/register", regReq, AuthResponse.class
+        );
+        assertThat(regResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        AuthResponse regBody = regResp.getBody();
+        assertThat(regBody.accessToken()).isNotBlank();
+        assertThat(regBody.activeOrganization()).isNotNull();
+        Long orgId = regBody.activeOrganization().id();
+        String tokenAfterReg = regBody.accessToken();
+
+        // 2. Логин
+        LoginRequest loginReq = new LoginRequest("new@example.com", "password123");
+        ResponseEntity<AuthResponse> loginResp = restTemplate.postForEntity(
+                baseUrl() + "/api/v1/auth/login", loginReq, AuthResponse.class
+        );
+        assertThat(loginResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        AuthResponse loginBody = loginResp.getBody();
+        assertThat(loginBody.organizations()).hasSize(1);
+        // Токен без организации
+        String tokenBeforeSelect = loginBody.accessToken();
+
+        // 3. Выбор организации (с токеном из логина)
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(tokenBeforeSelect);
+        SelectOrganizationRequest selReq = new SelectOrganizationRequest(orgId);
+        HttpEntity<SelectOrganizationRequest> entity = new HttpEntity<>(selReq, headers);
+        ResponseEntity<AuthResponse> selResp = restTemplate.postForEntity(
+                baseUrl() + "/api/v1/auth/select-organization", entity, AuthResponse.class
+        );
+        assertThat(selResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        AuthResponse selBody = selResp.getBody();
+        assertThat(selBody.activeOrganization()).isNotNull();
+        String tokenWithOrg = selBody.accessToken();
+
+        // 4. Доступ к защищённому эндпоинту (получение профиля)
+        headers = new HttpHeaders();
+        headers.setBearerAuth(tokenWithOrg);
+        HttpEntity<Void> profileEntity = new HttpEntity<>(headers);
+        ResponseEntity<UserResponse> userResp = restTemplate.exchange(
+                baseUrl() + "/api/v1/users/" + regBody.user().id(),
+                HttpMethod.GET,
+                profileEntity,
+                UserResponse.class
+        );
+        assertThat(userResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(userResp.getBody().email()).isEqualTo("new@example.com");
+
+        // 5. Попытка доступа к защищённому эндпоинту без токена должна вернуть 401/403
+        ResponseEntity<String> unauthorized = restTemplate.getForEntity(
+                baseUrl() + "/api/v1/users/1", String.class
+        );
+        assertThat(unauthorized.getStatusCode()).isIn(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN);
+    }
+}
+

@@ -30,6 +30,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -64,12 +65,12 @@ public class InvitationApplicationService implements InvitationFacade {
         String token = generateToken();
         String tokenHash = hashToken(token);
 
+        Role role = roleRepository.findByName(request.role())
+                .orElseThrow(() -> new DomainException("Role not found"));
         Instant expiresAt = request.expiresAt() != null
                 ? request.expiresAt()
                 : Instant.now().plusSeconds(7 * 24 * 3600);
 
-        Role role = roleRepository.findByName(request.role())
-                .orElseThrow(() -> new DomainException("Role not found"));
 
         Invitation invitation = Invitation.create(
                 organizationId,
@@ -121,12 +122,12 @@ public class InvitationApplicationService implements InvitationFacade {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
 
-        Invitation invitation = findInvitationByToken(request.token());
-
-        ensurePendingAndNotExpired(invitation);
 
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new DomainException("User not found"));
+        Invitation invitation = findInvitationByToken(request.token());
+
+        ensurePendingAndNotExpired(invitation);
 
         if (!currentUser.getEmail().equalsIgnoreCase(invitation.getEmail())) {
             throw new SecurityException("Invitation is not addressed to current user");
@@ -139,7 +140,7 @@ public class InvitationApplicationService implements InvitationFacade {
     public InvitationResponse revoke(RevokeInvitationRequest request) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
-
+                
         Invitation invitation = invitationRepository.findByInvitationUuid(request.invitationUuid())
                 .orElseThrow(() -> new DomainException("Invitation not found"));
 
@@ -155,11 +156,11 @@ public class InvitationApplicationService implements InvitationFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public InvitationResponse getById(Long invitationId) {
+    public InvitationResponse getById(UUID invitationUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
 
-        Invitation invitation = invitationRepository.findById(invitationId)
+        Invitation invitation = invitationRepository.findByInvitationUuid(invitationUuid)
                 .orElseThrow(() -> new DomainException("Invitation not found"));
 
         if (!permissionCheckerPort.isMember(currentUserId, invitation.getOrganizationId())) {
@@ -172,18 +173,21 @@ public class InvitationApplicationService implements InvitationFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public List<InvitationResponse> getByOrganization(Long organizationId) {
+    public List<InvitationResponse> getByOrganization(UUID orgUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"))
+                .getId();
 
         if (!permissionCheckerPort.isMember(currentUserId, organizationId)) {
             throw new SecurityException("Not a member of this organization");
         }
 
         return invitationRepository.findByOrganizationId(organizationId).stream()
-                .map(inv -> {
-                    Role role = roleRepository.findById(inv.getRoleId()).orElse(null);
-                    return invitationMapper.toResponse(inv, role != null ? role.getName().toString() : null);
+                .map(invitation -> {
+                    Role role = roleRepository.findById(invitation.getRoleId()).orElse(null);
+                    return invitationMapper.toResponse(invitation, role != null ? role.getName().toString() : null);
                 })
                 .toList();
     }
@@ -204,6 +208,7 @@ public class InvitationApplicationService implements InvitationFacade {
             throw new DomainException("Invitation has expired");
         }
     }
+
 
     private String generateToken() {
         byte[] bytes = new byte[32];

@@ -1,0 +1,26 @@
+# Compiled class files
+*.class
+
+# Build directories
+.gradle/
+build/
+target/
+out/
+bin/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+tt/

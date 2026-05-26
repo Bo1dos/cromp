@@ -1,5 +1,6 @@
 package com.cromp.iam.domain.model;
 
+import com.cromp.iam.domain.model.support.AbstractAuditableDomainEntity;
 import com.cromp.iam.domain.model.support.SchemaLimits;
 
 import lombok.AccessLevel;

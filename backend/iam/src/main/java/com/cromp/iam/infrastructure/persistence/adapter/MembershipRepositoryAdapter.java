@@ -56,6 +56,6 @@ public class MembershipRepositoryAdapter implements MembershipRepositoryPort {
 
     @Override
     public Optional<Membership> findByMembershipUuid(UUID membershipUuid) {
-        return repository.findByMembershipUuid(membershipUuid);
+        return repository.findByMembershipUuid(membershipUuid).map(mapper::toDomain);
     }
 }

@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.cromp.iam.domain.model.support.AbstractAuditableDomainEntity;
+
 import static com.cromp.iam.domain.model.support.DomainChecks.requireNonNullValue;
 
 @Getter

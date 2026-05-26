@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface MembershipJpaRepository extends JpaRepository<MembershipJpaEntity, Long> {
 
-    Optional<Membership> findByMembershipUuid(UUID membershipUuid);
+    Optional<MembershipJpaEntity> findByMembershipUuid(UUID membershipUuid);
     Optional<MembershipJpaEntity> findByUserIdAndOrganizationId(Long userId, Long organizationId);
     List<MembershipJpaEntity> findByOrganizationId(Long organizationId);
     List<MembershipJpaEntity> findByUserId(Long userId);

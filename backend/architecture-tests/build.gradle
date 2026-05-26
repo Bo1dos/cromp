@@ -4,18 +4,17 @@ plugins {
 
 dependencies {
     // ArchUnit
-    implementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
 
-    // Зависимости на все модули для сканирования классов
-    implementation project(':backend:common')
-    implementation project(':backend:iam')
-    implementation project(':backend:jobs')
-    implementation project(':backend:schedules')
-    implementation project(':backend:executions')
-    implementation project(':backend:secrets')
-    implementation project(':backend:analytics')
-    implementation project(':backend:api')
-    implementation project(':backend:orchestrator')
+    // Все модули — testImplementation, т.к. сканируются только в тестах
+    testImplementation project(':backend:common')
+    testImplementation project(':backend:iam')
+    testImplementation project(':backend:jobs')
+    testImplementation project(':backend:schedules')
+    testImplementation project(':backend:executions')
+    testImplementation project(':backend:secrets')
+    testImplementation project(':backend:analytics')
+    testImplementation project(':backend:orchestrator')
 }
 
 test {
