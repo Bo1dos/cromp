@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+
+  # ── Java backend ─────────────────────────────────────────────────────────────
+
   app:
     build:
       context: ./backend
@@ -15,6 +18,7 @@ services:
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
+      ML_SERVICE_URL: http://ml-service:8000
     ports:
       - "8080:8080"
     depends_on:
@@ -22,8 +26,96 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      ml-service:
+        condition: service_healthy
     networks:
       - cromp-net
+
+  # ── ML сервис ────────────────────────────────────────────────────────────────
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+      target: api              # multi-stage: берём api-таргет
+    container_name: cromp-ml
+    environment:
+      DATABASE_URL: postgresql+psycopg2://cromp:cromp123@postgres:5432/cromp
+      REDIS_URL: redis://redis:6379/0
+      MODELS_DIR: /app/models
+    ports:
+      - "8000:8000"
+    volumes:
+      - ml_models:/app/models  # модели переживают перезапуск контейнера
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s        # даём время загрузить модели при старте
+    networks:
+      - cromp-net
+
+  # ── Celery worker (обучение моделей) ─────────────────────────────────────────
+
+  celery-worker:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+      target: worker
+    container_name: cromp-celery-worker
+    environment:
+      DATABASE_URL: postgresql+psycopg2://cromp:cromp123@postgres:5432/cromp
+      REDIS_URL: redis://redis:6379/0
+      MODELS_DIR: /app/models
+    volumes:
+      - ml_models:/app/models  # тот же volume — воркер пишет, api читает
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cromp-net
+
+  # ── Celery beat (планировщик переобучения) ────────────────────────────────────
+
+  celery-beat:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+      target: beat
+    container_name: cromp-celery-beat
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - cromp-net
+
+  # ── Redis (брокер Celery) ────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    container_name: cromp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cromp-net
+
+  # ── Инфраструктура (без изменений) ───────────────────────────────────────────
 
   postgres:
     image: postgres:17-alpine
@@ -110,6 +202,8 @@ networks:
 volumes:
   postgres_data:
   minio_data:
+  redis_data:
+  ml_models:
   prometheus_data:
   grafana_data:
   loki_data:
