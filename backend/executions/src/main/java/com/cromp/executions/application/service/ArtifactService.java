@@ -46,16 +46,21 @@ public class ArtifactService {
                 .filter(e -> e.getOrganizationId().equals(organizationId))
                 .orElseThrow(() -> new ExecutionNotFoundException(execUuid));
 
-        String originalFilename = file.getOriginalFilename() != null
-                ? file.getOriginalFilename()
-                : request.kind().name().toLowerCase();
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            originalFilename = request.kind().name().toLowerCase();
+        }
+
+        String contentType = request.contentType() != null && !request.contentType().isBlank()
+                ? request.contentType()
+                : file.getContentType();
 
         StoredArtifact stored;
         try {
             stored = storagePort.store(
                     execution.getId(),
                     originalFilename,
-                    request.contentType() != null ? request.contentType() : file.getContentType(),
+                    contentType,
                     file.getInputStream(),
                     file.getSize()
             );
@@ -69,7 +74,7 @@ public class ArtifactService {
                 stored.storagePath(),
                 stored.sizeBytes(),
                 stored.checksumSha256(),
-                request.contentType() != null ? request.contentType() : file.getContentType(),
+                contentType,
                 userId
         );
         artifact = artifactRepository.save(artifact);

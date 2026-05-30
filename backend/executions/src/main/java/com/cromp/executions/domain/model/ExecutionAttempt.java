@@ -1,6 +1,7 @@
 package com.cromp.executions.domain.model;
 
 import com.cromp.executions.domain.model.enums.AttemptStatus;
+import com.cromp.executions.domain.model.support.DomainChecks;
 import lombok.Getter;
 
 import java.time.Instant;
@@ -39,15 +40,16 @@ public class ExecutionAttempt {
             UUID idempotencyKey
     ) {
         ExecutionAttempt a = new ExecutionAttempt();
+        a.executionId = DomainChecks.requireNonNullValue(executionId, "executionId");
+        a.organizationId = DomainChecks.requireNonNullValue(organizationId, "organizationId");
         a.attemptUuid = UUID.randomUUID();
-        a.executionId = executionId;
-        a.organizationId = organizationId;
         a.attemptNumber = attemptNumber;
         a.status = AttemptStatus.PENDING;
         a.scheduledAt = scheduledAt;
         a.idempotencyKey = idempotencyKey != null ? idempotencyKey : UUID.randomUUID();
-        a.createdAt = Instant.now();
-        a.updatedAt = Instant.now();
+        Instant now = Instant.now();
+        a.createdAt = now;
+        a.updatedAt = now;
         return a;
     }
 
@@ -59,12 +61,12 @@ public class ExecutionAttempt {
             String outputSummary, UUID traceId, Instant createdAt, Instant updatedAt
     ) {
         ExecutionAttempt a = new ExecutionAttempt();
-        a.id = id;
-        a.attemptUuid = attemptUuid;
-        a.executionId = executionId;
-        a.organizationId = organizationId;
+        a.id = DomainChecks.requireNonNullValue(id, "id");
+        a.attemptUuid = DomainChecks.requireNonNullValue(attemptUuid, "attemptUuid");
+        a.executionId = DomainChecks.requireNonNullValue(executionId, "executionId");
+        a.organizationId = DomainChecks.requireNonNullValue(organizationId, "organizationId");
         a.attemptNumber = attemptNumber;
-        a.status = status;
+        a.status = DomainChecks.requireNonNullValue(status, "status");
         a.statusReason = statusReason;
         a.errorClass = errorClass;
         a.scheduledAt = scheduledAt;
@@ -76,22 +78,24 @@ public class ExecutionAttempt {
         a.idempotencyKey = idempotencyKey;
         a.outputSummary = outputSummary;
         a.traceId = traceId;
-        a.createdAt = createdAt;
-        a.updatedAt = updatedAt;
+        a.createdAt = DomainChecks.requireNonNullValue(createdAt, "createdAt");
+        a.updatedAt = DomainChecks.requireNonNullValue(updatedAt, "updatedAt");
         return a;
     }
 
     public void dispatch() {
         this.status = AttemptStatus.DISPATCHED;
-        this.claimedAt = Instant.now();
-        this.updatedAt = Instant.now();
+        Instant now = Instant.now();
+        this.claimedAt = now;
+        this.updatedAt = now;
     }
 
     public void start(UUID traceId) {
         this.status = AttemptStatus.RUNNING;
-        this.startedAt = Instant.now();
+        Instant now = Instant.now();
+        this.startedAt = now;
         this.traceId = traceId;
-        this.updatedAt = Instant.now();
+        this.updatedAt = now;
     }
 
     public void complete(AttemptStatus terminalStatus, String outputSummary,
@@ -100,24 +104,27 @@ public class ExecutionAttempt {
         this.outputSummary = outputSummary;
         this.errorClass = errorClass;
         this.statusReason = statusReason;
-        this.finishedAt = Instant.now();
+        Instant now = Instant.now();
+        this.finishedAt = now;
         if (this.startedAt != null) {
             this.durationMs = (int) (finishedAt.toEpochMilli() - startedAt.toEpochMilli());
         }
-        this.updatedAt = Instant.now();
+        this.updatedAt = now;
     }
 
     public void cancel(String reason) {
         this.status = AttemptStatus.CANCELLED;
         this.statusReason = reason;
-        this.finishedAt = Instant.now();
-        this.updatedAt = Instant.now();
+        Instant now = Instant.now();
+        this.finishedAt = now;
+        this.updatedAt = now;
     }
 
     public void markTimeout() {
         this.status = AttemptStatus.TIMEOUT;
         this.statusReason = "Timed out by janitor";
-        this.finishedAt = Instant.now();
-        this.updatedAt = Instant.now();
+        Instant now = Instant.now();
+        this.finishedAt = now;
+        this.updatedAt = now;
     }
 }

@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - include:
+      file: classpath:db/changelog/V0000-common-extensions.yaml
+  - include:
+      file: classpath:db/changelog/V0001-common-enums.yaml
+  - include:
+      file: classpath:db/changelog/V0002-common-functions.yaml
+  - include:
+      file: classpath:db/changelog/V0003-iam-organizations.yaml
+  - include:
+      file: classpath:db/changelog/V0004-iam-users.yaml
+  - include:
+      file: classpath:db/changelog/V0010-jobs-jobs.yaml
+  - changeSet:
+      id: create-job-versions-table-test
+      author: codex
+      changes:
+        - createTable:
+            tableName: job_versions
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true } }
+              - column: { name: job_id, type: BIGINT, constraints: { nullable: false } }
+              - column: { name: version, type: INTEGER, constraints: { nullable: false } }
+              - column: { name: lock_version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: config, type: JSONB, constraints: { nullable: false } }
+              - column: { name: target_url, type: TEXT }
+              - column: { name: method, type: VARCHAR(10) }
+              - column: { name: timeout_ms, type: INTEGER }
+              - column: { name: retry_policy, type: JSONB }
+              - column: { name: created_by, type: BIGINT }
+              - column: { name: created_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: job_versions
+            columnNames: job_id, version
+            constraintName: uk_job_versions_job_version
+  - include:
+      file: classpath:db/changelog/V0013-executions-executions.yaml
+  - include:
+      file: classpath:db/changelog/V0014-executions-execution-attempts.yaml
+  - include:
+      file: classpath:db/changelog/V0015-executions-functions-triggers.yaml
+  - include:
+      file: classpath:db/changelog/V0016-executions-execution-artifacts.yaml

@@ -1,6 +1,7 @@
 package com.cromp.executions.domain.model;
 
 import com.cromp.executions.domain.model.enums.ArtifactKind;
+import com.cromp.executions.domain.model.support.DomainChecks;
 import lombok.Getter;
 
 import java.time.Instant;
@@ -33,8 +34,8 @@ public class ExecutionArtifact {
             Long uploadedBy
     ) {
         ExecutionArtifact a = new ExecutionArtifact();
-        a.executionId = executionId;
-        a.kind = kind;
+        a.executionId = DomainChecks.requireNonNullValue(executionId, "executionId");
+        a.kind = DomainChecks.requireNonNullValue(kind, "kind");
         a.storagePath = storagePath;
         a.sizeBytes = sizeBytes;
         a.checksumSha256 = checksumSha256;
@@ -51,9 +52,9 @@ public class ExecutionArtifact {
             Long uploadedBy, Instant uploadedAt
     ) {
         ExecutionArtifact a = new ExecutionArtifact();
-        a.id = id;
-        a.executionId = executionId;
-        a.kind = kind;
+        a.id = DomainChecks.requireNonNullValue(id, "id");
+        a.executionId = DomainChecks.requireNonNullValue(executionId, "executionId");
+        a.kind = DomainChecks.requireNonNullValue(kind, "kind");
         a.storagePath = storagePath;
         a.sizeBytes = sizeBytes;
         a.checksumSha256 = checksumSha256;
@@ -62,7 +63,7 @@ public class ExecutionArtifact {
         a.metadata = metadata;
         a.retentionDays = retentionDays;
         a.uploadedBy = uploadedBy;
-        a.uploadedAt = uploadedAt;
+        a.uploadedAt = DomainChecks.requireNonNullValue(uploadedAt, "uploadedAt");
         return a;
     }
 }

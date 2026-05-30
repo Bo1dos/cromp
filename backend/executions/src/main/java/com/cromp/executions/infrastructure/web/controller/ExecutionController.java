@@ -32,14 +32,14 @@ public class ExecutionController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public PagedResponse<ExecutionResponse> list(
-            @PathVariable Long organizationId,
-            @RequestParam(required = false) Long jobId,
-            @RequestParam(required = false) ExecutionStatus status,
-            @RequestParam(required = false) ExecutionSource source,
-            @RequestParam(required = false) Instant from,
-            @RequestParam(required = false) Instant to,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "20") int size
+            @PathVariable("organizationId") Long organizationId,
+            @RequestParam(name = "jobId", required = false) Long jobId,
+            @RequestParam(name = "status", required = false) ExecutionStatus status,
+            @RequestParam(name = "source", required = false) ExecutionSource source,
+            @RequestParam(name = "from", required = false) Instant from,
+            @RequestParam(name = "to", required = false) Instant to,
+            @RequestParam(name = "page", defaultValue = "0")  int page,
+            @RequestParam(name = "size", defaultValue = "20") int size
     ) {
         ExecutionFilter filter = new ExecutionFilter(jobId, status, source, from, to, page, size);
         return executionService.listExecutions(organizationId, filter);
@@ -49,8 +49,8 @@ public class ExecutionController {
     @GetMapping("/{executionId}")
     @PreAuthorize("isAuthenticated()")
     public ExecutionDetailResponse get(
-            @PathVariable Long organizationId,
-            @PathVariable UUID executionId
+            @PathVariable("organizationId") Long organizationId,
+            @PathVariable("executionId") UUID executionId
     ) {
         return executionService.getExecution(organizationId, executionId);
     }
@@ -60,8 +60,8 @@ public class ExecutionController {
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(
-            @PathVariable Long organizationId,
-            @PathVariable UUID executionId
+            @PathVariable("organizationId") Long organizationId,
+            @PathVariable("executionId") UUID executionId
     ) {
         executionService.cancelExecution(organizationId, executionId);
     }
@@ -70,8 +70,8 @@ public class ExecutionController {
     @GetMapping("/{executionId}/attempts")
     @PreAuthorize("isAuthenticated()")
     public List<AttemptResponse> listAttempts(
-            @PathVariable Long organizationId,
-            @PathVariable UUID executionId
+            @PathVariable("organizationId") Long organizationId,
+            @PathVariable("executionId") UUID executionId
     ) {
         return attemptService.listAttempts(organizationId, executionId);
     }
@@ -80,8 +80,8 @@ public class ExecutionController {
     @GetMapping("/{executionId}/artifacts")
     @PreAuthorize("isAuthenticated()")
     public List<ArtifactResponse> listArtifacts(
-            @PathVariable Long organizationId,
-            @PathVariable UUID executionId
+            @PathVariable("organizationId") Long organizationId,
+            @PathVariable("executionId") UUID executionId
     ) {
         return artifactService.listArtifacts(organizationId, executionId);
     }
@@ -91,8 +91,8 @@ public class ExecutionController {
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
     @ResponseStatus(HttpStatus.CREATED)
     public ArtifactResponse uploadArtifact(
-            @PathVariable Long organizationId,
-            @PathVariable UUID executionId,
+            @PathVariable("organizationId") Long organizationId,
+            @PathVariable("executionId") UUID executionId,
             @RequestPart("meta") UploadArtifactRequest request,
             @RequestPart("file") MultipartFile file
     ) {

@@ -2,6 +2,7 @@ package com.cromp.executions.domain.model;
 
 import com.cromp.executions.domain.model.enums.ExecutionSource;
 import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import com.cromp.executions.domain.model.support.DomainChecks;
 import lombok.Getter;
 
 import java.time.Instant;
@@ -42,20 +43,21 @@ public class Execution {
             String executionPolicySnapshot
     ) {
         Execution e = new Execution();
+        e.organizationId = DomainChecks.requireNonNullValue(organizationId, "organizationId");
+        e.jobId = DomainChecks.requireNonNullValue(jobId, "jobId");
+        e.jobVersionId = DomainChecks.requireNonNullValue(jobVersionId, "jobVersionId");
         e.execUuid = UUID.randomUUID();
-        e.organizationId = organizationId;
-        e.jobId = jobId;
-        e.jobVersionId = jobVersionId;
         e.priority = priority;
-        e.source = source;
-        e.triggeredAt = Instant.now();
+        e.source = DomainChecks.requireNonNullValue(source, "source");
+        Instant now = Instant.now();
+        e.triggeredAt = now;
         e.scheduledAt = scheduledAt;
         e.finalStatus = ExecutionStatus.CREATED;
         e.totalAttempts = 0;
         e.correlationId = correlationId;
         e.executionPolicySnapshot = executionPolicySnapshot;
-        e.createdAt = Instant.now();
-        e.updatedAt = Instant.now();
+        e.createdAt = now;
+        e.updatedAt = now;
         return e;
     }
 
@@ -68,42 +70,45 @@ public class Execution {
             Instant createdAt, Instant updatedAt
     ) {
         Execution e = new Execution();
-        e.id = id;
-        e.execUuid = execUuid;
-        e.organizationId = organizationId;
-        e.jobId = jobId;
+        e.id = DomainChecks.requireNonNullValue(id, "id");
+        e.execUuid = DomainChecks.requireNonNullValue(execUuid, "execUuid");
+        e.organizationId = DomainChecks.requireNonNullValue(organizationId, "organizationId");
+        e.jobId = DomainChecks.requireNonNullValue(jobId, "jobId");
         e.jobVersionId = jobVersionId;
         e.priority = priority;
-        e.source = source;
+        e.source = DomainChecks.requireNonNullValue(source, "source");
         e.triggeredAt = triggeredAt;
         e.scheduledAt = scheduledAt;
-        e.finalStatus = finalStatus;
+        e.finalStatus = DomainChecks.requireNonNullValue(finalStatus, "finalStatus");
         e.totalAttempts = totalAttempts;
         e.startedAt = startedAt;
         e.finishedAt = finishedAt;
         e.correlationId = correlationId;
         e.executionPolicySnapshot = executionPolicySnapshot;
-        e.createdAt = createdAt;
-        e.updatedAt = updatedAt;
+        e.createdAt = DomainChecks.requireNonNullValue(createdAt, "createdAt");
+        e.updatedAt = DomainChecks.requireNonNullValue(updatedAt, "updatedAt");
         return e;
     }
 
     // Доменные методы — только разрешённые переходы, сама логика в StateMachine
     public void markInProgress() {
         this.finalStatus = ExecutionStatus.IN_PROGRESS;
-        if (this.startedAt == null) this.startedAt = Instant.now();
-        this.updatedAt = Instant.now();
+        Instant now = Instant.now();
+        if (this.startedAt == null) this.startedAt = now;
+        this.updatedAt = now;
     }
 
     public void complete(ExecutionStatus status) {
         this.finalStatus = status;
-        this.finishedAt = Instant.now();
-        this.updatedAt = Instant.now();
+        Instant now = Instant.now();
+        this.finishedAt = now;
+        this.updatedAt = now;
     }
 
     public void cancel() {
         this.finalStatus = ExecutionStatus.CANCELLED;
-        this.finishedAt = Instant.now();
-        this.updatedAt = Instant.now();
+        Instant now = Instant.now();
+        this.finishedAt = now;
+        this.updatedAt = now;
     }
 }
