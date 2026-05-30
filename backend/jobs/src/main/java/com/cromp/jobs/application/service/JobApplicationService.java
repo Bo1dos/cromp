@@ -69,6 +69,10 @@ public class JobApplicationService implements JobFacade {
 
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
+        if (job.isDeleted()) {
+            throw new JobNotFoundException("Job not found");
+        }
         Long jobId = job.getId();
 
         Map<String, Object> changes = new HashMap<>();
@@ -125,6 +129,10 @@ public class JobApplicationService implements JobFacade {
         }
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
+        if (job.isDeleted()) {
+            throw new JobNotFoundException("Job not found");
+        }
         JobVersion version = versionRepository.findLatestByJobId(job.getId())
                 .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), -1));
         int versionCount = versionRepository.findByJobIdOrderByVersionDesc(job.getId()).size();
@@ -171,11 +179,25 @@ public class JobApplicationService implements JobFacade {
 
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
+        if (job.isDeleted()) {
+            throw new JobNotFoundException("Job not found");
+        }
         Long jobId = job.getId();
 
         switch (request.status()) {
-            case ACTIVE -> job.activate();
-            case DISABLED -> job.disable();
+            case ACTIVE -> {
+                if (job.getStatus() == JobStatus.ACTIVE) {
+                    throw new InvalidJobStateException("Job is already ACTIVE");
+                }
+                job.activate();
+            }
+            case DISABLED -> {
+                if (job.getStatus() == JobStatus.DISABLED) {
+                    throw new InvalidJobStateException("Job is already DISABLED");
+                }
+                job.disable();
+            }
             default -> throw new InvalidJobStateException("Can only change to ACTIVE or DISABLED");
         }
 
@@ -200,6 +222,10 @@ public class JobApplicationService implements JobFacade {
 
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
+        if (job.isDeleted()) {
+            throw new JobNotFoundException("Job not found");
+        }
         Long jobId = job.getId();
         if (job.getStatus() != JobStatus.ACTIVE) {
             throw new InvalidJobStateException("Job must be ACTIVE to trigger manually");
@@ -237,10 +263,20 @@ public class JobApplicationService implements JobFacade {
         }
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
+        if (job.isDeleted()) {
+            throw new InvalidJobStateException("Job is already deleted");
+        }
         Long jobId = job.getId();
         job.archive();
         jobRepository.save(job);
         auditPort.record("JOB.ARCHIVE", organizationId, userId, "jobs", jobId, Map.of("status", "ARCHIVED"));
+    }
+
+    private void ensureOrganizationAccess(Job job, Long organizationId) {
+        if (!Objects.equals(job.getOrganizationId(), organizationId)) {
+            throw new SecurityException("Foreign organization access denied");
+        }
     }
 
 }

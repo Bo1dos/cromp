@@ -37,20 +37,20 @@ public class JobRepositoryAdapter implements JobRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public Optional<Job> findByIdAndOrganizationId(Long id, Long organizationId) {
-        return repository.findByIdAndOrganizationId(id, organizationId).map(mapper::toDomain);
+        return repository.findByIdAndOrganizationIdAndDeletedAtIsNull(id, organizationId).map(mapper::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Job> findByOrganizationId(Long organizationId) {
-        return repository.findByOrganizationIdOrderByCreatedAtDesc(organizationId)
+        return repository.findByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtDesc(organizationId)
                 .stream().map(mapper::toDomain).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Job> findByOrganizationIdAndStatus(Long organizationId, JobStatus status) {
-        return repository.findByOrganizationIdAndStatus(organizationId, status)
+        return repository.findByOrganizationIdAndStatusAndDeletedAtIsNull(organizationId, status)
                 .stream().map(mapper::toDomain).toList();
     }
 
@@ -63,6 +63,6 @@ public class JobRepositoryAdapter implements JobRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public Optional<Job> findByJobUuid(UUID jobUuid) {
-        return repository.findByJobUuid(jobUuid).map(mapper::toDomain);
+        return repository.findByJobUuidAndDeletedAtIsNull(jobUuid).map(mapper::toDomain);
     }
 }

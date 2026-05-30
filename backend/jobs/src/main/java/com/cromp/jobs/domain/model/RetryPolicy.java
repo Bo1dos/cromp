@@ -18,6 +18,6 @@ public record RetryPolicy(
     }
 
     public static RetryPolicy defaultPolicy() {
-        return new RetryPolicy(DEFAULT_MAX_ATTEMPTS, DEFAULT_MAX_ATTEMPTS, DEFAULT_BACKOFF_MULTIPLIER, List.of("5xx", "TIMEOUT", "NETWORK_ERROR"));
+        return new RetryPolicy(DEFAULT_MAX_ATTEMPTS, DEFAULT_BACKOFF_MS, DEFAULT_BACKOFF_MULTIPLIER, List.of("5xx", "TIMEOUT", "NETWORK_ERROR"));
     }
 }

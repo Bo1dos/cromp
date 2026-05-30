@@ -9,9 +9,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface JobJpaRepository extends JpaRepository<JobJpaEntity, Long> {
-    Optional<JobJpaEntity> findByIdAndOrganizationId(Long id, Long organizationId);
-    List<JobJpaEntity> findByOrganizationIdOrderByCreatedAtDesc(Long organizationId);
-    List<JobJpaEntity> findByOrganizationIdAndStatus(Long organizationId, JobStatus status);
+    Optional<JobJpaEntity> findByIdAndOrganizationIdAndDeletedAtIsNull(Long id, Long organizationId);
+    List<JobJpaEntity> findByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long organizationId);
+    List<JobJpaEntity> findByOrganizationIdAndStatusAndDeletedAtIsNull(Long organizationId, JobStatus status);
     boolean existsByNameAndOrganizationIdAndDeletedAtIsNull(String name, Long organizationId);
-    Optional<JobJpaEntity> findByJobUuid(UUID jobUuid);
+    Optional<JobJpaEntity> findByJobUuidAndDeletedAtIsNull(UUID jobUuid);
 }
