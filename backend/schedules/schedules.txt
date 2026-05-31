@@ -223,16 +223,464 @@ public class ScheduleApplicationService implements ScheduleFacade {
     }
 }
 
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\model\Schedule.java ===
+package com.cromp.schedules.domain.model;
+
+import com.cromp.schedules.domain.model.enums.ScheduleStatus;
+import com.cromp.schedules.domain.model.exceptions.InvalidScheduleStateException;
+import com.cromp.schedules.domain.model.support.AbstractAuditableDomainEntity;
+import com.cromp.schedules.domain.model.support.DomainChecks;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
+public class Schedule extends AbstractAuditableDomainEntity {
+
+    @EqualsAndHashCode.Include
+    private Long jobId;               
+
+    private String cronExpression;
+    private String timezone;
+    private String rules;             // JSONB, пока как строка
+    private Instant nextRunAt;
+    private ScheduleStatus status;
+
+    // Приватный конструктор для полноценной инициализации
+    private Schedule(Long id, Instant createdAt, Instant updatedAt, Instant deletedAt,
+                     Long jobId, String cronExpression, String timezone, String rules,
+                     Instant nextRunAt, ScheduleStatus status) {
+        super(id, createdAt, updatedAt, deletedAt);
+        this.jobId = DomainChecks.requireNonNullValue(jobId, "jobId");
+        this.cronExpression = DomainChecks.requireText(cronExpression, "cronExpression");
+        this.timezone = DomainChecks.requireText(timezone, "timezone");
+        this.rules = rules; // может быть null
+        this.nextRunAt = nextRunAt; // может быть null для paused?
+        this.status = DomainChecks.requireNonNullValue(status, "status");
+    }
+
+    // Фабричный метод создания нового расписания
+    public static Schedule create(Long jobId, String cronExpression, String timezone,
+                                  String rules, Instant nextRunAt) {
+        Instant now = Instant.now();
+        return new Schedule(null, now, now, null, jobId, cronExpression, timezone,
+                            rules, nextRunAt, ScheduleStatus.ACTIVE);
+    }
+
+    // Восстановление из БД
+    public static Schedule reconstitute(Long id, Long jobId, String cronExpression,
+                                        String timezone, String rules,
+                                        Instant nextRunAt, ScheduleStatus status,
+                                        Instant createdAt, Instant updatedAt, Instant deletedAt) {
+        return new Schedule(id, createdAt, updatedAt, deletedAt, jobId, cronExpression,
+                            timezone, rules, nextRunAt, status);
+    }
+
+    // ----------------- Поведенческие методы -----------------
+
+    public void updateCron(String newCronExpression, Instant newNextRunAt) {
+        DomainChecks.requireText(newCronExpression, "cronExpression");
+        ensureActive();
+        this.cronExpression = newCronExpression;
+        this.nextRunAt = newNextRunAt;
+        touch();
+    }
+
+    public void updateTimezone(String newTimezone, Instant newNextRunAt) {
+        DomainChecks.requireText(newTimezone, "timezone");
+        ensureActive();
+        this.timezone = newTimezone;
+        this.nextRunAt = newNextRunAt;
+        touch();
+    }
+
+    public void pause() {
+        ensureActive();
+        this.status = ScheduleStatus.PAUSED;
+        // nextRunAt не обнуляем, просто перестаём учитывать в выборках
+        touch();
+    }
+
+    public void resume(Instant newNextRunAt) {
+        if (this.status != ScheduleStatus.PAUSED) {
+            throw new InvalidScheduleStateException("Only a paused schedule can be resumed");
+        }
+        DomainChecks.requireNonNullValue(newNextRunAt, "newNextRunAt");
+        this.status = ScheduleStatus.ACTIVE;
+        this.nextRunAt = newNextRunAt;
+        touch();
+    }
+
+    // Обновление nextRunAt после выполнения задачи (вызовется orchestrator’ом)
+    public void advanceNextRun(Instant newNextRunAt) {
+        DomainChecks.requireNonNullValue(newNextRunAt, "newNextRunAt");
+        this.nextRunAt = newNextRunAt;
+        touch();
+    }
+
+    private void ensureActive() {
+        if (this.status != ScheduleStatus.ACTIVE) {
+            throw new InvalidScheduleStateException("Schedule is not ACTIVE");
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\model\enums\ScheduleStatus.java ===
+package com.cromp.schedules.domain.model.enums;
+
+public enum ScheduleStatus {
+    ACTIVE,
+    PAUSED
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\model\exceptions\InvalidCronExpressionException.java ===
+package com.cromp.schedules.domain.model.exceptions;
+
+public class InvalidCronExpressionException extends RuntimeException {
+    public InvalidCronExpressionException(String expression, String reason) {
+        super("Invalid cron expression: " + expression + ". " + reason);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\model\exceptions\InvalidScheduleStateException.java ===
+package com.cromp.schedules.domain.model.exceptions;
+
+public class InvalidScheduleStateException extends RuntimeException {
+    public InvalidScheduleStateException(String message) {
+        super(message);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\model\exceptions\ScheduleNotFoundException.java ===
+package com.cromp.schedules.domain.model.exceptions;
+
+public class ScheduleNotFoundException extends RuntimeException {
+    public ScheduleNotFoundException(String message) {
+        super(message);
+    }
+    public ScheduleNotFoundException(Long jobId) {
+        super("Schedule not found for job id=" + jobId);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\model\support\AbstractAuditableDomainEntity.java ===
+package com.cromp.schedules.domain.model.support;
+
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class AbstractAuditableDomainEntity {
+
+    private Long id;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private Instant deletedAt; // пока не используется, но задел для софт-делита
+
+    protected AbstractAuditableDomainEntity(Long id,
+                                            Instant createdAt,
+                                            Instant updatedAt,
+                                            Instant deletedAt) {
+        this.id = id;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.deletedAt = deletedAt;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void markDeleted() {
+        this.deletedAt = Instant.now();
+        touch();
+    }
+
+    public void restore() {
+        this.deletedAt = null;
+        touch();
+    }
+
+    protected void touch() {
+        this.updatedAt = Instant.now();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\model\support\DomainChecks.java ===
+package com.cromp.schedules.domain.model.support;
+
+import java.util.Map;
+import java.util.Objects;
+
+public final class DomainChecks {
+    private DomainChecks() {}
+
+    public static <T> T requireNonNullValue(T value, String fieldName) {
+        return Objects.requireNonNull(value, fieldName + " must not be null");
+    }
+
+    public static String requireText(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        return value.trim();
+    }
+
+    public static String requireMaxLength(String value, int maxLength, String fieldName) {
+        if (value != null && value.length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + " must not exceed " + maxLength + " characters");
+        }
+        return value;
+    }
+
+    public static String requireNonBlankMaxLength(String value, int maxLength, String fieldName) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) return null;
+        if (trimmed.length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + " must not exceed " + maxLength + " characters");
+        }
+        return trimmed;
+    }
+
+    public static Map<String, Object> safeMap(Map<String, Object> value) {
+        return value == null ? Map.of() : Map.copyOf(value);
+    }
+}
+
 === C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\repository\ScheduleRepositoryPort.java ===
 package com.cromp.schedules.domain.repository;
 
 import com.cromp.schedules.domain.model.Schedule;
+import com.cromp.schedules.domain.model.enums.ScheduleStatus;
+
+import java.util.List;
 import java.util.Optional;
 
+/**
+ * Доменный порт репозитория расписаний.
+ *
+ * Расширен методом {@code findAllByStatus} для нужд orchestrator'а:
+ * планировщику нужно читать все ACTIVE расписания без привязки к конкретному jobId.
+ */
 public interface ScheduleRepositoryPort {
+ 
     Schedule save(Schedule schedule);
+ 
     Optional<Schedule> findByJobId(Long jobId);
+ 
     void delete(Schedule schedule);
+ 
+    /**
+     * Возвращает все расписания с указанным статусом.
+     * Используется orchestrator'ом для выборки ACTIVE расписаний.
+     */
+    List<Schedule> findAllByStatus(ScheduleStatus status);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\domain\service\ScheduleCalculator.java ===
+package com.cromp.schedules.domain.service;
+
+import com.cronutils.model.Cron;
+import com.cronutils.model.CronType;
+import com.cronutils.model.definition.CronDefinitionBuilder;
+import com.cronutils.model.time.ExecutionTime;
+import com.cronutils.parser.CronParser;
+import com.cromp.schedules.domain.model.exceptions.InvalidCronExpressionException;
+import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
+@Component
+public class ScheduleCalculator {
+
+    private final CronParser cronParser;
+
+    public ScheduleCalculator() {
+        // По умолчанию используем стандартный UNIX cron (5 полей)
+        this.cronParser = new CronParser(
+                CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
+    }
+
+    /**
+     * Проверяет корректность cron-выражения и возвращает его представление.
+     * @throws InvalidCronExpressionException если выражение некорректно.
+     */
+    public Cron validate(String expression) {
+        try {
+            return cronParser.parse(expression);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidCronExpressionException(expression, e.getMessage());
+        }
+    }
+
+    /**
+     * Вычисляет следующий момент запуска от текущего времени (now).
+     * @param cronExpression проверенное cron-выражение
+     * @param timezone      временная зона (например, "Europe/Moscow")
+     * @return Instant следующего запуска
+     */
+    public Instant calculateNextRun(Cron cronExpression, String timezone) {
+        ZoneId zoneId = ZoneId.of(timezone);
+        ZonedDateTime now = ZonedDateTime.now(zoneId);
+        ExecutionTime executionTime = ExecutionTime.forCron(cronExpression);
+        return executionTime.nextExecution(now)
+                .orElseThrow(() -> new InvalidCronExpressionException(
+                        cronExpression.asString(), "No next execution time found"))
+                .toInstant();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\persistence\adapter\ScheduleRepositoryAdapter.java ===
+package com.cromp.schedules.infrastructure.persistence.adapter;
+
+import com.cromp.schedules.domain.model.Schedule;
+import com.cromp.schedules.domain.repository.ScheduleRepositoryPort;
+import com.cromp.schedules.infrastructure.persistence.jpa.repository.ScheduleJpaRepository;
+import com.cromp.schedules.infrastructure.persistence.mapper.SchedulePersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class ScheduleRepositoryAdapter implements ScheduleRepositoryPort {
+
+    private final ScheduleJpaRepository repository;
+    private final SchedulePersistenceMapper mapper;
+
+    @Override
+    public Schedule save(Schedule schedule) {
+        return mapper.toDomain(repository.save(mapper.toJpa(schedule)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Schedule> findByJobId(Long jobId) {
+        return repository.findByJobId(jobId).map(mapper::toDomain);
+    }
+
+    @Override
+    public void delete(Schedule schedule) {
+        repository.delete(mapper.toJpa(schedule));
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\persistence\jpa\entity\ScheduleJpaEntity.java ===
+package com.cromp.schedules.infrastructure.persistence.jpa.entity;
+
+import com.cromp.schedules.domain.model.enums.ScheduleStatus;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = "schedules")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ScheduleJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "job_id", nullable = false, unique = true)
+    private Long jobId;
+
+    @Column(name = "cron_expression", nullable = false, length = 128)
+    private String cronExpression;
+
+    @Column(name = "timezone", nullable = false, length = 64)
+    private String timezone;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rules", columnDefinition = "jsonb")
+    private String rules;
+
+    @Column(name = "next_run_at")
+    private Instant nextRunAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, columnDefinition = "schedule_status")
+    private ScheduleStatus status;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\persistence\jpa\repository\ScheduleJpaRepository.java ===
+package com.cromp.schedules.infrastructure.persistence.jpa.repository;
+
+import com.cromp.schedules.infrastructure.persistence.jpa.entity.ScheduleJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface ScheduleJpaRepository extends JpaRepository<ScheduleJpaEntity, Long> {
+    Optional<ScheduleJpaEntity> findByJobId(Long jobId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\persistence\mapper\SchedulePersistenceMapper.java ===
+package com.cromp.schedules.infrastructure.persistence.mapper;
+
+import com.cromp.schedules.domain.model.Schedule;
+import com.cromp.schedules.infrastructure.persistence.jpa.entity.ScheduleJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SchedulePersistenceMapper {
+
+    public ScheduleJpaEntity toJpa(Schedule schedule) {
+        return ScheduleJpaEntity.builder()
+                .id(schedule.getId())
+                .jobId(schedule.getJobId())
+                .cronExpression(schedule.getCronExpression())
+                .timezone(schedule.getTimezone())
+                .rules(schedule.getRules())
+                .nextRunAt(schedule.getNextRunAt())
+                .status(schedule.getStatus())
+                .createdAt(schedule.getCreatedAt())
+                .updatedAt(schedule.getUpdatedAt())
+                .build();
+    }
+
+    public Schedule toDomain(ScheduleJpaEntity entity) {
+        return Schedule.reconstitute(
+                entity.getId(),
+                entity.getJobId(),
+                entity.getCronExpression(),
+                entity.getTimezone(),
+                entity.getRules(),
+                entity.getNextRunAt(),
+                entity.getStatus(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                null  // deletedAt не используется
+        );
+    }
 }
 
 === C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\port\AuditPortImpl.java ===
@@ -280,6 +728,62 @@ public class JobOwnershipPortImpl implements JobOwnershipPort {
     @Override
     public boolean jobBelongsToOrganization(Long jobId, Long organizationId) {
         return jobRepository.findByIdAndOrganizationId(jobId, organizationId).isPresent();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\schedules\src\main\java\com\cromp\schedules\infrastructure\port\ScheduleQueryPortImpl.java ===
+package com.cromp.schedules.infrastructure.port;
+
+import com.cromp.schedules.application.port.ScheduleQueryPort;
+import com.cromp.schedules.domain.model.Schedule;
+import com.cromp.schedules.domain.model.enums.ScheduleStatus;
+import com.cromp.schedules.domain.repository.ScheduleRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Реализация порта запросов расписаний для orchestrator'а.
+ *
+ * Живёт в модуле schedules — знает о его инфраструктуре,
+ * но сам интерфейс ({@link ScheduleQueryPort}) принадлежит application-слою schedules,
+ * поэтому граница между модулями не нарушается.
+ *
+ * Метод {@code findActiveSchedulesReadyForRun} нарочно читается в отдельной транзакции
+ * (readOnly): orchestrator сам управляет тем, что делать с результатом,
+ * и не должен держать одну большую транзакцию на весь цикл.
+ */
+@Component
+@RequiredArgsConstructor
+public class ScheduleQueryPortImpl implements ScheduleQueryPort {
+
+    private final ScheduleRepositoryPort scheduleRepository;
+
+    /**
+     * Возвращает все ACTIVE расписания, у которых {@code next_run_at <= now()}.
+     *
+     * Выборка делегируется в {@link ScheduleRepositoryPort}, который уже умеет
+     * фильтровать по статусу. Фильтр по времени добавляем здесь, чтобы не расширять
+     * контракт репозитория ради одного сценария.
+     *
+     * <p><b>Важно:</b> метод не применяет пессимистическую блокировку — блокировка
+     * происходит в момент обновления {@code next_run_at} через {@code advanceNextRun}
+     * внутри транзакции Scheduler'а. Это достаточно для MVP с одним экземпляром.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Schedule> findActiveSchedulesReadyForRun() {
+        Instant now = Instant.now();
+
+        // Берём только ACTIVE расписания из репозитория,
+        // затем фильтруем по времени в памяти — выборка невелика,
+        // а дополнительный метод репозитория избыточен для MVP.
+        return scheduleRepository.findAllByStatus(ScheduleStatus.ACTIVE).stream()
+                .filter(s -> s.getNextRunAt() != null && !s.getNextRunAt().isAfter(now))
+                .toList();
     }
 }
 

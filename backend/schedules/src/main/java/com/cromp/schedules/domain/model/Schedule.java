@@ -16,6 +16,9 @@ import java.time.Instant;
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class Schedule extends AbstractAuditableDomainEntity {
 
+    private static final int CRON_EXPRESSION_MAX_LENGTH = 128;
+    private static final int TIMEZONE_MAX_LENGTH = 64;
+
     @EqualsAndHashCode.Include
     private Long jobId;               
 
@@ -31,8 +34,16 @@ public class Schedule extends AbstractAuditableDomainEntity {
                      Instant nextRunAt, ScheduleStatus status) {
         super(id, createdAt, updatedAt, deletedAt);
         this.jobId = DomainChecks.requireNonNullValue(jobId, "jobId");
-        this.cronExpression = DomainChecks.requireText(cronExpression, "cronExpression");
-        this.timezone = DomainChecks.requireText(timezone, "timezone");
+        this.cronExpression = DomainChecks.requireMaxLength(
+                DomainChecks.requireText(cronExpression, "cronExpression"),
+                CRON_EXPRESSION_MAX_LENGTH,
+                "cronExpression"
+        );
+        this.timezone = DomainChecks.requireMaxLength(
+                DomainChecks.requireText(timezone, "timezone"),
+                TIMEZONE_MAX_LENGTH,
+                "timezone"
+        );
         this.rules = rules; // может быть null
         this.nextRunAt = nextRunAt; // может быть null для paused?
         this.status = DomainChecks.requireNonNullValue(status, "status");
@@ -58,17 +69,23 @@ public class Schedule extends AbstractAuditableDomainEntity {
     // ----------------- Поведенческие методы -----------------
 
     public void updateCron(String newCronExpression, Instant newNextRunAt) {
-        DomainChecks.requireText(newCronExpression, "cronExpression");
         ensureActive();
-        this.cronExpression = newCronExpression;
+        this.cronExpression = DomainChecks.requireMaxLength(
+                DomainChecks.requireText(newCronExpression, "cronExpression"),
+                CRON_EXPRESSION_MAX_LENGTH,
+                "cronExpression"
+        );
         this.nextRunAt = newNextRunAt;
         touch();
     }
 
     public void updateTimezone(String newTimezone, Instant newNextRunAt) {
-        DomainChecks.requireText(newTimezone, "timezone");
         ensureActive();
-        this.timezone = newTimezone;
+        this.timezone = DomainChecks.requireMaxLength(
+                DomainChecks.requireText(newTimezone, "timezone"),
+                TIMEZONE_MAX_LENGTH,
+                "timezone"
+        );
         this.nextRunAt = newNextRunAt;
         touch();
     }
