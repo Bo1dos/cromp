@@ -333,6 +333,39 @@ public interface JobVersionQueryPort {
     Optional<String> findConfigJsonByVersionId(Long jobVersionId);
 }
 
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\StaleAttemptPort.java ===
+package com.cromp.executions.application.port;
+
+import com.cromp.executions.domain.model.ExecutionAttempt;
+
+import java.util.List;
+
+/**
+ * Порт для orchestrator'а: поиск и завершение зависших попыток.
+ *
+ * Реализация живёт в {@code executions/infrastructure/port/StaleAttemptPortImpl}.
+ */
+public interface StaleAttemptPort {
+
+    /**
+     * Возвращает все попытки в статусе RUNNING, у которых
+     * {@code updated_at < now() - olderThanMinutes}.
+     *
+     * @param olderThanMinutes порог в минутах (например, 5)
+     * @return список зависших попыток
+     */
+    List<ExecutionAttempt> findStaleAttempts(int olderThanMinutes);
+
+    /**
+     * Переводит каждую попытку из списка в статус TIMEOUT и сохраняет.
+     * Триггер БД {@code fn_update_execution_final_status} автоматически
+     * обновит {@code Execution.finalStatus = FAILED}.
+     *
+     * @param stale список зависших попыток, возвращённых {@link #findStaleAttempts}
+     */
+    void markStaleAsTimeout(List<ExecutionAttempt> stale);
+}
+
 === C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\application\port\StoredArtifact.java ===
 package com.cromp.executions.application.port;
 
@@ -684,6 +717,400 @@ public class ExecutionService {
     }
 }
 
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\Execution.java ===
+package com.cromp.executions.domain.model;
+
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import lombok.Getter;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Getter
+public class Execution {
+
+    private Long id;
+    private UUID execUuid;
+    private Long organizationId;
+    private Long jobId;
+    private Long jobVersionId;
+    private int priority;
+    private ExecutionSource source;
+    private Instant triggeredAt;
+    private Instant scheduledAt;
+    private ExecutionStatus finalStatus;
+    private int totalAttempts;
+    private Instant startedAt;
+    private Instant finishedAt;
+    private UUID correlationId;
+    private String executionPolicySnapshot; // JSONB как строка
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    private Execution() {}
+
+    // Фабрика для создания нового Execution
+    public static Execution create(
+            Long organizationId,
+            Long jobId,
+            Long jobVersionId,
+            int priority,
+            ExecutionSource source,
+            Instant scheduledAt,
+            UUID correlationId,
+            String executionPolicySnapshot
+    ) {
+        Execution e = new Execution();
+        e.execUuid = UUID.randomUUID();
+        e.organizationId = organizationId;
+        e.jobId = jobId;
+        e.jobVersionId = jobVersionId;
+        e.priority = priority;
+        e.source = source;
+        e.triggeredAt = Instant.now();
+        e.scheduledAt = scheduledAt;
+        e.finalStatus = ExecutionStatus.CREATED;
+        e.totalAttempts = 0;
+        e.correlationId = correlationId;
+        e.executionPolicySnapshot = executionPolicySnapshot;
+        e.createdAt = Instant.now();
+        e.updatedAt = Instant.now();
+        return e;
+    }
+
+    // Фабрика для восстановления из БД
+    public static Execution reconstitute(
+            Long id, UUID execUuid, Long organizationId, Long jobId, Long jobVersionId,
+            int priority, ExecutionSource source, Instant triggeredAt, Instant scheduledAt,
+            ExecutionStatus finalStatus, int totalAttempts, Instant startedAt,
+            Instant finishedAt, UUID correlationId, String executionPolicySnapshot,
+            Instant createdAt, Instant updatedAt
+    ) {
+        Execution e = new Execution();
+        e.id = id;
+        e.execUuid = execUuid;
+        e.organizationId = organizationId;
+        e.jobId = jobId;
+        e.jobVersionId = jobVersionId;
+        e.priority = priority;
+        e.source = source;
+        e.triggeredAt = triggeredAt;
+        e.scheduledAt = scheduledAt;
+        e.finalStatus = finalStatus;
+        e.totalAttempts = totalAttempts;
+        e.startedAt = startedAt;
+        e.finishedAt = finishedAt;
+        e.correlationId = correlationId;
+        e.executionPolicySnapshot = executionPolicySnapshot;
+        e.createdAt = createdAt;
+        e.updatedAt = updatedAt;
+        return e;
+    }
+
+    // Доменные методы — только разрешённые переходы, сама логика в StateMachine
+    public void markInProgress() {
+        this.finalStatus = ExecutionStatus.IN_PROGRESS;
+        if (this.startedAt == null) this.startedAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public void complete(ExecutionStatus status) {
+        this.finalStatus = status;
+        this.finishedAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public void cancel() {
+        this.finalStatus = ExecutionStatus.CANCELLED;
+        this.finishedAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\ExecutionArtifact.java ===
+package com.cromp.executions.domain.model;
+
+import com.cromp.executions.domain.model.enums.ArtifactKind;
+import lombok.Getter;
+
+import java.time.Instant;
+
+@Getter
+public class ExecutionArtifact {
+
+    private Long id;
+    private Long executionId;
+    private ArtifactKind kind;
+    private String storagePath;
+    private Long sizeBytes;
+    private String checksumSha256;
+    private String contentType;
+    private String compression;
+    private String metadata; // JSONB
+    private Integer retentionDays;
+    private Long uploadedBy;
+    private Instant uploadedAt;
+
+    private ExecutionArtifact() {}
+
+    public static ExecutionArtifact create(
+            Long executionId,
+            ArtifactKind kind,
+            String storagePath,
+            Long sizeBytes,
+            String checksumSha256,
+            String contentType,
+            Long uploadedBy
+    ) {
+        ExecutionArtifact a = new ExecutionArtifact();
+        a.executionId = executionId;
+        a.kind = kind;
+        a.storagePath = storagePath;
+        a.sizeBytes = sizeBytes;
+        a.checksumSha256 = checksumSha256;
+        a.contentType = contentType;
+        a.uploadedBy = uploadedBy;
+        a.uploadedAt = Instant.now();
+        return a;
+    }
+
+    public static ExecutionArtifact reconstitute(
+            Long id, Long executionId, ArtifactKind kind, String storagePath,
+            Long sizeBytes, String checksumSha256, String contentType,
+            String compression, String metadata, Integer retentionDays,
+            Long uploadedBy, Instant uploadedAt
+    ) {
+        ExecutionArtifact a = new ExecutionArtifact();
+        a.id = id;
+        a.executionId = executionId;
+        a.kind = kind;
+        a.storagePath = storagePath;
+        a.sizeBytes = sizeBytes;
+        a.checksumSha256 = checksumSha256;
+        a.contentType = contentType;
+        a.compression = compression;
+        a.metadata = metadata;
+        a.retentionDays = retentionDays;
+        a.uploadedBy = uploadedBy;
+        a.uploadedAt = uploadedAt;
+        return a;
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\ExecutionAttempt.java ===
+package com.cromp.executions.domain.model;
+
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import lombok.Getter;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Getter
+public class ExecutionAttempt {
+
+    private Long id;
+    private UUID attemptUuid;
+    private Long executionId;
+    private Long organizationId;
+    private int attemptNumber;
+    private AttemptStatus status;
+    private String statusReason;
+    private String errorClass;
+    private Instant scheduledAt;
+    private Instant claimedAt;
+    private Instant startedAt;
+    private Instant finishedAt;
+    private Integer durationMs;
+    private String executorMetadata; // JSONB
+    private UUID idempotencyKey;
+    private String outputSummary;    // JSONB
+    private UUID traceId;
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    private ExecutionAttempt() {}
+
+    public static ExecutionAttempt create(
+            Long executionId,
+            Long organizationId,
+            int attemptNumber,
+            Instant scheduledAt,
+            UUID idempotencyKey
+    ) {
+        ExecutionAttempt a = new ExecutionAttempt();
+        a.attemptUuid = UUID.randomUUID();
+        a.executionId = executionId;
+        a.organizationId = organizationId;
+        a.attemptNumber = attemptNumber;
+        a.status = AttemptStatus.PENDING;
+        a.scheduledAt = scheduledAt;
+        a.idempotencyKey = idempotencyKey != null ? idempotencyKey : UUID.randomUUID();
+        a.createdAt = Instant.now();
+        a.updatedAt = Instant.now();
+        return a;
+    }
+
+    public static ExecutionAttempt reconstitute(
+            Long id, UUID attemptUuid, Long executionId, Long organizationId,
+            int attemptNumber, AttemptStatus status, String statusReason, String errorClass,
+            Instant scheduledAt, Instant claimedAt, Instant startedAt, Instant finishedAt,
+            Integer durationMs, String executorMetadata, UUID idempotencyKey,
+            String outputSummary, UUID traceId, Instant createdAt, Instant updatedAt
+    ) {
+        ExecutionAttempt a = new ExecutionAttempt();
+        a.id = id;
+        a.attemptUuid = attemptUuid;
+        a.executionId = executionId;
+        a.organizationId = organizationId;
+        a.attemptNumber = attemptNumber;
+        a.status = status;
+        a.statusReason = statusReason;
+        a.errorClass = errorClass;
+        a.scheduledAt = scheduledAt;
+        a.claimedAt = claimedAt;
+        a.startedAt = startedAt;
+        a.finishedAt = finishedAt;
+        a.durationMs = durationMs;
+        a.executorMetadata = executorMetadata;
+        a.idempotencyKey = idempotencyKey;
+        a.outputSummary = outputSummary;
+        a.traceId = traceId;
+        a.createdAt = createdAt;
+        a.updatedAt = updatedAt;
+        return a;
+    }
+
+    public void dispatch() {
+        this.status = AttemptStatus.DISPATCHED;
+        this.claimedAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public void start(UUID traceId) {
+        this.status = AttemptStatus.RUNNING;
+        this.startedAt = Instant.now();
+        this.traceId = traceId;
+        this.updatedAt = Instant.now();
+    }
+
+    public void complete(AttemptStatus terminalStatus, String outputSummary,
+                         String errorClass, String statusReason) {
+        this.status = terminalStatus;
+        this.outputSummary = outputSummary;
+        this.errorClass = errorClass;
+        this.statusReason = statusReason;
+        this.finishedAt = Instant.now();
+        if (this.startedAt != null) {
+            this.durationMs = (int) (finishedAt.toEpochMilli() - startedAt.toEpochMilli());
+        }
+        this.updatedAt = Instant.now();
+    }
+
+    public void cancel(String reason) {
+        this.status = AttemptStatus.CANCELLED;
+        this.statusReason = reason;
+        this.finishedAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public void markTimeout() {
+        this.status = AttemptStatus.TIMEOUT;
+        this.statusReason = "Timed out by janitor";
+        this.finishedAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\enums\ArtifactKind.java ===
+package com.cromp.executions.domain.model.enums;
+
+public enum ArtifactKind {
+    LOG_STDOUT,
+    LOG_STDERR,
+    OUTPUT_PAYLOAD,
+    DEBUG_SNAPSHOT
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\enums\AttemptStatus.java ===
+package com.cromp.executions.domain.model.enums;
+
+public enum AttemptStatus {
+    PENDING,
+    DISPATCHED,
+    RUNNING,
+    SUCCEEDED,
+    FAILED,
+    TIMEOUT,
+    CANCELLED,
+    RETRYING
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\enums\ExecutionSource.java ===
+package com.cromp.executions.domain.model.enums;
+
+public enum ExecutionSource {
+    SCHEDULED,
+    MANUAL,
+    API
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\enums\ExecutionStatus.java ===
+package com.cromp.executions.domain.model.enums;
+
+public enum ExecutionStatus {
+    CREATED,
+    IN_PROGRESS,
+    SUCCEEDED,
+    FAILED,
+    CANCELLED,
+    SKIPPED
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\exceptions\ArtifactNotFoundException.java ===
+package com.cromp.executions.domain.model.exceptions;
+
+public class ArtifactNotFoundException extends RuntimeException {
+    public ArtifactNotFoundException(Long id) {
+        super("ExecutionArtifact not found: id=" + id);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\exceptions\AttemptNotFoundException.java ===
+package com.cromp.executions.domain.model.exceptions;
+
+import java.util.UUID;
+
+public class AttemptNotFoundException extends RuntimeException {
+    public AttemptNotFoundException(UUID attemptUuid) {
+        super("ExecutionAttempt not found: " + attemptUuid);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\exceptions\ExecutionNotFoundException.java ===
+package com.cromp.executions.domain.model.exceptions;
+
+import java.util.UUID;
+
+public class ExecutionNotFoundException extends RuntimeException {
+    public ExecutionNotFoundException(UUID execUuid) {
+        super("Execution not found: " + execUuid);
+    }
+    public ExecutionNotFoundException(Long id) {
+        super("Execution not found: id=" + id);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\model\exceptions\InvalidStatusTransitionException.java ===
+package com.cromp.executions.domain.model.exceptions;
+
+public class InvalidStatusTransitionException extends RuntimeException {
+    public InvalidStatusTransitionException(String message) {
+        super(message);
+    }
+}
+
 === C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\repository\ExecutionArtifactRepositoryPort.java ===
 package com.cromp.executions.domain.repository;
 
@@ -746,6 +1173,805 @@ public interface ExecutionRepositoryPort {
                        Instant from, Instant to);
 }
 
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\service\AttemptStateMachine.java ===
+package com.cromp.executions.domain.service;
+
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import com.cromp.executions.domain.model.exceptions.InvalidStatusTransitionException;
+
+import java.util.Map;
+import java.util.Set;
+
+public class AttemptStateMachine {
+
+    private static final Map<AttemptStatus, Set<AttemptStatus>> ALLOWED =
+            Map.of(
+                    AttemptStatus.PENDING,     Set.of(AttemptStatus.DISPATCHED, AttemptStatus.CANCELLED),
+                    AttemptStatus.DISPATCHED,  Set.of(AttemptStatus.RUNNING, AttemptStatus.FAILED, AttemptStatus.TIMEOUT, AttemptStatus.CANCELLED),
+                    AttemptStatus.RUNNING,     Set.of(AttemptStatus.SUCCEEDED, AttemptStatus.FAILED, AttemptStatus.TIMEOUT, AttemptStatus.CANCELLED),
+                    AttemptStatus.RETRYING,    Set.of(AttemptStatus.PENDING),
+                    AttemptStatus.SUCCEEDED,   Set.of(),
+                    AttemptStatus.FAILED,      Set.of(),
+                    AttemptStatus.TIMEOUT,     Set.of(),
+                    AttemptStatus.CANCELLED,   Set.of()
+            );
+
+    public static void assertTransitionAllowed(AttemptStatus from, AttemptStatus to) {
+        Set<AttemptStatus> allowed = ALLOWED.getOrDefault(from, Set.of());
+        if (!allowed.contains(to)) {
+            throw new InvalidStatusTransitionException(
+                    "Attempt: transition " + from + " → " + to + " is not allowed"
+            );
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\domain\service\ExecutionStateMachine.java ===
+package com.cromp.executions.domain.service;
+
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import com.cromp.executions.domain.model.exceptions.InvalidStatusTransitionException;
+
+import java.util.Map;
+import java.util.Set;
+
+public class ExecutionStateMachine {
+
+    // Допустимые переходы: from -> set of allowed to
+    private static final Map<ExecutionStatus, Set<ExecutionStatus>> ALLOWED =
+            Map.of(
+                    ExecutionStatus.CREATED,      Set.of(ExecutionStatus.IN_PROGRESS, ExecutionStatus.CANCELLED, ExecutionStatus.SKIPPED),
+                    ExecutionStatus.IN_PROGRESS,  Set.of(ExecutionStatus.SUCCEEDED, ExecutionStatus.FAILED, ExecutionStatus.CANCELLED),
+                    ExecutionStatus.SUCCEEDED,    Set.of(),
+                    ExecutionStatus.FAILED,       Set.of(),
+                    ExecutionStatus.CANCELLED,    Set.of(),
+                    ExecutionStatus.SKIPPED,      Set.of()
+            );
+
+    public static void assertTransitionAllowed(ExecutionStatus from, ExecutionStatus to) {
+        Set<ExecutionStatus> allowed = ALLOWED.getOrDefault(from, Set.of());
+        if (!allowed.contains(to)) {
+            throw new InvalidStatusTransitionException(
+                    "Execution: transition " + from + " → " + to + " is not allowed"
+            );
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\adapter\ExecutionArtifactRepositoryAdapter.java ===
+package com.cromp.executions.infrastructure.persistence.adapter;
+
+import com.cromp.executions.domain.model.ExecutionArtifact;
+import com.cromp.executions.domain.repository.ExecutionArtifactRepositoryPort;
+import com.cromp.executions.infrastructure.persistence.jpa.repository.ExecutionArtifactJpaRepository;
+import com.cromp.executions.infrastructure.persistence.mapper.ExecutionArtifactPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class ExecutionArtifactRepositoryAdapter implements ExecutionArtifactRepositoryPort {
+
+    private final ExecutionArtifactJpaRepository repository;
+    private final ExecutionArtifactPersistenceMapper mapper;
+
+    @Override
+    public ExecutionArtifact save(ExecutionArtifact artifact) {
+        return mapper.toDomain(repository.save(mapper.toJpa(artifact)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ExecutionArtifact> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExecutionArtifact> findByExecutionId(Long executionId) {
+        return repository.findByExecutionIdOrderByUploadedAtAsc(executionId)
+                .stream().map(mapper::toDomain).toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\adapter\ExecutionAttemptRepositoryAdapter.java ===
+package com.cromp.executions.infrastructure.persistence.adapter;
+
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import com.cromp.executions.domain.repository.ExecutionAttemptRepositoryPort;
+import com.cromp.executions.infrastructure.persistence.jpa.repository.ExecutionAttemptJpaRepository;
+import com.cromp.executions.infrastructure.persistence.mapper.ExecutionAttemptPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class ExecutionAttemptRepositoryAdapter implements ExecutionAttemptRepositoryPort {
+
+    private final ExecutionAttemptJpaRepository repository;
+    private final ExecutionAttemptPersistenceMapper mapper;
+
+    @Override
+    public ExecutionAttempt save(ExecutionAttempt attempt) {
+        return mapper.toDomain(repository.save(mapper.toJpa(attempt)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ExecutionAttempt> findByAttemptUuid(UUID attemptUuid) {
+        return repository.findByAttemptUuid(attemptUuid).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ExecutionAttempt> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExecutionAttempt> findByExecutionId(Long executionId) {
+        return repository.findByExecutionIdOrderByAttemptNumberAsc(executionId)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExecutionAttempt> findByStatusAndUpdatedAtBefore(AttemptStatus status, Instant cutoff) {
+        return repository.findByStatusAndUpdatedAtBefore(status, cutoff)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExecutionAttempt> findActiveByExecutionId(Long executionId) {
+        return repository.findActiveByExecutionId(executionId)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int findMaxAttemptNumberByExecutionId(Long executionId) {
+        return repository.findMaxAttemptNumberByExecutionId(executionId);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\adapter\ExecutionRepositoryAdapter.java ===
+package com.cromp.executions.infrastructure.persistence.adapter;
+
+import com.cromp.executions.domain.model.Execution;
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import com.cromp.executions.domain.repository.ExecutionRepositoryPort;
+import com.cromp.executions.infrastructure.persistence.jpa.repository.ExecutionJpaRepository;
+import com.cromp.executions.infrastructure.persistence.mapper.ExecutionPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+@Transactional
+public class ExecutionRepositoryAdapter implements ExecutionRepositoryPort {
+
+    private final ExecutionJpaRepository repository;
+    private final ExecutionPersistenceMapper mapper;
+
+    @Override
+    public Execution save(Execution execution) {
+        return mapper.toDomain(repository.save(mapper.toJpa(execution)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Execution> findByExecUuid(UUID execUuid) {
+        return repository.findByExecUuid(execUuid).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Execution> findById(Long id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Execution> findByFilter(Long organizationId, Long jobId,
+                                        ExecutionStatus status, ExecutionSource source,
+                                        Instant from, Instant to, int page, int size) {
+        return repository.findByFilter(organizationId, jobId, status, source, from, to,
+                        PageRequest.of(page, size))
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countByFilter(Long organizationId, Long jobId,
+                               ExecutionStatus status, ExecutionSource source,
+                               Instant from, Instant to) {
+        return repository.countByFilter(organizationId, jobId, status, source, from, to);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\custom\ExecutionAttemptCustomRepository.java ===
+package com.cromp.executions.infrastructure.persistence.custom;
+
+import com.cromp.executions.api.dto.response.ClaimAttemptResult;
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import com.cromp.executions.infrastructure.persistence.jpa.repository.ExecutionAttemptJpaRepository;
+import com.cromp.executions.infrastructure.persistence.mapper.ExecutionAttemptPersistenceMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+public class ExecutionAttemptCustomRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+    private final ExecutionAttemptJpaRepository jpaRepository;
+    private final ExecutionAttemptPersistenceMapper mapper;
+
+    /**
+     * Атомарный захват PENDING попытки через хранимую функцию.
+     * SELECT ... FOR UPDATE SKIP LOCKED — внутри функции claim_execution_attempt.
+     */
+    @Transactional
+    public Optional<ClaimAttemptResult> claimAttempt(Long organizationId) {
+        List<ClaimAttemptResult> results = jdbcTemplate.query(
+                "SELECT attempt_id, execution_id, attempt_uuid, config FROM claim_execution_attempt(?)",
+                (rs, rowNum) -> new ClaimAttemptResult(
+                        rs.getLong("attempt_id"),
+                        rs.getObject("attempt_uuid", UUID.class),
+                        rs.getLong("execution_id"),
+                        rs.getString("config")
+                ),
+                organizationId
+        );
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
+    /**
+     * Попытки по execUuid + organizationId — для публичного API.
+     */
+    @Transactional(readOnly = true)
+    public List<ExecutionAttempt> findAttemptsByExecUuid(Long organizationId, UUID execUuid) {
+        return jpaRepository.findByExecUuidAndOrgId(execUuid, organizationId)
+                .stream().map(mapper::toDomain).toList();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\jpa\entity\ExecutionArtifactJpaEntity.java ===
+package com.cromp.executions.infrastructure.persistence.jpa.entity;
+
+import com.cromp.executions.domain.model.enums.ArtifactKind;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = "execution_artifacts")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExecutionArtifactJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "execution_id", nullable = false)
+    private Long executionId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kind", nullable = false, columnDefinition = "artifact_kind")
+    private ArtifactKind kind;
+
+    @Column(name = "storage_path", nullable = false, unique = true, columnDefinition = "TEXT")
+    private String storagePath;
+
+    @Column(name = "size_bytes")
+    private Long sizeBytes;
+
+    @Column(name = "checksum_sha256", length = 64)
+    private String checksumSha256;
+
+    @Column(name = "content_type", length = 255)
+    private String contentType;
+
+    @Column(name = "compression", length = 20)
+    private String compression;
+
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String metadata;
+
+    @Column(name = "retention_days")
+    private Integer retentionDays;
+
+    @Column(name = "uploaded_by")
+    private Long uploadedBy;
+
+    @Column(name = "uploaded_at", nullable = false)
+    private Instant uploadedAt;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\jpa\entity\ExecutionAttemptJpaEntity.java ===
+package com.cromp.executions.infrastructure.persistence.jpa.entity;
+
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "execution_attempts")
+@DynamicInsert
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExecutionAttemptJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "attempt_uuid", nullable = false, unique = true, updatable = false)
+    private UUID attemptUuid;
+
+    @Column(name = "execution_id", nullable = false)
+    private Long executionId;
+
+    @Column(name = "organization_id", nullable = false)
+    private Long organizationId;
+
+    @Column(name = "attempt_number", nullable = false)
+    private int attemptNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, columnDefinition = "attempt_status")
+    private AttemptStatus status;
+
+    @Column(name = "status_reason", columnDefinition = "TEXT")
+    private String statusReason;
+
+    @Column(name = "error_class", columnDefinition = "TEXT")
+    private String errorClass;
+
+    @Column(name = "scheduled_at")
+    private Instant scheduledAt;
+
+    @Column(name = "claimed_at")
+    private Instant claimedAt;
+
+    @Column(name = "started_at")
+    private Instant startedAt;
+
+    @Column(name = "finished_at")
+    private Instant finishedAt;
+
+    @Column(name = "duration_ms")
+    private Integer durationMs;
+
+    @Column(name = "executor_metadata", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String executorMetadata;
+
+    @Column(name = "idempotency_key")
+    private UUID idempotencyKey;
+
+    @Column(name = "output_summary", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String outputSummary;
+
+    @Column(name = "trace_id")
+    private UUID traceId;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\jpa\entity\ExecutionJpaEntity.java ===
+package com.cromp.executions.infrastructure.persistence.jpa.entity;
+
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "executions")
+@DynamicInsert
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExecutionJpaEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "exec_uuid", nullable = false, unique = true, updatable = false)
+    private UUID execUuid;
+
+    @Column(name = "organization_id", nullable = false)
+    private Long organizationId;
+
+    @Column(name = "job_id", nullable = false)
+    private Long jobId;
+
+    @Column(name = "job_version_id")
+    private Long jobVersionId;
+
+    @Column(name = "priority")
+    private int priority;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", nullable = false, length = 20)
+    private ExecutionSource source;
+
+    @Column(name = "triggered_at", nullable = false)
+    private Instant triggeredAt;
+
+    @Column(name = "scheduled_at")
+    private Instant scheduledAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "final_status", nullable = false, columnDefinition = "execution_status")
+    private ExecutionStatus finalStatus;
+
+    @Column(name = "total_attempts", nullable = false)
+    private int totalAttempts;
+
+    @Column(name = "started_at")
+    private Instant startedAt;
+
+    @Column(name = "finished_at")
+    private Instant finishedAt;
+
+    @Column(name = "correlation_id")
+    private UUID correlationId;
+
+    @Column(name = "execution_policy_snapshot", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String executionPolicySnapshot;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\jpa\repository\ExecutionArtifactJpaRepository.java ===
+package com.cromp.executions.infrastructure.persistence.jpa.repository;
+
+import com.cromp.executions.infrastructure.persistence.jpa.entity.ExecutionArtifactJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface ExecutionArtifactJpaRepository extends JpaRepository<ExecutionArtifactJpaEntity, Long> {
+
+    List<ExecutionArtifactJpaEntity> findByExecutionIdOrderByUploadedAtAsc(Long executionId);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\jpa\repository\ExecutionAttemptJpaRepository.java ===
+package com.cromp.executions.infrastructure.persistence.jpa.repository;
+
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import com.cromp.executions.infrastructure.persistence.jpa.entity.ExecutionAttemptJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface ExecutionAttemptJpaRepository extends JpaRepository<ExecutionAttemptJpaEntity, Long> {
+
+    Optional<ExecutionAttemptJpaEntity> findByAttemptUuid(UUID attemptUuid);
+
+    List<ExecutionAttemptJpaEntity> findByExecutionIdOrderByAttemptNumberAsc(Long executionId);
+
+    List<ExecutionAttemptJpaEntity> findByStatusAndUpdatedAtBefore(AttemptStatus status, Instant cutoff);
+
+    @Query("""
+            SELECT a FROM ExecutionAttemptJpaEntity a
+            WHERE a.executionId = :executionId
+              AND a.status NOT IN (
+                com.cromp.executions.domain.model.enums.AttemptStatus.SUCCEEDED,
+                com.cromp.executions.domain.model.enums.AttemptStatus.FAILED,
+                com.cromp.executions.domain.model.enums.AttemptStatus.TIMEOUT,
+                com.cromp.executions.domain.model.enums.AttemptStatus.CANCELLED
+              )
+            """)
+    List<ExecutionAttemptJpaEntity> findActiveByExecutionId(@Param("executionId") Long executionId);
+
+    @Query("SELECT COALESCE(MAX(a.attemptNumber), 0) FROM ExecutionAttemptJpaEntity a WHERE a.executionId = :executionId")
+    int findMaxAttemptNumberByExecutionId(@Param("executionId") Long executionId);
+
+    // Для listAttempts по execUuid через join
+    @Query("""
+            SELECT a FROM ExecutionAttemptJpaEntity a
+            JOIN ExecutionJpaEntity e ON e.id = a.executionId
+            WHERE e.execUuid = :execUuid
+              AND e.organizationId = :orgId
+            ORDER BY a.attemptNumber ASC
+            """)
+    List<ExecutionAttemptJpaEntity> findByExecUuidAndOrgId(
+            @Param("execUuid") UUID execUuid,
+            @Param("orgId")    Long organizationId
+    );
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\jpa\repository\ExecutionJpaRepository.java ===
+package com.cromp.executions.infrastructure.persistence.jpa.repository;
+
+import com.cromp.executions.domain.model.enums.ExecutionSource;
+import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import com.cromp.executions.infrastructure.persistence.jpa.entity.ExecutionJpaEntity;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface ExecutionJpaRepository extends JpaRepository<ExecutionJpaEntity, Long> {
+
+    Optional<ExecutionJpaEntity> findByExecUuid(UUID execUuid);
+
+    @Query("""
+            SELECT e FROM ExecutionJpaEntity e
+            WHERE e.organizationId = :orgId
+              AND (:jobId      IS NULL OR e.jobId      = :jobId)
+              AND (:status     IS NULL OR e.finalStatus = :status)
+              AND (:source     IS NULL OR e.source      = :source)
+              AND (:from       IS NULL OR e.createdAt  >= :from)
+              AND (:to         IS NULL OR e.createdAt  <= :to)
+            ORDER BY e.createdAt DESC
+            """)
+    List<ExecutionJpaEntity> findByFilter(
+            @Param("orgId")  Long organizationId,
+            @Param("jobId")  Long jobId,
+            @Param("status") ExecutionStatus status,
+            @Param("source") ExecutionSource source,
+            @Param("from")   Instant from,
+            @Param("to")     Instant to,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT COUNT(e) FROM ExecutionJpaEntity e
+            WHERE e.organizationId = :orgId
+              AND (:jobId      IS NULL OR e.jobId       = :jobId)
+              AND (:status     IS NULL OR e.finalStatus  = :status)
+              AND (:source     IS NULL OR e.source       = :source)
+              AND (:from       IS NULL OR e.createdAt   >= :from)
+              AND (:to         IS NULL OR e.createdAt   <= :to)
+            """)
+    long countByFilter(
+            @Param("orgId")  Long organizationId,
+            @Param("jobId")  Long jobId,
+            @Param("status") ExecutionStatus status,
+            @Param("source") ExecutionSource source,
+            @Param("from")   Instant from,
+            @Param("to")     Instant to
+    );
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\mapper\ExecutionArtifactPersistenceMapper.java ===
+package com.cromp.executions.infrastructure.persistence.mapper;
+
+import com.cromp.executions.domain.model.ExecutionArtifact;
+import com.cromp.executions.infrastructure.persistence.jpa.entity.ExecutionArtifactJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ExecutionArtifactPersistenceMapper {
+
+    public ExecutionArtifactJpaEntity toJpa(ExecutionArtifact a) {
+        return ExecutionArtifactJpaEntity.builder()
+                .id(a.getId())
+                .executionId(a.getExecutionId())
+                .kind(a.getKind())
+                .storagePath(a.getStoragePath())
+                .sizeBytes(a.getSizeBytes())
+                .checksumSha256(a.getChecksumSha256())
+                .contentType(a.getContentType())
+                .compression(a.getCompression())
+                .metadata(a.getMetadata())
+                .retentionDays(a.getRetentionDays())
+                .uploadedBy(a.getUploadedBy())
+                .uploadedAt(a.getUploadedAt())
+                .build();
+    }
+
+    public ExecutionArtifact toDomain(ExecutionArtifactJpaEntity entity) {
+        return ExecutionArtifact.reconstitute(
+                entity.getId(),
+                entity.getExecutionId(),
+                entity.getKind(),
+                entity.getStoragePath(),
+                entity.getSizeBytes(),
+                entity.getChecksumSha256(),
+                entity.getContentType(),
+                entity.getCompression(),
+                entity.getMetadata(),
+                entity.getRetentionDays(),
+                entity.getUploadedBy(),
+                entity.getUploadedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\mapper\ExecutionAttemptPersistenceMapper.java ===
+package com.cromp.executions.infrastructure.persistence.mapper;
+
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import com.cromp.executions.infrastructure.persistence.jpa.entity.ExecutionAttemptJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ExecutionAttemptPersistenceMapper {
+
+    public ExecutionAttemptJpaEntity toJpa(ExecutionAttempt a) {
+        return ExecutionAttemptJpaEntity.builder()
+                .id(a.getId())
+                .attemptUuid(a.getAttemptUuid())
+                .executionId(a.getExecutionId())
+                .organizationId(a.getOrganizationId())
+                .attemptNumber(a.getAttemptNumber())
+                .status(a.getStatus())
+                .statusReason(a.getStatusReason())
+                .errorClass(a.getErrorClass())
+                .scheduledAt(a.getScheduledAt())
+                .claimedAt(a.getClaimedAt())
+                .startedAt(a.getStartedAt())
+                .finishedAt(a.getFinishedAt())
+                .durationMs(a.getDurationMs())
+                .executorMetadata(a.getExecutorMetadata())
+                .idempotencyKey(a.getIdempotencyKey())
+                .outputSummary(a.getOutputSummary())
+                .traceId(a.getTraceId())
+                .createdAt(a.getCreatedAt())
+                .updatedAt(a.getUpdatedAt())
+                .build();
+    }
+
+    public ExecutionAttempt toDomain(ExecutionAttemptJpaEntity entity) {
+        return ExecutionAttempt.reconstitute(
+                entity.getId(),
+                entity.getAttemptUuid(),
+                entity.getExecutionId(),
+                entity.getOrganizationId(),
+                entity.getAttemptNumber(),
+                entity.getStatus(),
+                entity.getStatusReason(),
+                entity.getErrorClass(),
+                entity.getScheduledAt(),
+                entity.getClaimedAt(),
+                entity.getStartedAt(),
+                entity.getFinishedAt(),
+                entity.getDurationMs(),
+                entity.getExecutorMetadata(),
+                entity.getIdempotencyKey(),
+                entity.getOutputSummary(),
+                entity.getTraceId(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\persistence\mapper\ExecutionPersistenceMapper.java ===
+package com.cromp.executions.infrastructure.persistence.mapper;
+
+import com.cromp.executions.domain.model.Execution;
+import com.cromp.executions.infrastructure.persistence.jpa.entity.ExecutionJpaEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ExecutionPersistenceMapper {
+
+    public ExecutionJpaEntity toJpa(Execution e) {
+        return ExecutionJpaEntity.builder()
+                .id(e.getId())
+                .execUuid(e.getExecUuid())
+                .organizationId(e.getOrganizationId())
+                .jobId(e.getJobId())
+                .jobVersionId(e.getJobVersionId())
+                .priority(e.getPriority())
+                .source(e.getSource())
+                .triggeredAt(e.getTriggeredAt())
+                .scheduledAt(e.getScheduledAt())
+                .finalStatus(e.getFinalStatus())
+                .totalAttempts(e.getTotalAttempts())
+                .startedAt(e.getStartedAt())
+                .finishedAt(e.getFinishedAt())
+                .correlationId(e.getCorrelationId())
+                .executionPolicySnapshot(e.getExecutionPolicySnapshot())
+                .createdAt(e.getCreatedAt())
+                .updatedAt(e.getUpdatedAt())
+                .build();
+    }
+
+    public Execution toDomain(ExecutionJpaEntity entity) {
+        return Execution.reconstitute(
+                entity.getId(),
+                entity.getExecUuid(),
+                entity.getOrganizationId(),
+                entity.getJobId(),
+                entity.getJobVersionId(),
+                entity.getPriority(),
+                entity.getSource(),
+                entity.getTriggeredAt(),
+                entity.getScheduledAt(),
+                entity.getFinalStatus(),
+                entity.getTotalAttempts(),
+                entity.getStartedAt(),
+                entity.getFinishedAt(),
+                entity.getCorrelationId(),
+                entity.getExecutionPolicySnapshot(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+        );
+    }
+}
+
 === C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\port\AttemptClaimPortImpl.java ===
 package com.cromp.executions.infrastructure.port;
 
@@ -763,6 +1989,7 @@ public class AttemptClaimPortImpl implements AttemptClaimPort {
 
     private final AttemptService attemptService;
 
+    //TODO: убедиться, что не падает на null
     @Override
     public Optional<ClaimAttemptResult> claimNextAttempt(Long organizationId) {
         return attemptService.claimNextAttempt(organizationId);
@@ -894,6 +2121,39 @@ public class JobVersionQueryPortImpl implements JobVersionQueryPort {
                         throw new RuntimeException("Failed to serialize JobConfig", e);
                     }
                 });
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\executions\src\main\java\com\cromp\executions\infrastructure\port\StaleAttemptPortImpl.java ===
+package com.cromp.executions.infrastructure.port;
+
+import com.cromp.executions.application.port.StaleAttemptPort;
+import com.cromp.executions.application.service.AttemptService;
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * Реализация {@link StaleAttemptPort}.
+ *
+ * Живёт в infrastructure-слое модуля executions — знает о {@link AttemptService}
+ */
+@Component
+@RequiredArgsConstructor
+public class StaleAttemptPortImpl implements StaleAttemptPort {
+
+    private final AttemptService attemptService;
+
+    @Override
+    public List<ExecutionAttempt> findStaleAttempts(int olderThanMinutes) {
+        return attemptService.findStaleAttempts(olderThanMinutes);
+    }
+
+    @Override
+    public void markStaleAsTimeout(List<ExecutionAttempt> stale) {
+        attemptService.markStaleAsTimeout(stale);
     }
 }
 

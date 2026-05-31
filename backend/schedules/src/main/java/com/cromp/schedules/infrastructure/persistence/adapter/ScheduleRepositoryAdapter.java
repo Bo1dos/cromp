@@ -1,6 +1,7 @@
 package com.cromp.schedules.infrastructure.persistence.adapter;
 
 import com.cromp.schedules.domain.model.Schedule;
+import com.cromp.schedules.domain.model.enums.ScheduleStatus;
 import com.cromp.schedules.domain.repository.ScheduleRepositoryPort;
 import com.cromp.schedules.infrastructure.persistence.jpa.repository.ScheduleJpaRepository;
 import com.cromp.schedules.infrastructure.persistence.mapper.SchedulePersistenceMapper;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -32,5 +34,10 @@ public class ScheduleRepositoryAdapter implements ScheduleRepositoryPort {
     @Override
     public void delete(Schedule schedule) {
         repository.delete(mapper.toJpa(schedule));
+    }
+
+    @Override
+    public List<Schedule> findAllByStatus(ScheduleStatus status) {
+        return repository.findAllByStatus(status).stream().map(mapper::toDomain).toList();
     }
 }

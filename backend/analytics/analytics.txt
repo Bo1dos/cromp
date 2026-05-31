@@ -1,0 +1,1267 @@
+﻿=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\api\dto\AnalyticsDtos.java ===
+package com.cromp.analytics.api.dto;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * DTO ответов API аналитики.
+ * Все record'ы — неизменяемые, сериализуются Jackson'ом.
+ * {@code @JsonInclude(NON_NULL)} — не включаем null-поля в JSON.
+ */
+public final class AnalyticsDtos {
+
+    private AnalyticsDtos() {}
+
+    // ── Summary ───────────────────────────────────────────────────────────────
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SummaryResponse(
+            Long organizationId,
+            Long jobId,             // null если запрос по всей организации
+            String period,
+            long total,
+            long succeeded,
+            long failed,
+            double errorRate,
+            Double avgDurationMs,
+            Double p95DurationMs,
+            Instant calculatedAt
+    ) {}
+
+    // ── Predictions ───────────────────────────────────────────────────────────
+
+    public record PredictionsResponse(
+            Long organizationId,
+            Long jobId,
+            List<PredictionItem> predictions
+    ) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record PredictionItem(
+            Long jobId,
+            Instant nextRunAt,
+            double failureProbability,
+            Long expectedDurationMs,
+            double confidence
+    ) {}
+
+    // ── Anomalies ─────────────────────────────────────────────────────────────
+
+    public record AnomaliesResponse(
+            Long organizationId,
+            Long jobId,
+            String from,
+            String to,
+            List<AnomalyItem> anomalies
+    ) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record AnomalyItem(
+            Long jobId,
+            String metric,
+            double value,
+            double expectedMin,
+            double expectedMax,
+            String severity,
+            Instant detectedAt
+    ) {}
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\api\mapper\AnalyticsMapper.java ===
+package com.cromp.analytics.api.mapper;
+
+import com.cromp.analytics.api.dto.AnalyticsDtos;
+import com.cromp.analytics.domain.model.AnomalyDetection;
+import com.cromp.analytics.domain.model.ExecutionSummary;
+import com.cromp.analytics.domain.model.Prediction;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+import java.util.List;
+
+/**
+ * MapStruct-маппер из доменных объектов в API DTO.
+ *
+ * {@code componentModel = "spring"} — маппер становится Spring-бином,
+ * инжектируется через конструктор в контроллер.
+ */
+@Mapper(componentModel = "spring")
+public interface AnalyticsMapper {
+
+    // ── Summary ───────────────────────────────────────────────────────────────
+
+    @Mapping(target = "period", expression = "java(summary.period().name())")
+    AnalyticsDtos.SummaryResponse toSummaryResponse(ExecutionSummary summary);
+
+    // ── Predictions ───────────────────────────────────────────────────────────
+
+    AnalyticsDtos.PredictionItem toPredictionItem(Prediction prediction);
+
+    default AnalyticsDtos.PredictionsResponse toPredictionsResponse(
+            Long organizationId, Long jobId, List<Prediction> predictions) {
+        return new AnalyticsDtos.PredictionsResponse(
+                organizationId,
+                jobId,
+                predictions.stream().map(this::toPredictionItem).toList()
+        );
+    }
+
+    // ── Anomalies ─────────────────────────────────────────────────────────────
+
+    @Mapping(target = "severity", expression = "java(anomaly.severity().name())")
+    AnalyticsDtos.AnomalyItem toAnomalyItem(AnomalyDetection anomaly);
+
+    default AnalyticsDtos.AnomaliesResponse toAnomaliesResponse(
+            Long organizationId, Long jobId,
+            String from, String to,
+            List<AnomalyDetection> anomalies) {
+        return new AnalyticsDtos.AnomaliesResponse(
+                organizationId,
+                jobId,
+                from,
+                to,
+                anomalies.stream().map(this::toAnomalyItem).toList()
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\application\service\AnalyticsService.java ===
+package com.cromp.analytics.application.service;
+
+import com.cromp.analytics.domain.model.AnalyticsPeriod;
+import com.cromp.analytics.domain.model.ExecutionSummary;
+import com.cromp.analytics.domain.repository.AnalyticsRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+/**
+ * Сервис сводной статистики выполнений.
+ *
+ * Читает агрегаты из {@code mv_job_execution_daily} через {@link AnalyticsRepository}.
+ * Результаты кэшируются — TTL настраивается в {@code CacheConfig}.
+ *
+ * Кэш-ключ включает все параметры запроса: при смене periodа или jobId
+ * кэш не пересекается.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AnalyticsService {
+
+    private final AnalyticsRepository analyticsRepository;
+
+    /**
+     * Возвращает сводку по всем задачам организации за период.
+     *
+     * @param organizationId идентификатор организации
+     * @param period         период агрегации
+     * @return Optional.empty() если данных нет
+     */
+    @Cacheable(
+            cacheNames = "analytics.summary",
+            key = "#organizationId + ':' + #period.name()"
+    )
+    public Optional<ExecutionSummary> getSummary(Long organizationId, AnalyticsPeriod period) {
+        log.debug("[analytics] querying summary orgId={} period={}", organizationId, period);
+        return analyticsRepository.findSummaryByOrganization(organizationId, period);
+    }
+
+    /**
+     * Возвращает сводку по конкретной задаче за период.
+     *
+     * @param organizationId идентификатор организации
+     * @param jobId          идентификатор задачи
+     * @param period         период агрегации
+     * @return Optional.empty() если данных нет
+     */
+    @Cacheable(
+            cacheNames = "analytics.summary",
+            key = "#organizationId + ':' + #jobId + ':' + #period.name()"
+    )
+    public Optional<ExecutionSummary> getSummaryByJob(Long organizationId, Long jobId,
+                                                       AnalyticsPeriod period) {
+        log.debug("[analytics] querying summary orgId={} jobId={} period={}",
+                organizationId, jobId, period);
+        return analyticsRepository.findSummaryByJob(organizationId, jobId, period);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\application\service\MaterializedViewService.java ===
+package com.cromp.analytics.application.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+/**
+ * Периодическое обновление материализованного представления
+ * {@code mv_job_execution_daily} и инвалидация связанных кэшей.
+ *
+ * <p>CONCURRENT REFRESH позволяет читать из MV во время обновления —
+ * запросы не блокируются. Требует уникального индекса на MV
+ * ({@code idx_mv_job_exec_daily}), который создан в Liquibase changelog.
+ *
+ * <p>После обновления инвалидируем кэши summary, predictions и anomalies —
+ * иначе пользователи будут видеть устаревшие данные до истечения TTL.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MaterializedViewService {
+
+    private static final String REFRESH_SQL =
+            "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_job_execution_daily";
+
+    private final JdbcTemplate jdbc;
+    private final CacheManager cacheManager;
+
+    @Scheduled(fixedRateString = "${analytics.mv.refresh-interval-ms:3600000}")
+    public void refresh() {
+        log.info("[mv-refresh] starting REFRESH MATERIALIZED VIEW mv_job_execution_daily");
+        long start = System.currentTimeMillis();
+
+        try {
+            jdbc.execute(REFRESH_SQL);
+            long elapsed = System.currentTimeMillis() - start;
+            log.info("[mv-refresh] completed in {}ms", elapsed);
+
+            // Инвалидируем кэши — данные обновились, кэш устарел
+            evictCaches();
+
+        } catch (Exception e) {
+            log.error("[mv-refresh] failed to refresh materialized view", e);
+            // Не бросаем — следующий цикл попробует снова
+        }
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    private void evictCaches() {
+        evict("analytics.summary");
+        evict("analytics.predictions");
+        evict("analytics.anomalies");
+    }
+
+    private void evict(String cacheName) {
+        var cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.clear();
+            log.debug("[mv-refresh] evicted cache '{}'", cacheName);
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\application\service\PredictionService.java ===
+package com.cromp.analytics.application.service;
+
+import com.cromp.analytics.domain.model.AnomalyDetection;
+import com.cromp.analytics.domain.model.Prediction;
+import com.cromp.analytics.domain.model.enums.AnomalySeverity;
+import com.cromp.analytics.domain.repository.AnalyticsRepository;
+import com.cromp.analytics.domain.repository.AnalyticsRepository.DailyExecutionRow;
+import com.cromp.analytics.infrastructure.mlclient.client.MlClient;
+import com.cromp.analytics.infrastructure.mlclient.contract.MlContracts;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Сервис прогнозов и обнаружения аномалий.
+ *
+ * Алгоритм:
+ *   1. Загрузить исторические строки из MV через {@link AnalyticsRepository}.
+ *   2. Сформировать запрос к ML-сервису.
+ *   3. Вызвать {@link MlClient} (с встроенным fallback на пустой список).
+ *   4. Смапить ответ в доменные объекты.
+ *
+ * Если ML недоступен — {@link MlClient} вернёт пустой список, сервис вернёт
+ * пустой список наружу. Клиент получит 200 с пустым массивом, а не 503.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class PredictionService {
+
+    /** Глубина истории, передаваемой в ML-сервис. */
+    private static final int HISTORY_DAYS = 90;
+
+    private final AnalyticsRepository analyticsRepository;
+    private final MlClient mlClient;
+
+    // ── Predictions ───────────────────────────────────────────────────────────
+
+    @Cacheable(
+            cacheNames = "analytics.predictions",
+            key = "#organizationId + ':' + (#jobId != null ? #jobId : 'all')"
+    )
+    public List<Prediction> getPredictions(Long organizationId, Long jobId) {
+        log.debug("[prediction] fetching predictions orgId={} jobId={}", organizationId, jobId);
+
+        List<DailyExecutionRow> history =
+                analyticsRepository.findDailyRows(organizationId, jobId, HISTORY_DAYS);
+
+        if (history.isEmpty()) {
+            log.info("[prediction] no history found, returning empty predictions orgId={}", organizationId);
+            return List.of();
+        }
+
+        MlContracts.PredictionRequest request = new MlContracts.PredictionRequest(
+                organizationId,
+                jobId,
+                toMlRows(history)
+        );
+
+        MlContracts.PredictionResponse response = mlClient.getPredictions(request);
+
+        List<Prediction> predictions = response.predictions().stream()
+                .map(this::toDomain)
+                .toList();
+
+        log.debug("[prediction] received {} prediction(s) orgId={}", predictions.size(), organizationId);
+        return predictions;
+    }
+
+    // ── Anomalies ─────────────────────────────────────────────────────────────
+
+    @Cacheable(
+            cacheNames = "analytics.anomalies",
+            key = "#organizationId + ':' + (#jobId != null ? #jobId : 'all') + ':' + #from + ':' + #to"
+    )
+    public List<AnomalyDetection> getAnomalies(Long organizationId, Long jobId,
+                                                String from, String to) {
+        log.debug("[anomaly] fetching anomalies orgId={} jobId={} from={} to={}",
+                organizationId, jobId, from, to);
+
+        List<DailyExecutionRow> history =
+                analyticsRepository.findDailyRows(organizationId, jobId, HISTORY_DAYS);
+
+        if (history.isEmpty()) {
+            log.info("[anomaly] no history found, returning empty anomalies orgId={}", organizationId);
+            return List.of();
+        }
+
+        MlContracts.AnomalyRequest request = new MlContracts.AnomalyRequest(
+                organizationId,
+                jobId,
+                from,
+                to,
+                toMlRows(history)
+        );
+
+        MlContracts.AnomalyResponse response = mlClient.getAnomalies(request);
+
+        List<AnomalyDetection> anomalies = response.anomalies().stream()
+                .map(this::toDomain)
+                .toList();
+
+        log.debug("[anomaly] received {} anomal(ies) orgId={}", anomalies.size(), organizationId);
+        return anomalies;
+    }
+
+    // ── Private mappers ───────────────────────────────────────────────────────
+
+    private List<MlContracts.ExecutionRow> toMlRows(List<DailyExecutionRow> rows) {
+        return rows.stream()
+                .map(r -> new MlContracts.ExecutionRow(
+                        r.jobId(),
+                        r.day(),
+                        r.total(),
+                        r.succeeded(),
+                        r.failed(),
+                        r.avgDurationMs(),
+                        r.p95DurationMs()
+                ))
+                .toList();
+    }
+
+    private Prediction toDomain(MlContracts.PredictionItem item) {
+        Instant nextRunAt = null;
+        if (item.nextRunAt() != null && !item.nextRunAt().isBlank()) {
+            try {
+                nextRunAt = Instant.parse(item.nextRunAt());
+            } catch (Exception e) {
+                log.warn("[prediction] failed to parse nextRunAt='{}' for jobId={}",
+                        item.nextRunAt(), item.jobId());
+            }
+        }
+
+        return new Prediction(
+                item.jobId(),
+                nextRunAt,
+                item.failureProbability(),
+                item.expectedDurationMs(),
+                item.confidence()
+        );
+    }
+
+    private AnomalyDetection toDomain(MlContracts.AnomalyItem item) {
+        AnomalySeverity severity;
+        try {
+            severity = AnomalySeverity.valueOf(item.severity().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("[anomaly] unknown severity='{}', defaulting to LOW", item.severity());
+            severity = AnomalySeverity.LOW;
+        }
+
+        Instant detectedAt;
+        try {
+            detectedAt = Instant.parse(item.detectedAt());
+        } catch (Exception e) {
+            log.warn("[anomaly] failed to parse detectedAt='{}', using now", item.detectedAt());
+            detectedAt = Instant.now();
+        }
+
+        return new AnomalyDetection(
+                item.jobId(),
+                item.metric(),
+                item.value(),
+                item.expectedMin(),
+                item.expectedMax(),
+                severity,
+                detectedAt
+        );
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\config\CacheConfig.java ===
+package com.cromp.analytics.config;
+
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Конфигурация кэша на базе Caffeine (in-memory).
+ *
+ * <p><b>Переезд на Redis:</b> заменить этот бин на
+ * {@code RedisCacheManager} из {@code spring-boot-starter-data-redis}.
+ * Аннотации {@code @Cacheable} в сервисах не трогаются.
+ *
+ * <p>Три кэша с одинаковым TTL:
+ * <ul>
+ *   <li>{@code analytics.summary}    — сводная статистика из MV
+ *   <li>{@code analytics.predictions} — прогнозы от ML
+ *   <li>{@code analytics.anomalies}  — аномалии от ML
+ * </ul>
+ *
+ * После {@code REFRESH MATERIALIZED VIEW} все кэши инвалидируются
+ * явно через {@link com.cromp.analytics.application.service.MaterializedViewService}.
+ */
+@Configuration
+@EnableCaching
+public class CacheConfig {
+
+    @Value("${analytics.cache.ttl-minutes:60}")
+    private long ttlMinutes;
+
+    @Value("${analytics.cache.max-size:500}")
+    private long maxSize;
+
+    @Bean
+    public CacheManager cacheManager() {
+        CaffeineCacheManager manager = new CaffeineCacheManager(
+                "analytics.summary",
+                "analytics.predictions",
+                "analytics.anomalies"
+        );
+
+        manager.setCaffeine(Caffeine.newBuilder()
+                .expireAfterWrite(ttlMinutes, TimeUnit.MINUTES)
+                .maximumSize(maxSize)
+                .recordStats()  // статистика hit/miss доступна через Actuator
+        );
+
+        return manager;
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\config\MlClientConfig.java ===
+package com.cromp.analytics.config;
+
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.util.Timeout;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Конфигурация RestClient для Python ML-сервиса.
+ *
+ * Base URL берётся из {@code ml.service.url}.
+ * Таймауты — из {@code ml.service.timeout-ms}.
+ *
+ * Переезд на другой HTTP-клиент или URL — только здесь,
+ * {@link com.cromp.analytics.infrastructure.mlclient.client.MlClientImpl} не трогается.
+ */
+@Configuration
+public class MlClientConfig {
+
+    @Value("${ml.service.url:http://localhost:8000}")
+    private String mlServiceUrl;
+
+    @Value("${ml.service.timeout-ms:10000}")
+    private long timeoutMs;
+
+    @Bean(name = "mlRestClient")
+    public RestClient mlRestClient() {
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.of(timeoutMs, TimeUnit.MILLISECONDS))
+                .setResponseTimeout(Timeout.of(timeoutMs, TimeUnit.MILLISECONDS))
+                .build();
+
+        HttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .setConnectionManager(
+                        PoolingHttpClientConnectionManagerBuilder.create()
+                                .setMaxConnTotal(20)
+                                .setMaxConnPerRoute(10)
+                                .build()
+                )
+                .build();
+
+        return RestClient.builder()
+                .baseUrl(mlServiceUrl)
+                .requestFactory(new HttpComponentsClientHttpRequestFactory(httpClient))
+                .defaultHeader("Content-Type", "application/json")
+                .defaultHeader("Accept", "application/json")
+                .build();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\domain\model\AnalyticsPeriod.java ===
+package com.cromp.analytics.domain.model;
+
+/**
+ * Период агрегации для сводной статистики.
+ * Значение {@code days} используется в SQL-запросах как INTERVAL.
+ */
+public enum AnalyticsPeriod {
+
+    ONE_DAY(1, "1d"),
+    SEVEN_DAYS(7, "7d"),
+    THIRTY_DAYS(30, "30d"),
+    NINETY_DAYS(90, "90d");
+
+    private final int days;
+    private final String alias;
+
+    AnalyticsPeriod(int days, String alias) {
+        this.days = days;
+        this.alias = alias;
+    }
+
+    public int getDays() {
+        return days;
+    }
+
+    public static AnalyticsPeriod fromAlias(String alias) {
+        for (AnalyticsPeriod p : values()) {
+            if (p.alias.equalsIgnoreCase(alias)) return p;
+        }
+        throw new IllegalArgumentException("Unknown period: " + alias
+                + ". Valid values: 1d, 7d, 30d, 90d");
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\domain\model\AnomalyDetection.java ===
+package com.cromp.analytics.domain.model;
+
+import java.time.Instant;
+
+import com.cromp.analytics.domain.model.enums.AnomalySeverity;
+
+/**
+ * Обнаруженная аномалия в метриках выполнения задачи.
+ * Value object — результат анализа ML-сервиса.
+ *
+ * @param expectedMin нижняя граница ожидаемого диапазона
+ * @param expectedMax верхняя граница ожидаемого диапазона
+ */
+public record AnomalyDetection(
+        Long jobId,
+        String metric,          // например: "duration_ms", "error_rate"
+        double value,           // фактическое значение метрики
+        double expectedMin,
+        double expectedMax,
+        AnomalySeverity severity,
+        Instant detectedAt
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\domain\model\ExecutionSummary.java ===
+package com.cromp.analytics.domain.model;
+
+import java.time.Instant;
+
+/**
+ * Сводная статистика выполнений за период.
+ * Value object — неизменяемый, без идентификатора.
+ * Формируется из материализованного представления {@code mv_job_execution_daily}.
+ */
+public record ExecutionSummary(
+        Long organizationId,
+        Long jobId,             // null — агрегат по всем задачам организации
+        AnalyticsPeriod period,
+        long total,
+        long succeeded,
+        long failed,
+        double errorRate,       // failed / total, [0.0 .. 1.0]
+        Double avgDurationMs,   // null если нет данных о длительности
+        Double p95DurationMs,   // null если нет данных
+        Instant calculatedAt
+) {
+    public ExecutionSummary {
+        if (total > 0) {
+            errorRate = (double) failed / total;
+        } else {
+            errorRate = 0.0;
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\domain\model\Prediction.java ===
+package com.cromp.analytics.domain.model;
+
+import java.time.Instant;
+
+/**
+ * Прогноз ML-сервиса для одной задачи.
+ * Value object — результат инференса, не хранится в БД.
+ */
+public record Prediction(
+        Long jobId,
+        Instant nextRunAt,          // может быть null если ML не знает расписания
+        double failureProbability,  // [0.0 .. 1.0]
+        Long expectedDurationMs,    // null если модель не обучена на длительности
+        double confidence           // уверенность модели [0.0 .. 1.0]
+) {}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\domain\model\enums\AnomalySeverity.java ===
+package com.cromp.analytics.domain.model.enums;
+
+public enum AnomalySeverity {
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\domain\repository\AnalyticsRepository.java ===
+package com.cromp.analytics.domain.repository;
+
+import com.cromp.analytics.domain.model.AnalyticsPeriod;
+import com.cromp.analytics.domain.model.ExecutionSummary;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Доменный порт репозитория аналитики.
+ * Реализуется через JdbcTemplate в infrastructure-слое.
+ *
+ * Все методы читают из материализованного представления
+ * {@code mv_job_execution_daily} — read-only, без side effects.
+ */
+public interface AnalyticsRepository {
+
+    /**
+     * Сводная статистика по всем задачам организации за период.
+     */
+    Optional<ExecutionSummary> findSummaryByOrganization(Long organizationId,
+                                                          AnalyticsPeriod period);
+
+    /**
+     * Сводная статистика по конкретной задаче за период.
+     */
+    Optional<ExecutionSummary> findSummaryByJob(Long organizationId, Long jobId,
+                                                 AnalyticsPeriod period);
+
+    /**
+     * Исторические данные выполнений для ML-сервиса.
+     * Возвращает сырые строки: jobId, day, total, succeeded, avgDurationMs и т.д.
+     * Используется для формирования запроса к Python.
+     *
+     * @param days глубина истории в днях
+     */
+    List<DailyExecutionRow> findDailyRows(Long organizationId, Long jobId, int days);
+
+    /**
+     * Проекция одной строки mv_job_execution_daily.
+     * Используется при передаче данных в ML-сервис.
+     */
+    record DailyExecutionRow(
+            Long jobId,
+            String day,           // ISO date string
+            long total,
+            long succeeded,
+            long failed,
+            Double avgDurationMs,
+            Double p95DurationMs
+    ) {}
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\infrastructure\mlclient\client\MlClient.java ===
+package com.cromp.analytics.infrastructure.mlclient.client;
+
+import com.cromp.analytics.infrastructure.mlclient.contract.MlContracts;
+
+/**
+ * Порт для взаимодействия с Python ML-сервисом.
+ *
+ * Реализация ({@link MlClientImpl}) использует RestClient.
+ * При недоступности сервиса реализация возвращает деградированный ответ
+ * (пустые списки) — не бросает исключений наружу.
+ */
+public interface MlClient {
+
+    /**
+     * Запрашивает прогнозы для задачи (или всех задач организации).
+     * При ошибке сети / таймауте возвращает ответ с пустым списком.
+     */
+    MlContracts.PredictionResponse getPredictions(MlContracts.PredictionRequest request);
+
+    /**
+     * Запрашивает обнаружение аномалий за указанный период.
+     * При ошибке сети / таймауте возвращает ответ с пустым списком.
+     */
+    MlContracts.AnomalyResponse getAnomalies(MlContracts.AnomalyRequest request);
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\infrastructure\mlclient\client\MlClientImpl.java ===
+package com.cromp.analytics.infrastructure.mlclient.client;
+
+import com.cromp.analytics.infrastructure.mlclient.contract.MlContracts;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
+
+/**
+ * Реализация {@link MlClient} через Spring RestClient.
+ *
+ * <p><b>Fallback-стратегия:</b> при любой ошибке сети, таймауте или
+ * недоступности ML-сервиса логируем предупреждение и возвращаем
+ * деградированный ответ (пустые списки). Верхний слой не падает.
+ *
+ * <p>Таймауты настраиваются в {@code MlClientConfig} на уровне HttpClient.
+ */
+@Slf4j
+@Component
+public class MlClientImpl implements MlClient {
+
+    private static final String PREDICTIONS_PATH = "/predictions";
+    private static final String ANOMALIES_PATH   = "/anomalies";
+
+    private static final MlContracts.PredictionResponse EMPTY_PREDICTIONS =
+            new MlContracts.PredictionResponse(List.of());
+
+    private static final MlContracts.AnomalyResponse EMPTY_ANOMALIES =
+            new MlContracts.AnomalyResponse(List.of());
+
+    private final RestClient restClient;
+
+    public MlClientImpl(@Qualifier("mlRestClient") RestClient restClient) {
+        this.restClient = restClient;
+    }
+
+    @Override
+    public MlContracts.PredictionResponse getPredictions(MlContracts.PredictionRequest request) {
+        try {
+            MlContracts.PredictionResponse response = restClient.post()
+                    .uri(PREDICTIONS_PATH)
+                    .body(request)
+                    .retrieve()
+                    .body(MlContracts.PredictionResponse.class);
+
+            if (response == null || response.predictions() == null) {
+                log.warn("[ml-client] predictions response is null or empty, returning fallback");
+                return EMPTY_PREDICTIONS;
+            }
+
+            log.debug("[ml-client] received {} prediction(s) for orgId={} jobId={}",
+                    response.predictions().size(), request.orgId(), request.jobId());
+            return response;
+
+        } catch (ResourceAccessException e) {
+            log.warn("[ml-client] ML service unavailable for predictions orgId={}: {}",
+                    request.orgId(), e.getMessage());
+            return EMPTY_PREDICTIONS;
+
+        } catch (Exception e) {
+            log.error("[ml-client] unexpected error calling predictions orgId={}",
+                    request.orgId(), e);
+            return EMPTY_PREDICTIONS;
+        }
+    }
+
+    @Override
+    public MlContracts.AnomalyResponse getAnomalies(MlContracts.AnomalyRequest request) {
+        try {
+            MlContracts.AnomalyResponse response = restClient.post()
+                    .uri(ANOMALIES_PATH)
+                    .body(request)
+                    .retrieve()
+                    .body(MlContracts.AnomalyResponse.class);
+
+            if (response == null || response.anomalies() == null) {
+                log.warn("[ml-client] anomalies response is null or empty, returning fallback");
+                return EMPTY_ANOMALIES;
+            }
+
+            log.debug("[ml-client] received {} anomal(ies) for orgId={} jobId={}",
+                    response.anomalies().size(), request.orgId(), request.jobId());
+            return response;
+
+        } catch (ResourceAccessException e) {
+            log.warn("[ml-client] ML service unavailable for anomalies orgId={}: {}",
+                    request.orgId(), e.getMessage());
+            return EMPTY_ANOMALIES;
+
+        } catch (Exception e) {
+            log.error("[ml-client] unexpected error calling anomalies orgId={}",
+                    request.orgId(), e);
+            return EMPTY_ANOMALIES;
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\infrastructure\mlclient\contract\MlContracts.java ===
+package com.cromp.analytics.infrastructure.mlclient.contract;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
+
+/**
+ * Контракты запросов и ответов ML-сервиса.
+ * Все record'ы сериализуются в JSON через Jackson.
+ */
+public final class MlContracts {
+
+    private MlContracts() {}
+
+    // ── Predictions ───────────────────────────────────────────────────────────
+
+    /**
+     * Запрос к POST /predictions.
+     * Передаём исторические данные по задаче и мета-информацию.
+     */
+    public record PredictionRequest(
+            @JsonProperty("org_id")       Long orgId,
+            @JsonProperty("job_id")       Long jobId,       // null — для всех задач организации
+            @JsonProperty("history")      List<ExecutionRow> history
+    ) {}
+
+    /**
+     * Одна строка исторических данных — соответствует одному дню из MV.
+     */
+    public record ExecutionRow(
+            @JsonProperty("job_id")          Long jobId,
+            @JsonProperty("day")             String day,
+            @JsonProperty("total")           long total,
+            @JsonProperty("succeeded")       long succeeded,
+            @JsonProperty("failed")          long failed,
+            @JsonProperty("avg_duration_ms") Double avgDurationMs,
+            @JsonProperty("p95_duration_ms") Double p95DurationMs
+    ) {}
+
+    /**
+     * Ответ от POST /predictions — список прогнозов.
+     */
+    public record PredictionResponse(
+            @JsonProperty("predictions") List<PredictionItem> predictions
+    ) {}
+
+    public record PredictionItem(
+            @JsonProperty("job_id")               Long jobId,
+            @JsonProperty("next_run_at")          String nextRunAt,       // ISO-8601, может быть null
+            @JsonProperty("failure_probability")  double failureProbability,
+            @JsonProperty("expected_duration_ms") Long expectedDurationMs,
+            @JsonProperty("confidence")           double confidence
+    ) {}
+
+    // ── Anomalies ─────────────────────────────────────────────────────────────
+
+    /**
+     * Запрос к POST /anomalies.
+     */
+    public record AnomalyRequest(
+            @JsonProperty("org_id")   Long orgId,
+            @JsonProperty("job_id")   Long jobId,
+            @JsonProperty("from")     String from,     // ISO-8601 date
+            @JsonProperty("to")       String to,
+            @JsonProperty("history")  List<ExecutionRow> history
+    ) {}
+
+    /**
+     * Ответ от POST /anomalies — список обнаруженных аномалий.
+     */
+    public record AnomalyResponse(
+            @JsonProperty("anomalies") List<AnomalyItem> anomalies
+    ) {}
+
+    public record AnomalyItem(
+            @JsonProperty("job_id")         Long jobId,
+            @JsonProperty("metric")         String metric,
+            @JsonProperty("value")          double value,
+            @JsonProperty("expected_min")   double expectedMin,
+            @JsonProperty("expected_max")   double expectedMax,
+            @JsonProperty("severity")       String severity,    // LOW/MEDIUM/HIGH/CRITICAL
+            @JsonProperty("detected_at")    String detectedAt   // ISO-8601
+    ) {}
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\infrastructure\persistence\repository\AnalyticsRepositoryImpl.java ===
+package com.cromp.analytics.infrastructure.persistence.repository;
+
+import com.cromp.analytics.domain.model.AnalyticsPeriod;
+import com.cromp.analytics.domain.model.ExecutionSummary;
+import com.cromp.analytics.domain.repository.AnalyticsRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Реализация {@link AnalyticsRepository} через JdbcTemplate.
+ *
+ * Все запросы идут к материализованному представлению {@code mv_job_execution_daily}.
+ * JPA здесь не нужен — нет сущностей, только агрегации.
+ *
+ * Фильтрация по периоду реализована через {@code day >= now() - INTERVAL '? days'},
+ * где {@code ?} — число дней из {@link AnalyticsPeriod#getDays()}.
+ */
+@Slf4j
+@Repository
+@RequiredArgsConstructor
+public class AnalyticsRepositoryImpl implements AnalyticsRepository {
+
+    private final JdbcTemplate jdbc;
+
+    // ── Сводная статистика ────────────────────────────────────────────────────
+
+    @Override
+    public Optional<ExecutionSummary> findSummaryByOrganization(Long organizationId,
+                                                                  AnalyticsPeriod period) {
+        String sql = """
+                SELECT
+                    SUM(total_executions)                           AS total,
+                    SUM(succeeded)                                  AS succeeded,
+                    SUM(failed)                                     AS failed,
+                    AVG(avg_attempt_duration_ms)                    AS avg_duration_ms,
+                    percentile_cont(0.95) WITHIN GROUP
+                        (ORDER BY p95_duration_ms)                  AS p95_duration_ms
+                FROM mv_job_execution_daily
+                WHERE organization_id = ?
+                  AND day >= now() - (? * INTERVAL '1 day')
+                """;
+
+        return queryForSummary(sql, organizationId, null, period,
+                organizationId, period.getDays());
+    }
+
+    @Override
+    public Optional<ExecutionSummary> findSummaryByJob(Long organizationId, Long jobId,
+                                                        AnalyticsPeriod period) {
+        String sql = """
+                SELECT
+                    SUM(total_executions)                           AS total,
+                    SUM(succeeded)                                  AS succeeded,
+                    SUM(failed)                                     AS failed,
+                    AVG(avg_attempt_duration_ms)                    AS avg_duration_ms,
+                    percentile_cont(0.95) WITHIN GROUP
+                        (ORDER BY p95_duration_ms)                  AS p95_duration_ms
+                FROM mv_job_execution_daily
+                WHERE organization_id = ?
+                  AND job_id = ?
+                  AND day >= now() - (? * INTERVAL '1 day')
+                """;
+
+        return queryForSummary(sql, organizationId, jobId, period,
+                organizationId, jobId, period.getDays());
+    }
+
+    // ── Исторические строки для ML ────────────────────────────────────────────
+
+    @Override
+    public List<DailyExecutionRow> findDailyRows(Long organizationId, Long jobId, int days) {
+        if (jobId != null) {
+            return findDailyRowsByJob(organizationId, jobId, days);
+        }
+        return findDailyRowsByOrganization(organizationId, days);
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    private Optional<ExecutionSummary> queryForSummary(String sql,
+                                                        Long organizationId,
+                                                        Long jobId,
+                                                        AnalyticsPeriod period,
+                                                        Object... params) {
+        try {
+            ExecutionSummary result = jdbc.queryForObject(sql, (rs, rowNum) -> {
+                long total     = rs.getLong("total");
+                long succeeded = rs.getLong("succeeded");
+                long failed    = rs.getLong("failed");
+
+                Double avgDuration = nullableDouble(rs, "avg_duration_ms");
+                Double p95Duration = nullableDouble(rs, "p95_duration_ms");
+
+                // Если total = 0 — данных нет, возвращаем null → Optional.empty()
+                if (total == 0) return null;
+
+                return new ExecutionSummary(
+                        organizationId,
+                        jobId,
+                        period,
+                        total,
+                        succeeded,
+                        failed,
+                        0.0,        // errorRate вычислится в compact constructor
+                        avgDuration,
+                        p95Duration,
+                        Instant.now()
+                );
+            }, params);
+
+            return Optional.ofNullable(result);
+
+        } catch (Exception e) {
+            log.error("Failed to query execution summary orgId={} jobId={} period={}",
+                    organizationId, jobId, period, e);
+            return Optional.empty();
+        }
+    }
+
+    private List<DailyExecutionRow> findDailyRowsByJob(Long organizationId,
+                                                        Long jobId,
+                                                        int days) {
+        String sql = """
+                SELECT
+                    job_id,
+                    to_char(day, 'YYYY-MM-DD')  AS day,
+                    total_executions            AS total,
+                    succeeded,
+                    failed,
+                    avg_attempt_duration_ms     AS avg_duration_ms,
+                    p95_duration_ms
+                FROM mv_job_execution_daily
+                WHERE organization_id = ?
+                  AND job_id = ?
+                  AND day >= now() - (? * INTERVAL '1 day')
+                ORDER BY day DESC
+                """;
+
+        return jdbc.query(sql, dailyRowMapper(), organizationId, jobId, days);
+    }
+
+    private List<DailyExecutionRow> findDailyRowsByOrganization(Long organizationId,
+                                                                  int days) {
+        String sql = """
+                SELECT
+                    job_id,
+                    to_char(day, 'YYYY-MM-DD')  AS day,
+                    total_executions            AS total,
+                    succeeded,
+                    failed,
+                    avg_attempt_duration_ms     AS avg_duration_ms,
+                    p95_duration_ms
+                FROM mv_job_execution_daily
+                WHERE organization_id = ?
+                  AND day >= now() - (? * INTERVAL '1 day')
+                ORDER BY job_id, day DESC
+                """;
+
+        return jdbc.query(sql, dailyRowMapper(), organizationId, days);
+    }
+
+    private RowMapper<DailyExecutionRow> dailyRowMapper() {
+        return (rs, rowNum) -> new DailyExecutionRow(
+                rs.getLong("job_id"),
+                rs.getString("day"),
+                rs.getLong("total"),
+                rs.getLong("succeeded"),
+                rs.getLong("failed"),
+                nullableDouble(rs, "avg_duration_ms"),
+                nullableDouble(rs, "p95_duration_ms")
+        );
+    }
+
+    /**
+     * Возвращает null вместо 0.0 для nullable double колонок.
+     * JDBC возвращает 0.0 для NULL при getDouble() — это маскирует отсутствие данных.
+     */
+    private Double nullableDouble(ResultSet rs, String column) throws SQLException {
+        double value = rs.getDouble(column);
+        return rs.wasNull() ? null : value;
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\analytics\src\main\java\com\cromp\analytics\infrastructure\web\controller\AnalyticsController.java ===
+package com.cromp.analytics.infrastructure.web.controller;
+
+import com.cromp.analytics.api.dto.AnalyticsDtos;
+import com.cromp.analytics.api.mapper.AnalyticsMapper;
+import com.cromp.analytics.application.service.AnalyticsService;
+import com.cromp.analytics.application.service.PredictionService;
+import com.cromp.analytics.domain.model.AnalyticsPeriod;
+import com.cromp.analytics.domain.model.AnomalyDetection;
+import com.cromp.analytics.domain.model.ExecutionSummary;
+import com.cromp.analytics.domain.model.Prediction;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * REST-контроллер аналитики.
+ *
+ * Все эндпоинты требуют права {@code analytics:read} и контекст организации.
+ * organizationId берётся из path — проверка принадлежности пользователя
+ * к организации выполняется через {@code @PreAuthorize}.
+ *
+ * Возвращает 200 с пустым payload если данных нет (не 404) —
+ * отсутствие данных не ошибка, это нормальное состояние для новой организации.
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/v1/organizations/{orgId}/analytics")
+@RequiredArgsConstructor
+public class AnalyticsController {
+
+    private final AnalyticsService analyticsService;
+    private final PredictionService predictionService;
+    private final AnalyticsMapper mapper;
+
+    // ── Summary ───────────────────────────────────────────────────────────────
+
+    /**
+     * GET /api/v1/organizations/{orgId}/analytics/executions/summary
+     *
+     * @param period  период: 1d, 7d, 30d, 90d (default: 7d)
+     * @param jobId   опционально — фильтр по задаче
+     */
+    @GetMapping("/executions/summary")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
+    public ResponseEntity<AnalyticsDtos.SummaryResponse> getSummary(
+            @PathVariable Long orgId,
+            @RequestParam(defaultValue = "7d") String period,
+            @RequestParam(required = false) Long jobId) {
+
+        AnalyticsPeriod analyticsPeriod = parsePeriod(period);
+
+        Optional<ExecutionSummary> summary = jobId != null
+                ? analyticsService.getSummaryByJob(orgId, jobId, analyticsPeriod)
+                : analyticsService.getSummary(orgId, analyticsPeriod);
+
+        return summary
+                .map(s -> ResponseEntity.ok(mapper.toSummaryResponse(s)))
+                .orElse(ResponseEntity.ok(emptysummary(orgId, jobId, period)));
+    }
+
+    // ── Predictions ───────────────────────────────────────────────────────────
+
+    /**
+     * GET /api/v1/organizations/{orgId}/analytics/predictions
+     *
+     * @param jobId опционально — прогноз для конкретной задачи
+     */
+    @GetMapping("/predictions")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
+    public ResponseEntity<AnalyticsDtos.PredictionsResponse> getPredictions(
+            @PathVariable Long orgId,
+            @RequestParam(required = false) Long jobId) {
+
+        List<Prediction> predictions = predictionService.getPredictions(orgId, jobId);
+        return ResponseEntity.ok(mapper.toPredictionsResponse(orgId, jobId, predictions));
+    }
+
+    // ── Anomalies ─────────────────────────────────────────────────────────────
+
+    /**
+     * GET /api/v1/organizations/{orgId}/analytics/anomalies
+     *
+     * @param from     начало периода (ISO date, default: 30 дней назад)
+     * @param to       конец периода (ISO date, default: сегодня)
+     * @param jobId    опционально — фильтр по задаче
+     */
+    @GetMapping("/anomalies")
+    @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
+    public ResponseEntity<AnalyticsDtos.AnomaliesResponse> getAnomalies(
+            @PathVariable Long orgId,
+            @RequestParam(required = false) Long jobId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+        String fromStr = (from != null ? from : LocalDate.now().minusDays(30)).toString();
+        String toStr   = (to   != null ? to   : LocalDate.now()).toString();
+
+        List<AnomalyDetection> anomalies =
+                predictionService.getAnomalies(orgId, jobId, fromStr, toStr);
+
+        return ResponseEntity.ok(
+                mapper.toAnomaliesResponse(orgId, jobId, fromStr, toStr, anomalies));
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    private AnalyticsPeriod parsePeriod(String period) {
+        try {
+            return AnalyticsPeriod.fromAlias(period);
+        } catch (IllegalArgumentException e) {
+            log.warn("[analytics] unknown period='{}', defaulting to SEVEN_DAYS", period);
+            return AnalyticsPeriod.SEVEN_DAYS;
+        }
+    }
+
+    /** Пустой ответ когда данных нет — не 404, а 200 с нулями. */
+    private AnalyticsDtos.SummaryResponse emptysummary(Long orgId, Long jobId, String period) {
+        return new AnalyticsDtos.SummaryResponse(
+                orgId, jobId, period, 0, 0, 0, 0.0, null, null, null);
+    }
+}
+

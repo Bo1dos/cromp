@@ -13,6 +13,7 @@ dependencies {
     
     // HTTP-клиент для вызова ml-service
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
     
     // Кэширование (например, Caffeine)
     implementation 'org.springframework.boot:spring-boot-starter-cache'
@@ -21,7 +22,19 @@ dependencies {
     // Для агрегации
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
+    // MapStruct
+    implementation 'org.mapstruct:mapstruct'
+    annotationProcessor 'org.mapstruct:mapstruct-processor'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // Test dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'com.tngtech.archunit:archunit-junit5'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.mapstruct:mapstruct-processor'
 }

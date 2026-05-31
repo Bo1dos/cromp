@@ -43,6 +43,7 @@ public class JobVersionApplicationService implements JobVersionFacade {
         }
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
         return versionRepository.findByJobIdOrderByVersionDesc(job.getId()).stream()
                 .map(v -> jobVersionApiMapper.toVersionResponse(job, v))
                 .toList();
@@ -60,6 +61,7 @@ public class JobVersionApplicationService implements JobVersionFacade {
         }
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
         JobVersion ver = versionRepository.findByJobIdAndVersion(job.getId(), version)
                 .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), version));
         return jobVersionApiMapper.toVersionResponse(job, ver);
@@ -77,6 +79,7 @@ public class JobVersionApplicationService implements JobVersionFacade {
         }
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
         JobVersion from = versionRepository.findByJobIdAndVersion(job.getId(), fromVersion)
                 .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), fromVersion));
         JobVersion to = versionRepository.findByJobIdAndVersion(job.getId(), toVersion)
@@ -115,6 +118,7 @@ public class JobVersionApplicationService implements JobVersionFacade {
         }
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
         Long jobId = job.getId();
         JobVersion source = versionRepository.findByJobIdAndVersion(jobId, version)
                 .orElseThrow(() -> new JobVersionNotFoundException(jobId, version));
@@ -139,6 +143,7 @@ public class JobVersionApplicationService implements JobVersionFacade {
         }
         Job job = jobRepository.findByJobUuid(jobUuid)
                 .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
         JobVersion latest = versionRepository.findLatestByJobId(job.getId())
                 .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), -1));
         return jobVersionApiMapper.toVersionResponse(job, latest);
@@ -154,6 +159,12 @@ public class JobVersionApplicationService implements JobVersionFacade {
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
         if (!permissionCheckerPort.isMember(userId, orgId)) {
             throw new SecurityException("Not a member of this organization");
+        }
+    }
+
+    private void ensureOrganizationAccess(Job job, Long organizationId) {
+        if (!Objects.equals(job.getOrganizationId(), organizationId)) {
+            throw new SecurityException("Foreign organization access denied");
         }
     }
 }

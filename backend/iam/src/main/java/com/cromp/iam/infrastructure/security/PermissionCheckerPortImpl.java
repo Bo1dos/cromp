@@ -1,6 +1,7 @@
 package com.cromp.iam.infrastructure.security;
 
 import com.cromp.iam.application.port.PermissionCheckerPort;
+import com.cromp.iam.application.port.OrganizationContextPort;
 import com.cromp.iam.domain.model.Membership;
 import com.cromp.iam.domain.model.Role;
 import com.cromp.iam.domain.model.RolePermission;
@@ -20,6 +21,17 @@ public class PermissionCheckerPortImpl implements PermissionCheckerPort {
     private final MembershipRepositoryPort membershipRepository;
     private final RolePermissionRepositoryPort rolePermissionRepository;
     private final RoleRepositoryPort roleRepository;
+    private final OrganizationContextPort organizationContextPort;
+
+    @Override
+    public boolean hasPermission(Object principal, String permission) {
+        if (principal instanceof Long userId) {
+            return organizationContextPort.currentOrganizationId()
+                    .map(organizationId -> hasPermission(userId, organizationId, permission))
+                    .orElse(false);
+        }
+        return false;
+    }
 
     @Override
     public boolean hasPermission(Long userId, 

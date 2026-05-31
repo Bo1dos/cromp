@@ -9,6 +9,7 @@ import com.cromp.schedules.domain.model.exceptions.InvalidCronExpressionExceptio
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.Clock;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
@@ -16,11 +17,17 @@ import java.time.ZonedDateTime;
 public class ScheduleCalculator {
 
     private final CronParser cronParser;
+    private final Clock clock;
 
     public ScheduleCalculator() {
+        this(Clock.systemDefaultZone());
+    }
+
+    public ScheduleCalculator(Clock clock) {
         // По умолчанию используем стандартный UNIX cron (5 полей)
         this.cronParser = new CronParser(
                 CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
+        this.clock = clock;
     }
 
     /**
@@ -43,7 +50,7 @@ public class ScheduleCalculator {
      */
     public Instant calculateNextRun(Cron cronExpression, String timezone) {
         ZoneId zoneId = ZoneId.of(timezone);
-        ZonedDateTime now = ZonedDateTime.now(zoneId);
+        ZonedDateTime now = ZonedDateTime.now(clock.withZone(zoneId));
         ExecutionTime executionTime = ExecutionTime.forCron(cronExpression);
         return executionTime.nextExecution(now)
                 .orElseThrow(() -> new InvalidCronExpressionException(

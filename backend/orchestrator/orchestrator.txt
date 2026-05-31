@@ -1,0 +1,1219 @@
+﻿=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\OrchestratorApplication.java ===
+package com.cromp.orchestrator;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+/**
+ * Точка входа модульного монолита "Cron as a Service".
+ *
+ * Orchestrator — process-модуль: не содержит собственной доменной модели,
+ * только координирует работу модулей iam, jobs, schedules, executions, secrets
+ * через их публичные порты.
+ */
+@SpringBootApplication(
+        scanBasePackages = {
+                "com.cromp.common",
+                "com.cromp.iam",
+                "com.cromp.jobs",
+                "com.cromp.schedules",
+                "com.cromp.executions",
+                "com.cromp.secrets",
+                "com.cromp.orchestrator"
+        }
+)
+@EnableScheduling
+@EnableConfigurationProperties
+public class OrchestratorApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(OrchestratorApplication.class, args);
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\config\ExecutorConfig.java ===
+package com.cromp.orchestrator.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.Executor;
+
+/**
+ * Конфигурация пула потоков для воркеров Executor'а.
+ *
+ * Воркеры конкурентно забирают (claim) и выполняют задачи независимо друг от друга.
+ * Имя бина — "taskExecutor", чтобы Spring Scheduling не перехватил его как дефолтный.
+ */
+@Configuration
+public class ExecutorConfig {
+
+    private final OrchestratorProperties properties;
+
+    public ExecutorConfig(OrchestratorProperties properties) {
+        this.properties = properties;
+    }
+
+    @Bean(name = "orchestratorTaskExecutor")
+    public Executor orchestratorTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        int poolSize = properties.getExecutor().getPoolSize();
+
+        executor.setCorePoolSize(poolSize);
+        executor.setMaxPoolSize(poolSize);
+        // Очередь без буфера — задачи не накапливаются, если все потоки заняты
+        executor.setQueueCapacity(0);
+        executor.setThreadNamePrefix("orch-worker-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+
+        return executor;
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\config\OrchestratorProperties.java ===
+package com.cromp.orchestrator.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+/**
+ * Централизованные настройки оркестратора.
+ * Все значения читаются из application.yml под префиксом "orchestrator".
+ */
+@Component
+@ConfigurationProperties(prefix = "orchestrator")
+public class OrchestratorProperties {
+
+    private final Scheduler scheduler = new Scheduler();
+    private final Executor executor = new Executor();
+    private final Janitor janitor = new Janitor();
+    private boolean dryRun = false;
+
+    // ── Scheduler ────────────────────────────────────────────────────────────
+
+    public static class Scheduler {
+        /** Интервал между циклами планировщика (мс). */
+        private long intervalMs = 30_000;
+
+        public long getIntervalMs() { return intervalMs; }
+        public void setIntervalMs(long intervalMs) { this.intervalMs = intervalMs; }
+    }
+
+    // ── Executor ─────────────────────────────────────────────────────────────
+
+    public static class Executor {
+        /** Интервал между циклами забора задач (мс). */
+        private long intervalMs = 5_000;
+        /** Количество потоков в пуле. */
+        private int poolSize = 10;
+        /** Максимальное число задач за один цикл. */
+        private int batchSize = 20;
+        /** Таймаут одного HTTP-запроса (мс). */
+        private long httpTimeoutMs = 30_000;
+
+        public long getIntervalMs() { return intervalMs; }
+        public void setIntervalMs(long intervalMs) { this.intervalMs = intervalMs; }
+
+        public int getPoolSize() { return poolSize; }
+        public void setPoolSize(int poolSize) { this.poolSize = poolSize; }
+
+        public int getBatchSize() { return batchSize; }
+        public void setBatchSize(int batchSize) { this.batchSize = batchSize; }
+
+        public long getHttpTimeoutMs() { return httpTimeoutMs; }
+        public void setHttpTimeoutMs(long httpTimeoutMs) { this.httpTimeoutMs = httpTimeoutMs; }
+    }
+
+    // ── Janitor ──────────────────────────────────────────────────────────────
+
+    public static class Janitor {
+        /** Интервал между циклами уборщика (мс). */
+        private long intervalMs = 60_000;
+        /** Порог "зависшей" попытки: старше N минут в статусе RUNNING. */
+        private int stuckThresholdMinutes = 5;
+
+        public long getIntervalMs() { return intervalMs; }
+        public void setIntervalMs(long intervalMs) { this.intervalMs = intervalMs; }
+
+        public int getStuckThresholdMinutes() { return stuckThresholdMinutes; }
+        public void setStuckThresholdMinutes(int stuckThresholdMinutes) {
+            this.stuckThresholdMinutes = stuckThresholdMinutes;
+        }
+    }
+
+    // ── Getters ──────────────────────────────────────────────────────────────
+
+    public Scheduler getScheduler() { return scheduler; }
+    public Executor getExecutor() { return executor; }
+    public Janitor getJanitor() { return janitor; }
+
+    /**
+     * Dry-run режим: все шаги выполняются, но HTTP-запросы не отправляются.
+     * Полезен для отладки и тестирования.
+     */
+    public boolean isDryRun() { return dryRun; }
+    public void setDryRun(boolean dryRun) { this.dryRun = dryRun; }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\config\RestClientConfig.java ===
+package com.cromp.orchestrator.config;
+
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.core5.util.Timeout;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Конфигурация RestClient для выполнения HTTP-задач.
+ *
+ * Используем Apache HttpClient 5 (httpclient5) под капотом:
+ * — поддерживает connection pool;
+ * — позволяет задать connect/response таймауты на уровне клиента.
+ */
+@Configuration
+public class RestClientConfig {
+
+    private final OrchestratorProperties properties;
+
+    public RestClientConfig(OrchestratorProperties properties) {
+        this.properties = properties;
+    }
+
+    @Bean
+    public RestClient orchestratorRestClient() {
+        long timeoutMs = properties.getExecutor().getHttpTimeoutMs();
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.of(timeoutMs, TimeUnit.MILLISECONDS))
+                .setResponseTimeout(Timeout.of(timeoutMs, TimeUnit.MILLISECONDS))
+                .build();
+
+        HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setMaxConnTotal(200)
+                .setMaxConnPerRoute(20)
+                .build();
+
+        HttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .setConnectionManager(connectionManager)
+                .build();
+
+        HttpComponentsClientHttpRequestFactory factory =
+                new HttpComponentsClientHttpRequestFactory(httpClient);
+
+        return RestClient.builder()
+                .requestFactory(factory)
+                .build();
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\exception\GlobalExceptionHandler.java ===
+package com.cromp.orchestrator.exception;
+
+import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.jobs.domain.model.exceptions.JobNotFoundException;
+import com.cromp.jobs.domain.model.exceptions.InvalidJobStateException;
+import com.cromp.schedules.domain.model.exceptions.ScheduleNotFoundException;
+import com.cromp.secrets.domain.model.exceptions.SecretNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.Instant;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    record ErrorResponse(int status, String error, Instant timestamp) {}
+
+    @ExceptionHandler(DomainException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleDomain(DomainException ex) {
+        return new ErrorResponse(400, ex.getMessage(), Instant.now());
+    }
+
+    @ExceptionHandler({JobNotFoundException.class, ScheduleNotFoundException.class,
+                        SecretNotFoundException.class})
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleNotFound(RuntimeException ex) {
+        return new ErrorResponse(404, ex.getMessage(), Instant.now());
+    }
+
+    @ExceptionHandler(InvalidJobStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleConflict(RuntimeException ex) {
+        return new ErrorResponse(409, ex.getMessage(), Instant.now());
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleSecurity(SecurityException ex) {
+        return new ErrorResponse(403, ex.getMessage(), Instant.now());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ErrorResponse handleValidation(MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .findFirst().orElse("Validation failed");
+        return new ErrorResponse(422, msg, Instant.now());
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleGeneric(Exception ex) {
+        return new ErrorResponse(500, "Internal error", Instant.now());
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\executor\ExecutorService.java ===
+package com.cromp.orchestrator.executor;
+
+import com.cromp.executions.application.port.AttemptClaimPort;
+import com.cromp.executions.application.port.AttemptCompletionPort;
+import com.cromp.executions.api.dto.request.CompleteAttemptRequest;
+import com.cromp.executions.api.dto.response.ClaimAttemptResult;
+import com.cromp.executions.domain.model.enums.AttemptStatus;
+import com.cromp.jobs.domain.model.JobConfig;
+import com.cromp.jobs.domain.model.JobSecretRef;
+import com.cromp.orchestrator.config.OrchestratorProperties;
+import com.cromp.orchestrator.executor.adapter.HttpTaskAdapter;
+import com.cromp.orchestrator.executor.adapter.HttpTaskResult;
+import com.cromp.orchestrator.executor.secret.SecretResolverService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
+/**
+ * Executor: периодически забирает PENDING-попытки из БД и выполняет их.
+ *
+ * <p><b>Алгоритм одного цикла:</b>
+ * <ol>
+ *   <li>В цикле до {@code batchSize} раз вызывать {@link AttemptClaimPort#claimNextAttempt}.
+ *   <li>Каждую захваченную попытку запустить в пуле потоков ({@code orchestratorTaskExecutor}).
+ *   <li>В воркере: распарсить jobConfig → разрешить секреты → выполнить HTTP-запрос.
+ *   <li>Зафиксировать результат через {@link AttemptCompletionPort}.
+ *   <li>При ошибке — завершить попытку со статусом FAILED.
+ * </ol>
+ *
+ * <p><b>Многопоточность:</b> claim выполняется в основном потоке последовательно,
+ * исполнение — конкурентно в пуле. Claim использует SELECT FOR UPDATE SKIP LOCKED
+ * в БД (через {@code AttemptClaimPortImpl}), поэтому дублей не будет.
+ *
+ * <p><b>organizationId:</b> поскольку оркестратор работает system-wide, а не в контексте
+ * конкретной организации, claim вызывается с {@code organizationId = null}.
+ * {@code AttemptClaimPort} должен поддерживать это — выбирать из всех организаций.
+ */
+@Slf4j
+@Service
+public class ExecutorService {
+
+    private final AttemptClaimPort claimPort;
+    private final AttemptCompletionPort completionPort;
+    private final HttpTaskAdapter httpTaskAdapter;
+    private final SecretResolverService secretResolverService;
+    private final OrchestratorProperties properties;
+    private final ObjectMapper objectMapper;
+    private final Executor taskExecutor;
+
+    // Метрики
+    private final Counter startedCounter;
+    private final Counter successCounter;
+    private final Counter failedCounter;
+    private final Timer durationTimer;
+
+    public ExecutorService(
+            AttemptClaimPort claimPort,
+            AttemptCompletionPort completionPort,
+            HttpTaskAdapter httpTaskAdapter,
+            SecretResolverService secretResolverService,
+            OrchestratorProperties properties,
+            ObjectMapper objectMapper,
+            @Qualifier("orchestratorTaskExecutor") Executor taskExecutor,
+            MeterRegistry meterRegistry) {
+
+        this.claimPort = claimPort;
+        this.completionPort = completionPort;
+        this.httpTaskAdapter = httpTaskAdapter;
+        this.secretResolverService = secretResolverService;
+        this.properties = properties;
+        this.objectMapper = objectMapper;
+        this.taskExecutor = taskExecutor;
+
+        this.startedCounter = Counter.builder("orchestrator.executor.attempts.started")
+                .description("Число захваченных и запущенных попыток")
+                .register(meterRegistry);
+        this.successCounter = Counter.builder("orchestrator.executor.attempts.success")
+                .description("Успешно выполненные попытки")
+                .register(meterRegistry);
+        this.failedCounter = Counter.builder("orchestrator.executor.attempts.failed")
+                .description("Неуспешные попытки (FAILED / TIMEOUT / ошибка)")
+                .register(meterRegistry);
+        this.durationTimer = Timer.builder("orchestrator.executor.attempt.duration")
+                .description("Время выполнения одной попытки")
+                .register(meterRegistry);
+    }
+
+    // ── Основной цикл ────────────────────────────────────────────────────────
+
+    @Scheduled(fixedDelayString = "${orchestrator.executor.interval-ms:5000}")
+    public void run() {
+        int batchSize = properties.getExecutor().getBatchSize();
+        List<CompletableFuture<Void>> futures = new ArrayList<>(batchSize);
+
+        for (int i = 0; i < batchSize; i++) {
+            Optional<ClaimAttemptResult> claimed = tryClaimNext();
+            if (claimed.isEmpty()) {
+                // Нет больше PENDING попыток — выходим из цикла раньше времени
+                break;
+            }
+
+            ClaimAttemptResult attempt = claimed.get();
+            startedCounter.increment();
+            log.info("[executor] claimed attemptUuid={} executionId={}",
+                    attempt.attemptUuid(), attempt.executionId());
+
+            // Запускаем каждую попытку в пуле потоков, не блокируя цикл claim
+            CompletableFuture<Void> future = CompletableFuture
+                    .runAsync(() -> executeAttempt(attempt), taskExecutor);
+            futures.add(future);
+        }
+
+        // Не ждём завершения воркеров — они завершатся самостоятельно.
+        // Следующий цикл начнётся через fixedDelay после возврата из run().
+        if (!futures.isEmpty()) {
+            log.debug("[executor] dispatched {} attempt(s) to worker pool", futures.size());
+        }
+    }
+
+    // ── Выполнение одной попытки (в потоке пула) ─────────────────────────────
+
+    private void executeAttempt(ClaimAttemptResult claimed) {
+        Timer.Sample sample = Timer.start();
+
+        try {
+            // 1. Десериализуем jobConfig из JSON-строки
+            JobConfig jobConfig = parseJobConfig(claimed.jobConfig());
+            if (jobConfig == null) {
+                failAttempt(claimed, "CONFIG_PARSE_ERROR",
+                        "Failed to parse jobConfig JSON", "FAILED");
+                return;
+            }
+
+            // 2. Разрешаем секреты батчем
+            List<JobSecretRef> secretRefs = jobConfig.secrets();
+            // organizationId нам недоступен напрямую из ClaimAttemptResult —
+            // получаем его из Execution через executionId.
+            // В MVP используем системный вызов без organizationId (null-safe в SecretResolvePort).
+            // TODO: добавить organizationId в ClaimAttemptResult для полной изоляции.
+            Map<String, String> resolvedSecrets = resolveSecrets(claimed, secretRefs);
+
+            // 3. Выполняем HTTP-запрос
+            HttpTaskResult result = durationTimer.record(() ->
+                    httpTaskAdapter.execute(
+                            claimed.attemptUuid(),
+                            jobConfig.target(),
+                            resolvedSecrets
+                    )
+            );
+
+            // 4. Фиксируем результат
+            if (result.success()) {
+                completeAttempt(claimed, result, AttemptStatus.SUCCEEDED);
+                successCounter.increment();
+            } else {
+                handleFailure(claimed, result, jobConfig);
+            }
+
+        } catch (Exception e) {
+            log.error("[executor] unhandled error in worker attemptUuid={}", claimed.attemptUuid(), e);
+            failAttempt(claimed, "INTERNAL_ERROR", e.getMessage(), "FAILED");
+            failedCounter.increment();
+        } finally {
+            sample.stop(durationTimer);
+        }
+    }
+
+    // ── Обработка ошибки и retry ─────────────────────────────────────────────
+
+    /**
+     * Определяет: нужен ли retry или фиксируем как FAILED.
+     * Классификация ошибки идёт через {@link HttpTaskResult#errorType()}.
+     */
+    private void handleFailure(ClaimAttemptResult claimed, HttpTaskResult result,
+                                JobConfig jobConfig) {
+        String errorType = result.errorType();
+        boolean isRetryable = jobConfig.retryPolicy().retryableErrors().contains(errorType);
+
+        if (isRetryable) {
+            // Помечаем текущую попытку как FAILED — следующая PENDING-попытка
+            // будет создана автоматически триггером БД или Janitor'ом,
+            // в зависимости от того, как реализован retry в модуле executions.
+            // В MVP: просто завершаем с FAILED, retry создаётся на стороне executions.
+            log.info("[executor] attempt failed with retryable error={} attemptUuid={}",
+                    errorType, claimed.attemptUuid());
+        } else {
+            log.warn("[executor] attempt failed with non-retryable error={} attemptUuid={}",
+                    errorType, claimed.attemptUuid());
+        }
+
+        completeAttempt(claimed, result,
+                "TIMEOUT".equals(errorType) ? AttemptStatus.TIMEOUT : AttemptStatus.FAILED);
+        failedCounter.increment();
+    }
+
+    // ── Вспомогательные методы ────────────────────────────────────────────────
+
+    private Optional<ClaimAttemptResult> tryClaimNext() {
+        try {
+            // null = system-wide claim (все организации)
+            return claimPort.claimNextAttempt(null);
+        } catch (Exception e) {
+            log.error("[executor] failed to claim next attempt", e);
+            return Optional.empty();
+        }
+    }
+
+    private JobConfig parseJobConfig(String json) {
+        if (json == null || json.isBlank()) {
+            log.error("[executor] jobConfig is null or blank");
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, JobConfig.class);
+        } catch (Exception e) {
+            log.error("[executor] failed to parse jobConfig: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private Map<String, String> resolveSecrets(ClaimAttemptResult claimed,
+                                                List<JobSecretRef> secretRefs) {
+        if (secretRefs == null || secretRefs.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            // organizationId = null — system-wide, SecretResolverService пропустит проверку
+            // TODO: передавать organizationId когда он появится в ClaimAttemptResult
+            return secretResolverService.resolve(null, secretRefs);
+        } catch (Exception e) {
+            log.error("[executor] failed to resolve secrets attemptUuid={}: {}",
+                    claimed.attemptUuid(), e.getMessage());
+            return Map.of();
+        }
+    }
+
+    private void completeAttempt(ClaimAttemptResult claimed, HttpTaskResult result,
+                                  AttemptStatus status) {
+        try {
+            String outputSummary = buildOutputSummary(result);
+            completionPort.completeAttempt(
+                    claimed.attemptUuid(),
+                    new CompleteAttemptRequest(
+                            status,
+                            outputSummary,
+                            result.errorClass(),
+                            result.errorMessage()
+                    )
+            );
+            log.info("[executor] attempt completed status={} attemptUuid={}",
+                    status, claimed.attemptUuid());
+        } catch (Exception e) {
+            log.error("[executor] failed to complete attempt attemptUuid={}",
+                    claimed.attemptUuid(), e);
+        }
+    }
+
+    private void failAttempt(ClaimAttemptResult claimed, String errorClass,
+                              String errorMessage, String statusStr) {
+        try {
+            completionPort.completeAttempt(
+                    claimed.attemptUuid(),
+                    new CompleteAttemptRequest(
+                            AttemptStatus.FAILED,
+                            null,
+                            errorClass,
+                            errorMessage
+                    )
+            );
+        } catch (Exception e) {
+            log.error("[executor] failed to mark attempt as FAILED attemptUuid={}",
+                    claimed.attemptUuid(), e);
+        }
+    }
+
+    /**
+     * Сериализует результат HTTP в компактный JSON-снэпшот для хранения в БД.
+     */
+    private String buildOutputSummary(HttpTaskResult result) {
+        if (result == null) return null;
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                    "statusCode", result.statusCode(),
+                    "success", result.success(),
+                    "body", result.body() != null ? result.body() : ""
+            ));
+        } catch (Exception e) {
+            return "{\"error\":\"failed to serialize output\"}";
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\executor\adapter\HttpTaskAdapter.java ===
+package com.cromp.orchestrator.executor.adapter;
+
+import com.cromp.jobs.domain.model.JobTarget;
+import com.cromp.orchestrator.config.OrchestratorProperties;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Выполняет HTTP-вызов согласно конфигу {@link JobTarget}.
+ *
+ * <p><b>Dry-run:</b> если {@code orchestrator.dry-run=true} — запрос не отправляется,
+ * метод возвращает синтетический успешный результат. Полезно для отладки.
+ *
+ * <p><b>Заголовки:</b>
+ * <ul>
+ *   <li>Все заголовки из {@code JobTarget.headers} — как есть.
+ *   <li>{@code X-Execution-Id} — UUID попытки для идемпотентности на стороне получателя.
+ *   <li>Значения секретов подставляются как дополнительные заголовки (envName → value).
+ * </ul>
+ *
+ * <p>Таймаут задаётся на уровне {@link RestClient} через {@code RestClientConfig} —
+ * здесь дублировать не нужно.
+ */
+@Slf4j
+@Component
+public class HttpTaskAdapter {
+
+    private final RestClient restClient;
+    private final OrchestratorProperties properties;
+
+    public HttpTaskAdapter(
+            @Qualifier("orchestratorRestClient") RestClient restClient,
+            OrchestratorProperties properties) {
+        this.restClient = restClient;
+        this.properties = properties;
+    }
+
+    /**
+     * @param attemptUuid UUID попытки — добавляется в заголовок {@code X-Execution-Id}
+     * @param target      HTTP-конфиг задачи (url, method, headers, body)
+     * @param resolvedSecrets Map envName → plaintext; значения добавляются как заголовки
+     * @return результат вызова
+     */
+    public HttpTaskResult execute(UUID attemptUuid, JobTarget target,
+                                  Map<String, String> resolvedSecrets) {
+        // Dry-run: не отправляем реальный запрос
+        if (properties.isDryRun()) {
+            log.info("[executor] dry-run mode, skipping HTTP call attemptUuid={} url={}",
+                    attemptUuid, target.url());
+            return HttpTaskResult.success(200, "{\"dry-run\":true}");
+        }
+
+        log.debug("[executor] executing HTTP {} {} attemptUuid={}",
+                target.method(), target.url(), attemptUuid);
+
+        try {
+            var requestSpec = restClient
+                    .method(HttpMethod.valueOf(target.method().toUpperCase()))
+                    .uri(target.url())
+                    // Идентификатор для идемпотентности
+                    .header("X-Execution-Id", attemptUuid.toString());
+
+            // Заголовки из конфига задачи
+            for (Map.Entry<String, String> h : target.headers().entrySet()) {
+                requestSpec.header(h.getKey(), h.getValue());
+            }
+
+            // Значения секретов как заголовки (envName = заголовок)
+            for (Map.Entry<String, String> secret : resolvedSecrets.entrySet()) {
+                requestSpec.header(secret.getKey(), secret.getValue());
+            }
+
+            // Тело запроса, если есть
+            if (target.body() != null && !target.body().isBlank()) {
+                requestSpec
+                        .header("Content-Type", "application/json")
+                        .body(target.body());
+            }
+
+            ResponseEntity<String> response = requestSpec
+                    .retrieve()
+                    .toEntity(String.class);
+
+            int statusCode = response.getStatusCode().value();
+            String body = response.getBody();
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("[executor] HTTP success status={} attemptUuid={}", statusCode, attemptUuid);
+                return HttpTaskResult.success(statusCode, truncate(body));
+            } else {
+                log.warn("[executor] HTTP non-2xx status={} attemptUuid={}", statusCode, attemptUuid);
+                return HttpTaskResult.failure(statusCode, truncate(body),
+                        "HTTP_" + statusCode, "Non-2xx response: " + statusCode);
+            }
+
+        } catch (HttpStatusCodeException e) {
+            int statusCode = e.getStatusCode().value();
+            log.warn("[executor] HTTP error status={} attemptUuid={}", statusCode, attemptUuid);
+            return HttpTaskResult.failure(
+                    statusCode,
+                    truncate(e.getResponseBodyAsString()),
+                    "HTTP_" + statusCode,
+                    e.getMessage()
+            );
+
+        } catch (ResourceAccessException e) {
+            // Сюда попадают таймауты и сетевые ошибки
+            String message = e.getMessage() != null ? e.getMessage() : "Resource access error";
+            if (message.toLowerCase().contains("timeout") ||
+                    message.toLowerCase().contains("timed out")) {
+                log.warn("[executor] HTTP timeout attemptUuid={}: {}", attemptUuid, message);
+                return HttpTaskResult.timeout(message);
+            }
+            log.warn("[executor] HTTP network error attemptUuid={}: {}", attemptUuid, message);
+            return HttpTaskResult.networkError(message);
+
+        } catch (Exception e) {
+            log.error("[executor] unexpected error during HTTP call attemptUuid={}", attemptUuid, e);
+            return HttpTaskResult.networkError(e.getMessage());
+        }
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    /** Обрезаем тело ответа — не храним мегабайты в БД. */
+    private String truncate(String body) {
+        if (body == null) return null;
+        int maxLen = 4096;
+        return body.length() > maxLen ? body.substring(0, maxLen) + "...[truncated]" : body;
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\executor\adapter\HttpTaskResult.java ===
+package com.cromp.orchestrator.executor.adapter;
+
+/**
+ * Результат выполнения HTTP-задачи.
+ *
+ * Передаётся из {@link HttpTaskAdapter} в {@link com.cromp.orchestrator.executor.ExecutorService}
+ * для последующей фиксации через {@code AttemptCompletionPort}.
+ */
+public record HttpTaskResult(
+        boolean success,
+        int statusCode,
+        String body,
+        String errorClass,
+        String errorMessage
+) {
+
+    /** Успешный результат (2xx). */
+    public static HttpTaskResult success(int statusCode, String body) {
+        return new HttpTaskResult(true, statusCode, body, null, null);
+    }
+
+    /** Ошибка HTTP (4xx, 5xx) или сетевая ошибка. */
+    public static HttpTaskResult failure(int statusCode, String body,
+                                         String errorClass, String errorMessage) {
+        return new HttpTaskResult(false, statusCode, body, errorClass, errorMessage);
+    }
+
+    /** Таймаут запроса. */
+    public static HttpTaskResult timeout(String errorMessage) {
+        return new HttpTaskResult(false, 0, null, "TIMEOUT", errorMessage);
+    }
+
+    /** Сетевая / иная ошибка без HTTP-статуса. */
+    public static HttpTaskResult networkError(String errorMessage) {
+        return new HttpTaskResult(false, 0, null, "NETWORK_ERROR", errorMessage);
+    }
+
+    /**
+     * Классифицирует тип ошибки для retry policy.
+     * Соответствует значениям в {@code RetryPolicy.retryableErrors}.
+     */
+    public String errorType() {
+        if (success) return null;
+        if ("TIMEOUT".equals(errorClass)) return "TIMEOUT";
+        if ("NETWORK_ERROR".equals(errorClass)) return "NETWORK_ERROR";
+        if (statusCode >= 500) return "5xx";
+        if (statusCode >= 400) return "4xx";
+        return "UNKNOWN";
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\executor\secret\SecretResolverService.java ===
+package com.cromp.orchestrator.executor.secret;
+
+import com.cromp.jobs.domain.model.JobSecretRef;
+import com.cromp.secrets.application.port.SecretResolvePort;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+/**
+ * Разрешает список {@link JobSecretRef} в Map envName → plaintext.
+ *
+ * Оркестратор передаёт эту Map в {@code HttpTaskAdapter} как заголовки или
+ * подстановки в тело запроса. Сами значения секретов нигде не логируются.
+ *
+ * Логика:
+ *   1. Собрать уникальные secretId из списка ссылок.
+ *   2. Запросить расшифровку у {@link SecretResolvePort} одним батчем.
+ *   3. Сопоставить UUID → envName, вернуть итоговую Map.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class SecretResolverService {
+
+    private final SecretResolvePort secretResolvePort;
+
+    /**
+     * @param organizationId для проверки принадлежности секретов
+     * @param secretRefs     список ссылок из JobConfig
+     * @return Map: envName → plaintext-значение
+     */
+    public Map<String, String> resolve(Long organizationId, List<JobSecretRef> secretRefs) {
+        if (secretRefs == null || secretRefs.isEmpty()) {
+            return Map.of();
+        }
+
+        List<UUID> secretIds = secretRefs.stream()
+                .map(JobSecretRef::secretId)
+                .distinct()
+                .toList();
+
+        // Один батч-запрос к secrets-модулю — не N отдельных вызовов
+        Map<UUID, String> resolved = secretResolvePort.resolveSecrets(organizationId, secretIds);
+
+        // Сопоставляем UUID → envName
+        Map<String, String> result = secretRefs.stream()
+                .filter(ref -> resolved.containsKey(ref.secretId()))
+                .collect(Collectors.toMap(
+                        JobSecretRef::envName,
+                        ref -> resolved.get(ref.secretId()),
+                        // При дублях envName берём первый — конфиг Job не должен допускать такого
+                        (first, second) -> first
+                ));
+
+        log.debug("Resolved {}/{} secret(s) for organizationId={}",
+                result.size(), secretRefs.size(), organizationId);
+
+        return result;
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\janitor\JanitorService.java ===
+package com.cromp.orchestrator.janitor;
+
+import com.cromp.executions.application.port.StaleAttemptPort;
+import com.cromp.executions.domain.model.ExecutionAttempt;
+import com.cromp.orchestrator.config.OrchestratorProperties;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Janitor: периодически ищет попытки, зависшие в статусе RUNNING,
+ * и помечает их как TIMEOUT.
+ *
+ * <p>"Зависшая" попытка — та, у которой {@code status = RUNNING}
+ * и {@code updated_at < now() - stuckThresholdMinutes}.
+ * Это значит воркер, взявший задачу, упал или завис без фиксации результата.
+ *
+ * <p><b>Алгоритм одного цикла:</b>
+ * <ol>
+ *   <li>Найти все стухшие попытки через {@link StaleAttemptPort#findStaleAttempts}.
+ *   <li>Пометить каждую как TIMEOUT через {@link StaleAttemptPort#markStaleAsTimeout}.
+ *   <li>Триггер БД ({@code fn_update_execution_final_status}) автоматически
+ *       обновит {@code Execution.finalStatus = FAILED}.
+ * </ol>
+ *
+ * <p>Каждый цикл получает correlationId для трассировки в логах.
+ */
+@Slf4j
+@Service
+public class JanitorService {
+
+    private final StaleAttemptPort staleAttemptPort;
+    private final OrchestratorProperties properties;
+
+    private final Counter timeoutCounter;
+    private final Counter errorCounter;
+
+    public JanitorService(
+            StaleAttemptPort staleAttemptPort,
+            OrchestratorProperties properties,
+            MeterRegistry meterRegistry) {
+
+        this.staleAttemptPort = staleAttemptPort;
+        this.properties = properties;
+
+        this.timeoutCounter = Counter.builder("orchestrator.janitor.attempts.timeout")
+                .description("Число попыток, помеченных Janitor'ом как TIMEOUT")
+                .register(meterRegistry);
+
+        this.errorCounter = Counter.builder("orchestrator.janitor.errors")
+                .description("Ошибки в цикле Janitor'а")
+                .register(meterRegistry);
+    }
+
+    // ── Основной цикл ────────────────────────────────────────────────────────
+
+    @Scheduled(fixedDelayString = "${orchestrator.janitor.interval-ms:60000}")
+    public void run() {
+        UUID correlationId = UUID.randomUUID();
+        int thresholdMinutes = properties.getJanitor().getStuckThresholdMinutes();
+
+        log.debug("[janitor] cycle started thresholdMinutes={} correlationId={}",
+                thresholdMinutes, correlationId);
+
+        List<ExecutionAttempt> stale;
+        try {
+            stale = staleAttemptPort.findStaleAttempts(thresholdMinutes);
+        } catch (Exception e) {
+            errorCounter.increment();
+            log.error("[janitor] failed to query stale attempts correlationId={}", correlationId, e);
+            return;
+        }
+
+        if (stale.isEmpty()) {
+            log.debug("[janitor] no stale attempts found correlationId={}", correlationId);
+            return;
+        }
+
+        log.warn("[janitor] found {} stale attempt(s), marking as TIMEOUT correlationId={}",
+                stale.size(), correlationId);
+
+        for (ExecutionAttempt attempt : stale) {
+            log.warn("[janitor] stale attempt attemptUuid={} executionId={} updatedAt={} correlationId={}",
+                    attempt.getAttemptUuid(),
+                    attempt.getExecutionId(),
+                    attempt.getUpdatedAt(),
+                    correlationId);
+        }
+
+        try {
+            staleAttemptPort.markStaleAsTimeout(stale);
+            timeoutCounter.increment(stale.size());
+            log.info("[janitor] marked {} attempt(s) as TIMEOUT correlationId={}",
+                    stale.size(), correlationId);
+        } catch (Exception e) {
+            errorCounter.increment();
+            log.error("[janitor] failed to mark stale attempts as TIMEOUT correlationId={}",
+                    correlationId, e);
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\scheduler\SchedulerService.java ===
+package com.cromp.orchestrator.scheduler;
+
+import com.cromp.executions.application.port.ExecutionCreationPort;
+import com.cromp.jobs.domain.model.enums.JobStatus;
+import com.cromp.jobs.domain.repository.JobRepositoryPort;
+import com.cromp.jobs.domain.repository.JobVersionRepositoryPort;
+import com.cromp.orchestrator.config.OrchestratorProperties;
+import com.cromp.schedules.application.port.ScheduleQueryPort;
+import com.cromp.schedules.domain.model.Schedule;
+import com.cromp.schedules.domain.repository.ScheduleRepositoryPort;
+import com.cromp.schedules.domain.service.ScheduleCalculator;
+import com.cronutils.model.Cron;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Планировщик: периодически проверяет расписания, у которых наступило время запуска,
+ * и создаёт для них {@code Execution} с первой попыткой в статусе PENDING.
+ *
+ * <p><b>Алгоритм одного цикла:</b>
+ * <ol>
+ *   <li>Запросить у {@link ScheduleQueryPort} все ACTIVE расписания с {@code next_run_at <= now()}.
+ *   <li>Для каждого расписания убедиться, что связанная Job — в статусе ACTIVE.
+ *   <li>Загрузить актуальную версию Job (latest).
+ *   <li>Создать Execution через {@link ExecutionCreationPort}.
+ *   <li>Продвинуть {@code next_run_at} расписания на следующий интервал и сохранить.
+ * </ol>
+ *
+ * <p><b>Защита от дублирования:</b> шаги 4–5 выполняются в одной транзакции.
+ * Обновление {@code next_run_at} с оптимистичной версией ({@code touch()}) гарантирует,
+ * что второй параллельный экземпляр сервиса не создаст дублирующий Execution
+ * (он получит {@code OptimisticLockException} при сохранении). Для MVP достаточно.
+ *
+ * <p>Каждый цикл получает уникальный {@code correlationId} (UUID) для трассировки в логах.
+ */
+@Slf4j
+@Service
+public class SchedulerService {
+
+    private final ScheduleQueryPort scheduleQueryPort;
+    private final ScheduleRepositoryPort scheduleRepository;
+    private final JobRepositoryPort jobRepository;
+    private final JobVersionRepositoryPort jobVersionRepository;
+    private final ExecutionCreationPort executionCreationPort;
+    private final ScheduleCalculator scheduleCalculator;
+    private final OrchestratorProperties properties;
+
+    // Метрики
+    private final Counter scheduledCounter;
+    private final Counter skippedCounter;
+    private final Counter errorCounter;
+
+    public SchedulerService(
+            ScheduleQueryPort scheduleQueryPort,
+            ScheduleRepositoryPort scheduleRepository,
+            JobRepositoryPort jobRepository,
+            JobVersionRepositoryPort jobVersionRepository,
+            ExecutionCreationPort executionCreationPort,
+            ScheduleCalculator scheduleCalculator,
+            OrchestratorProperties properties,
+            MeterRegistry meterRegistry) {
+
+        this.scheduleQueryPort = scheduleQueryPort;
+        this.scheduleRepository = scheduleRepository;
+        this.jobRepository = jobRepository;
+        this.jobVersionRepository = jobVersionRepository;
+        this.executionCreationPort = executionCreationPort;
+        this.scheduleCalculator = scheduleCalculator;
+        this.properties = properties;
+
+        this.scheduledCounter = Counter.builder("orchestrator.scheduler.executions.created")
+                .description("Число созданных Execution за все циклы планировщика")
+                .register(meterRegistry);
+
+        this.skippedCounter = Counter.builder("orchestrator.scheduler.schedules.skipped")
+                .description("Пропущенные расписания (Job не ACTIVE или нет версии)")
+                .register(meterRegistry);
+
+        this.errorCounter = Counter.builder("orchestrator.scheduler.errors")
+                .description("Ошибки при обработке отдельных расписаний")
+                .register(meterRegistry);
+    }
+
+    // ── Основной цикл ────────────────────────────────────────────────────────
+
+    @Scheduled(fixedDelayString = "${orchestrator.scheduler.interval-ms:30000}")
+    public void run() {
+        UUID correlationId = UUID.randomUUID();
+        log.debug("[scheduler] cycle started correlationId={}", correlationId);
+
+        List<Schedule> due;
+        try {
+            due = scheduleQueryPort.findActiveSchedulesReadyForRun();
+        } catch (Exception e) {
+            log.error("[scheduler] failed to query due schedules correlationId={}", correlationId, e);
+            return;
+        }
+
+        if (due.isEmpty()) {
+            log.debug("[scheduler] no due schedules correlationId={}", correlationId);
+            return;
+        }
+
+        log.info("[scheduler] found {} due schedule(s) correlationId={}", due.size(), correlationId);
+
+        for (Schedule schedule : due) {
+            try {
+                processSchedule(schedule, correlationId);
+            } catch (Exception e) {
+                // Ошибка одного расписания не останавливает обработку остальных
+                errorCounter.increment();
+                log.error("[scheduler] error processing scheduleId={} jobId={} correlationId={}",
+                        schedule.getId(), schedule.getJobId(), correlationId, e);
+            }
+        }
+
+        log.debug("[scheduler] cycle finished correlationId={}", correlationId);
+    }
+
+    // ── Обработка одного расписания ───────────────────────────────────────────
+
+    /**
+     * Создаёт Execution и продвигает next_run_at в одной транзакции.
+     * Если Job не ACTIVE или у неё нет версии — расписание пропускается.
+     */
+    @Transactional
+    public void processSchedule(Schedule schedule, UUID correlationId) {
+        Long jobId = schedule.getJobId();
+
+        // 1. Проверяем, что Job существует и в статусе ACTIVE
+        var jobOpt = jobRepository.findById(jobId);
+        if (jobOpt.isEmpty()) {
+            log.warn("[scheduler] job not found, skipping scheduleId={} jobId={} correlationId={}",
+                    schedule.getId(), jobId, correlationId);
+            skippedCounter.increment();
+            return;
+        }
+
+        var job = jobOpt.get();
+        if (job.getStatus() != JobStatus.ACTIVE) {
+            log.info("[scheduler] job is not ACTIVE (status={}), skipping scheduleId={} jobId={} correlationId={}",
+                    job.getStatus(), schedule.getId(), jobId, correlationId);
+            skippedCounter.increment();
+            return;
+        }
+
+        // 2. Загружаем актуальную версию Job
+        var versionOpt = jobVersionRepository.findLatestByJobId(jobId);
+        if (versionOpt.isEmpty()) {
+            log.warn("[scheduler] no job version found, skipping scheduleId={} jobId={} correlationId={}",
+                    schedule.getId(), jobId, correlationId);
+            skippedCounter.increment();
+            return;
+        }
+
+        var jobVersion = versionOpt.get();
+        Instant now = Instant.now();
+
+        // 3. Создаём Execution — первая попытка автоматически в статусе PENDING
+        UUID execCorrelationId = UUID.randomUUID();
+        UUID execUuid = executionCreationPort.createExecution(
+                job.getOrganizationId(),
+                jobId,
+                jobVersion.getId(),
+                "SCHEDULED",
+                null,           // triggeredBy = null, это системный запуск
+                null,           // payload пустой для scheduled-запуска
+                execCorrelationId,
+                job.getPriority(),
+                now,
+                serializeRetryPolicy(jobVersion)
+        );
+
+        log.info("[scheduler] execution created execUuid={} scheduleId={} jobId={} correlationId={}",
+                execUuid, schedule.getId(), jobId, correlationId);
+
+        // 4. Продвигаем next_run_at — вычисляем следующее время запуска
+        Instant nextRun = computeNextRun(schedule);
+        schedule.advanceNextRun(nextRun);
+        scheduleRepository.save(schedule);
+
+        log.debug("[scheduler] schedule advanced nextRunAt={} scheduleId={} correlationId={}",
+                nextRun, schedule.getId(), correlationId);
+
+        scheduledCounter.increment();
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Вычисляет следующее время запуска через {@link ScheduleCalculator}.
+     * ScheduleCalculator уже умеет парсить cron и учитывать timezone.
+     */
+    private Instant computeNextRun(Schedule schedule) {
+        try {
+            Cron cron = scheduleCalculator.validate(schedule.getCronExpression());
+            return scheduleCalculator.calculateNextRun(cron, schedule.getTimezone());
+        } catch (Exception e) {
+            // Если cron вдруг некорректный — ставим через 24 часа, не падаем
+            log.error("[scheduler] failed to compute next run for scheduleId={}, defaulting to +24h",
+                    schedule.getId(), e);
+            return Instant.now().plusSeconds(86_400);
+        }
+    }
+
+    /**
+     * Сериализует RetryPolicy из JobVersion в строку-снэпшот для Execution.
+     * Execution хранит политику повтора на момент создания, чтобы изменение Job
+     * не влияло на уже запущенные выполнения.
+     */
+    private String serializeRetryPolicy(com.cromp.jobs.domain.model.JobVersion version) {
+        try {
+            var policy = version.getConfig().retryPolicy();
+            // Простой JSON-снэпшот без Jackson-зависимости в этом слое
+            return String.format(
+                    "{\"maxAttempts\":%d,\"backoffMs\":%d,\"backoffMultiplier\":%.1f}",
+                    policy.maxAttempts(),
+                    policy.backoffMs(),
+                    policy.backoffMultiplier()
+            );
+        } catch (Exception e) {
+            log.warn("[scheduler] failed to serialize retry policy for jobVersionId={}, using null",
+                    version.getId());
+            return null;
+        }
+    }
+}
+
+=== C:\projects\cron-as-a-service\cromp\backend\orchestrator\src\main\java\com\cromp\orchestrator\workflow\WorkflowStub.java ===
+package com.cromp.orchestrator.workflow;
+
+/**
+ * Заглушка для будущего модуля оркестрации сложных рабочих процессов.
+ *
+ * TODO: реализовать поддержку многошаговых Workflow, когда появится требование\желание.
+ *
+ * Планируемый функционал:
+ * - Цепочки задач (Job A → Job B → Job C) с передачей результатов между шагами.
+ * - Условные ветвления (if/else на основе результата предыдущего шага).
+ * - Параллельное выполнение независимых шагов с барьером синхронизации.
+ * - Компенсирующие транзакции (Saga-паттерн) при частичном сбое.
+ *
+ * Пока весь функционал покрывается простым Scheduler → Executor → Janitor.
+ */
+public final class WorkflowStub {
+
+    private WorkflowStub() {
+        // Utility-класс, не инстанциируется
+    }
+}
+

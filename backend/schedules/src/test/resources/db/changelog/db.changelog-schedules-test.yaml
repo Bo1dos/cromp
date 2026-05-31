@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - include:
+      file: classpath:db/changelog/V0000-common-extensions.yaml
+  - include:
+      file: classpath:db/changelog/V0001-common-enums.yaml
+  - include:
+      file: classpath:db/changelog/V0002-common-functions.yaml
+  - include:
+      file: classpath:db/changelog/V0003-iam-organizations.yaml
+  - include:
+      file: classpath:db/changelog/V0010-jobs-jobs.yaml
+  - include:
+      file: classpath:db/changelog/V0012-schedules-schedules.yaml

@@ -11,9 +11,14 @@ import com.cromp.iam.domain.repository.RoleRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.*;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestTemplate;
@@ -23,8 +28,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@SpringBootTest(
+        classes = AuthIntegrationTest.TestIamApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
+@Testcontainers(disabledWithoutDocker = true)
 public class AuthIntegrationTest {
 
     @Container
@@ -120,5 +128,13 @@ public class AuthIntegrationTest {
                 baseUrl() + "/api/v1/users/1", String.class
         );
         assertThat(unauthorized.getStatusCode()).isIn(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN);
+    }
+
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    @ComponentScan("com.cromp.iam")
+    @EntityScan("com.cromp.iam.infrastructure.persistence.jpa.entity")
+    @EnableJpaRepositories("com.cromp.iam.infrastructure.persistence.jpa.repository")
+    static class TestIamApplication {
     }
 }

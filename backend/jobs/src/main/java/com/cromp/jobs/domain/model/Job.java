@@ -1,6 +1,7 @@
 package com.cromp.jobs.domain.model;
 
 import com.cromp.jobs.domain.model.enums.JobStatus;
+import com.cromp.jobs.domain.model.exceptions.InvalidJobStateException;
 import com.cromp.jobs.domain.model.support.AbstractAuditableDomainEntity;
 import com.cromp.jobs.domain.model.support.SchemaLimits;
 import lombok.AccessLevel;
@@ -59,19 +60,37 @@ public class Job extends AbstractAuditableDomainEntity {
     // Поведенческие методы
     public void disable() {
         ensureNotArchived();
+        if (status == JobStatus.DISABLED) {
+            throw new InvalidJobStateException("Job is already disabled");
+        }
         this.status = JobStatus.DISABLED;
         touch();
     }
 
     public void activate() {
         ensureNotArchived();
+        if (status == JobStatus.ACTIVE) {
+            throw new InvalidJobStateException("Job is already active");
+        }
         this.status = JobStatus.ACTIVE;
         touch();
     }
 
     public void archive() {
+        if (status == JobStatus.ARCHIVED) {
+            throw new InvalidJobStateException("Job is already archived");
+        }
         this.status = JobStatus.ARCHIVED;
         markDeleted();
+    }
+
+    @Override
+    public void restore() {
+        if (status != JobStatus.ARCHIVED && !isDeleted()) {
+            throw new InvalidJobStateException("Job is not archived");
+        }
+        super.restore();
+        this.status = JobStatus.ACTIVE;
     }
 
     public void rename(String newName) {

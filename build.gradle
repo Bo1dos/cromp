@@ -19,6 +19,7 @@ subprojects {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
         options.encoding = 'UTF-8'
+        options.compilerArgs += ['-parameters']
     }
 
     // Управление зависимостями (версии из Spring Boot BOM)
@@ -45,6 +46,7 @@ subprojects {
     // Общие тестовые зависимости
     dependencies {
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.springframework.security:spring-security-test'
         testImplementation 'org.testcontainers:testcontainers'
         testImplementation 'org.testcontainers:junit-jupiter'
         testImplementation 'org.testcontainers:postgresql'

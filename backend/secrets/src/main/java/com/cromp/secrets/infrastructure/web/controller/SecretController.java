@@ -36,27 +36,27 @@ public class SecretController {
 
     @GetMapping("/{secretUuid}")
     @PreAuthorize("isAuthenticated()")
-    public SecretResponse get(@PathVariable UUID secretUuid) {
+    public SecretResponse get(@PathVariable("secretUuid") UUID secretUuid) {
         return secretFacade.getSecret(secretUuid);
     }
 
     @DeleteMapping("/{secretUuid}")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'secret:delete')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID secretUuid) {
+    public void delete(@PathVariable("secretUuid") UUID secretUuid) {
         secretFacade.deleteSecret(secretUuid);
     }
 
     @PostMapping("/{secretUuid}/rotate")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'secret:update')")
-    public SecretResponse rotate(@PathVariable UUID secretUuid,
+    public SecretResponse rotate(@PathVariable("secretUuid") UUID secretUuid,
                                  @Valid @RequestBody RotateSecretRequest request) {
         return secretFacade.rotateSecret(secretUuid, request);
     }
 
     @GetMapping("/{secretUuid}/versions")
     @PreAuthorize("isAuthenticated()")
-    public List<SecretVersionResponse> getVersions(@PathVariable UUID secretUuid) {
+    public List<SecretVersionResponse> getVersions(@PathVariable("secretUuid") UUID secretUuid) {
         return secretFacade.getVersions(secretUuid);
     }
 }
