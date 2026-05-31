@@ -1,0 +1,20 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Cron as a Service — Docker Compose override (DEV)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Автоматически применяется при docker compose up вместе с docker-compose.yml.
+# Добавляет dev-инструменты: debug-порт, dev-профиль Spring.
+#
+# Чтобы запустить БЕЗ dev-инструментов:
+#   docker compose -f docker-compose.yml up
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  app:
+    environment:
+      # dev,docker — оба профиля активны
+      SPRING_PROFILES_ACTIVE: dev,docker
+      # Удалённая отладка (подключиться: localhost:5005)
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    ports:
+      - "5005:5005"   # Java remote debug

@@ -1,0 +1,18 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Dev-профиль Spring Boot (активируется совместно с docker)
+# Используется docker-compose.override.yml → SPRING_PROFILES_ACTIVE=dev,docker
+# ═══════════════════════════════════════════════════════════════════════════════
+
+logging:
+  level:
+    com.cromp: DEBUG
+    com.cromp.orchestrator: DEBUG
+    org.springframework.web: DEBUG
+
+# Если в будущем добавите spring-boot-devtools:
+# spring:
+#   devtools:
+#     restart:
+#       enabled: true
+#     livereload:
+#       enabled: true

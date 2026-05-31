@@ -1,0 +1,273 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Cron as a Service — Docker Compose (базовый)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Запуск:
+#   docker compose up             # dev (с override, если есть)
+#   docker compose up --build     # dev + пересборка образов
+#   docker compose -f docker-compose.yml up   # prod-like (без override)
+#
+# Быстрый dev-цикл (jar уже собран на хосте):
+#   ./gradlew :backend:orchestrator:bootJar && docker compose restart app
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Java backend (модульный монолит) ────────────────────────────────────────
+
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cromp-app
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      CROMP_SECRETS_ENCRYPTION_KEY: ${CROMP_SECRETS_ENCRYPTION_KEY:-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6}
+      JWT_SECRET: ${JWT_SECRET:-changeit-changeit-changeit-changeit}
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/cromp}
+      DB_USER: ${DB_USER:-cromp}
+      DB_PASSWORD: ${DB_PASSWORD:-cromp123}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      ML_SERVICE_URL: ${ML_SERVICE_URL:-http://ml-service:8000}
+    ports:
+      - "${BACKEND_PORT_HOST:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+    networks:
+      - cromp-net
+
+  # ── ML сервис (FastAPI) ─────────────────────────────────────────────────────
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+      target: api
+    container_name: cromp-ml
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://cromp:cromp123@postgres:5432/cromp}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      MODELS_DIR: /app/models
+    ports:
+      - "${ML_SERVICE_PORT_HOST:-8000}:8000"
+    volumes:
+      - ml_models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - cromp-net
+
+  # ── Celery worker (обучение моделей) ─────────────────────────────────────────
+
+  celery-worker:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+      target: worker
+    container_name: cromp-celery-worker
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://cromp:cromp123@postgres:5432/cromp}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      MODELS_DIR: /app/models
+    volumes:
+      - ml_models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - cromp-net
+
+  # ── Celery beat (планировщик переобучения) ───────────────────────────────────
+
+  celery-beat:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+      target: beat
+    container_name: cromp-celery-beat
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - cromp-net
+
+  # ── Redis (брокер Celery + кэш) ─────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    container_name: cromp-redis
+    ports:
+      - "${REDIS_PORT_HOST:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cromp-net
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: cromp-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cromp}
+      POSTGRES_USER: ${POSTGRES_USER:-cromp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cromp123}
+    ports:
+      - "${POSTGRES_PORT_HOST:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cromp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cromp-net
+
+  # ── MinIO (S3-совместимое хранилище) ────────────────────────────────────────
+
+  minio:
+    image: minio/minio:latest
+    container_name: cromp-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    ports:
+      - "${MINIO_API_PORT_HOST:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT_HOST:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - cromp-net
+
+  # ── Prometheus ───────────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cromp-prometheus
+    ports:
+      - "${PROMETHEUS_PORT_HOST:-9090}:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
+    networks:
+      - cromp-net
+
+  # ── Grafana ─────────────────────────────────────────────────────────────────
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cromp-grafana
+    ports:
+      - "${GRAFANA_PORT_HOST:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./infrastructure/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    restart: unless-stopped
+    networks:
+      - cromp-net
+
+  # ── Loki ────────────────────────────────────────────────────────────────────
+
+  loki:
+    image: grafana/loki:3.2.0
+    container_name: cromp-loki
+    ports:
+      - "${LOKI_PORT_HOST:-3100}:3100"
+    volumes:
+      - ./infrastructure/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - cromp-net
+
+  # ── Frontend (React/TypeScript) — задел на будущее ──────────────────────────
+  # Раскомментируйте и настройте, когда фронтенд будет готов.
+  #
+  # frontend:
+  #   build:
+  #     context: ./tt/frontend
+  #     dockerfile: Dockerfile
+  #     target: dev
+  #   container_name: cromp-frontend
+  #   environment:
+  #     VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8081}
+  #   ports:
+  #     - "${FRONTEND_PORT_HOST:-3001}:5173"
+  #   volumes:
+  #     - ./tt/frontend/src:/app/src:ro
+  #   depends_on:
+  #     app:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - cromp-net
+
+# ── Named volumes (данные переживают перезапуск контейнеров) ─────────────────
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  ml_models:
+
+# ── Сеть ─────────────────────────────────────────────────────────────────────
+
+networks:
+  cromp-net:
+    driver: bridge
+    name: cromp-net

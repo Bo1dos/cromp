@@ -20,6 +20,11 @@ spring:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+# ── Server ──────────────────────────────────────────────────────────────────
+
+server:
+  port: 8080
+
 # ── Orchestrator ────────────────────────────────────────────────────────────
 
 orchestrator:

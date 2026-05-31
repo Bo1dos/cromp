@@ -23,4 +23,10 @@ bin/
 .DS_Store
 Thumbs.db
 
+# Docker / Environment (секреты и локальные настройки)
+.env
+.env.local
+.env.secrets
+.env.example
+
 tt/

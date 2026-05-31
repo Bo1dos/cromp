@@ -3,10 +3,10 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'spring-boot-app'
+  # ── Backend (Java / Spring Boot Actuator) ──────────────────────────────────
+  - job_name: 'cromp-backend'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8080']  # если приложение запущено локально, вне Docker
+      - targets: ['app:8080']
         labels:
-          application: 'cronasas-api'
-  # Если приложение тоже будет в Docker, используйте имя сервиса, например 'api:8080'
+          application: 'cron-as-a-service'

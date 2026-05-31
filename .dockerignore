@@ -1,0 +1,31 @@
+# Gradle build output
+backend/**/build/
+backend/**/bin/
+backend/**/target/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend (not needed for backend build)
+frontend/
+tt/
+
+# ML service (has its own Dockerfile)
+ml-service/
+
+# Infrastructure (configs mounted, not copied)
+infrastructure/
+
+# Docker
+.env
+.env.*
+
+# Git
+.git/
+.gitignore

@@ -1,0 +1,29 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Docker-профиль Spring Boot
+# Активируется при SPRING_PROFILES_ACTIVE=docker
+# ═══════════════════════════════════════════════════════════════════════════════
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/cromp}
+    username: ${DB_USER:cromp}
+    password: ${DB_PASSWORD:cromp123}
+
+  liquibase:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.cromp: INFO
