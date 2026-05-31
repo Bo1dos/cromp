@@ -30,6 +30,12 @@ dependencies {
     implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
     implementation 'org.apache.httpcomponents.client5:httpclient5'
     implementation 'io.minio:minio:8.5.17' // если orchestrator работает с MinIO
+
+    // ── Tests ────────────────────────────────────────────────────────────────
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 bootJar {
