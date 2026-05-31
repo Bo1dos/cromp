@@ -8,6 +8,12 @@ import com.cromp.executions.application.service.AttemptService;
 import com.cromp.executions.application.service.ExecutionService;
 import com.cromp.executions.domain.model.enums.ExecutionSource;
 import com.cromp.executions.domain.model.enums.ExecutionStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,82 +25,117 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Executions", description = "История запусков задач, попытки выполнения и артефакты")
 @RestController
 @RequestMapping("/api/v1/organizations/{organizationId}/executions")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class ExecutionController {
 
     private final ExecutionService executionService;
     private final AttemptService attemptService;
     private final ArtifactService artifactService;
 
-    // GET /organizations/{organizationId}/executions
+    @Operation(summary = "Получить список запусков с фильтрацией и пагинацией")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Страница с запусками"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован")
+    })
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public PagedResponse<ExecutionResponse> list(
-            @PathVariable("organizationId") Long organizationId,
-            @RequestParam(name = "jobId", required = false) Long jobId,
-            @RequestParam(name = "status", required = false) ExecutionStatus status,
-            @RequestParam(name = "source", required = false) ExecutionSource source,
-            @RequestParam(name = "from", required = false) Instant from,
-            @RequestParam(name = "to", required = false) Instant to,
-            @RequestParam(name = "page", defaultValue = "0")  int page,
-            @RequestParam(name = "size", defaultValue = "20") int size
+            @Parameter(description = "ID организации") @PathVariable("organizationId") Long organizationId,
+            @Parameter(description = "Фильтр по ID задачи") @RequestParam(name = "jobId", required = false) Long jobId,
+            @Parameter(description = "Фильтр по статусу") @RequestParam(name = "status", required = false) ExecutionStatus status,
+            @Parameter(description = "Фильтр по источнику запуска") @RequestParam(name = "source", required = false) ExecutionSource source,
+            @Parameter(description = "Начало временного диапазона") @RequestParam(name = "from", required = false) Instant from,
+            @Parameter(description = "Конец временного диапазона") @RequestParam(name = "to", required = false) Instant to,
+            @Parameter(description = "Номер страницы (с 0)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Размер страницы") @RequestParam(name = "size", defaultValue = "20") int size
     ) {
         ExecutionFilter filter = new ExecutionFilter(jobId, status, source, from, to, page, size);
         return executionService.listExecutions(organizationId, filter);
     }
 
-    // GET /organizations/{organizationId}/executions/{executionId}
+    @Operation(summary = "Получить детали запуска")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Детали запуска с payload и snapshot"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "404", description = "Запуск не найден")
+    })
     @GetMapping("/{executionId}")
     @PreAuthorize("isAuthenticated()")
     public ExecutionDetailResponse get(
-            @PathVariable("organizationId") Long organizationId,
-            @PathVariable("executionId") UUID executionId
+            @Parameter(description = "ID организации") @PathVariable("organizationId") Long organizationId,
+            @Parameter(description = "UUID запуска") @PathVariable("executionId") UUID executionId
     ) {
         return executionService.getExecution(organizationId, executionId);
     }
 
-    // POST /organizations/{organizationId}/executions/{executionId}/cancel
+    @Operation(summary = "Отменить запуск")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Запуск отменён"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "403", description = "Нет прав job:execute"),
+            @ApiResponse(responseCode = "404", description = "Запуск не найден"),
+            @ApiResponse(responseCode = "409", description = "Запуск уже завершён и не может быть отменён")
+    })
     @PostMapping("/{executionId}/cancel")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(
-            @PathVariable("organizationId") Long organizationId,
-            @PathVariable("executionId") UUID executionId
+            @Parameter(description = "ID организации") @PathVariable("organizationId") Long organizationId,
+            @Parameter(description = "UUID запуска") @PathVariable("executionId") UUID executionId
     ) {
         executionService.cancelExecution(organizationId, executionId);
     }
 
-    // GET /organizations/{organizationId}/executions/{executionId}/attempts
+    @Operation(summary = "Получить попытки выполнения запуска")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Список попыток"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "404", description = "Запуск не найден")
+    })
     @GetMapping("/{executionId}/attempts")
     @PreAuthorize("isAuthenticated()")
     public List<AttemptResponse> listAttempts(
-            @PathVariable("organizationId") Long organizationId,
-            @PathVariable("executionId") UUID executionId
+            @Parameter(description = "ID организации") @PathVariable("organizationId") Long organizationId,
+            @Parameter(description = "UUID запуска") @PathVariable("executionId") UUID executionId
     ) {
         return attemptService.listAttempts(organizationId, executionId);
     }
 
-    // GET /organizations/{organizationId}/executions/{executionId}/artifacts
+    @Operation(summary = "Получить артефакты запуска")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Список артефактов"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "404", description = "Запуск не найден")
+    })
     @GetMapping("/{executionId}/artifacts")
     @PreAuthorize("isAuthenticated()")
     public List<ArtifactResponse> listArtifacts(
-            @PathVariable("organizationId") Long organizationId,
-            @PathVariable("executionId") UUID executionId
+            @Parameter(description = "ID организации") @PathVariable("organizationId") Long organizationId,
+            @Parameter(description = "UUID запуска") @PathVariable("executionId") UUID executionId
     ) {
         return artifactService.listArtifacts(organizationId, executionId);
     }
 
-    // POST /organizations/{organizationId}/executions/{executionId}/artifacts
+    @Operation(summary = "Загрузить артефакт запуска")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Артефакт загружен"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "403", description = "Нет прав job:execute"),
+            @ApiResponse(responseCode = "404", description = "Запуск не найден"),
+            @ApiResponse(responseCode = "422", description = "Некорректные метаданные артефакта")
+    })
     @PostMapping(value = "/{executionId}/artifacts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'job:execute')")
     @ResponseStatus(HttpStatus.CREATED)
     public ArtifactResponse uploadArtifact(
-            @PathVariable("organizationId") Long organizationId,
-            @PathVariable("executionId") UUID executionId,
-            @RequestPart("meta") UploadArtifactRequest request,
-            @RequestPart("file") MultipartFile file
+            @Parameter(description = "ID организации") @PathVariable("organizationId") Long organizationId,
+            @Parameter(description = "UUID запуска") @PathVariable("executionId") UUID executionId,
+            @Parameter(description = "Метаданные артефакта (JSON)") @RequestPart("meta") UploadArtifactRequest request,
+            @Parameter(description = "Файл артефакта") @RequestPart("file") MultipartFile file
     ) {
         return artifactService.uploadArtifact(organizationId, executionId, request, file);
     }

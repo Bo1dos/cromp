@@ -7,6 +7,9 @@ dependencies {
     api project(':backend:executions') // для чтения истории
     api project(':backend:jobs')       // для контекста задач
     
+    // OpenAPI/Swagger annotations
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3'
+
     // Чтение данных, JPA не обязательно, но может использоваться для мат. представлений
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.postgresql:postgresql'

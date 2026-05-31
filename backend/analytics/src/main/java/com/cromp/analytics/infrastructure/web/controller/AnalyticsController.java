@@ -8,6 +8,12 @@ import com.cromp.analytics.domain.model.AnalyticsPeriod;
 import com.cromp.analytics.domain.model.AnomalyDetection;
 import com.cromp.analytics.domain.model.ExecutionSummary;
 import com.cromp.analytics.domain.model.Prediction;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,16 +29,15 @@ import java.util.Optional;
  * REST-контроллер аналитики.
  *
  * Все эндпоинты требуют права {@code analytics:read} и контекст организации.
- * organizationId берётся из path — проверка принадлежности пользователя
- * к организации выполняется через {@code @PreAuthorize}.
- *
- * Возвращает 200 с пустым payload если данных нет (не 404) —
+ * возвращает 200 с пустым payload если данных нет (не 404) —
  * отсутствие данных не ошибка, это нормальное состояние для новой организации.
  */
 @Slf4j
+@Tag(name = "Analytics", description = "Аналитика выполнения задач: сводки, прогнозы, аномалии")
 @RestController
 @RequestMapping("/api/v1/organizations/{orgId}/analytics")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
@@ -41,17 +46,20 @@ public class AnalyticsController {
 
     // ── Summary ───────────────────────────────────────────────────────────────
 
-    /**
-     * GET /api/v1/organizations/{orgId}/analytics/executions/summary
-     *
-     * @param period  период: 1d, 7d, 30d, 90d (default: 7d)
-     * @param jobId   опционально — фильтр по задаче
-     */
+    @Operation(summary = "Получить сводку по выполнениям",
+            description = "Возвращает агрегированную статистику выполнений за период. Если данных нет — возвращает 200 с нулевыми значениями.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Сводка (может быть пустой для новых организаций)"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read")
+    })
     @GetMapping("/executions/summary")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
     public ResponseEntity<AnalyticsDtos.SummaryResponse> getSummary(
-            @PathVariable Long orgId,
+            @Parameter(description = "ID организации") @PathVariable Long orgId,
+            @Parameter(description = "Период: 1d, 7d, 30d, 90d (по умолчанию 7d)")
             @RequestParam(defaultValue = "7d") String period,
+            @Parameter(description = "Опциональный фильтр по ID задачи")
             @RequestParam(required = false) Long jobId) {
 
         AnalyticsPeriod analyticsPeriod = parsePeriod(period);
@@ -67,15 +75,18 @@ public class AnalyticsController {
 
     // ── Predictions ───────────────────────────────────────────────────────────
 
-    /**
-     * GET /api/v1/organizations/{orgId}/analytics/predictions
-     *
-     * @param jobId опционально — прогноз для конкретной задачи
-     */
+    @Operation(summary = "Получить прогнозы по задачам",
+            description = "Возвращает ML-прогнозы: ожидаемое время следующего запуска, вероятность ошибки, предсказываемую длительность.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Прогнозы (может быть пустым)"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read")
+    })
     @GetMapping("/predictions")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
     public ResponseEntity<AnalyticsDtos.PredictionsResponse> getPredictions(
-            @PathVariable Long orgId,
+            @Parameter(description = "ID организации") @PathVariable Long orgId,
+            @Parameter(description = "Опциональный фильтр по ID задачи")
             @RequestParam(required = false) Long jobId) {
 
         List<Prediction> predictions = predictionService.getPredictions(orgId, jobId);
@@ -84,20 +95,23 @@ public class AnalyticsController {
 
     // ── Anomalies ─────────────────────────────────────────────────────────────
 
-    /**
-     * GET /api/v1/organizations/{orgId}/analytics/anomalies
-     *
-     * @param from     начало периода (ISO date, default: 30 дней назад)
-     * @param to       конец периода (ISO date, default: сегодня)
-     * @param jobId    опционально — фильтр по задаче
-     */
+    @Operation(summary = "Получить обнаруженные аномалии",
+            description = "Возвращает список аномалий в выполнениях за указанный период. По умолчанию период — последние 30 дней.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Список аномалий (может быть пустым)"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read")
+    })
     @GetMapping("/anomalies")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
     public ResponseEntity<AnalyticsDtos.AnomaliesResponse> getAnomalies(
-            @PathVariable Long orgId,
+            @Parameter(description = "ID организации") @PathVariable Long orgId,
+            @Parameter(description = "Опциональный фильтр по ID задачи")
             @RequestParam(required = false) Long jobId,
+            @Parameter(description = "Начало периода (ISO date, по умолчанию 30 дней назад)")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @Parameter(description = "Конец периода (ISO date, по умолчанию сегодня)")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
