@@ -15,4 +15,13 @@ export interface MembershipResponse {
   userUuid: string;
   organization: OrganizationResponse;
   role: OrganizationRole;
+  user?: UserBrief;
+  joinedAt?: string;
+}
+
+export interface UserBrief {
+  uuid: string;
+  email: string;
+  name: string;
+  avatarUrl?: string | null;
 }

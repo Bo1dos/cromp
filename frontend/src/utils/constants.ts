@@ -15,4 +15,12 @@ export const QUERY_KEYS = {
   SECRET:  'secret',
   SECRET_VERSIONS: 'secretVersions',
   SCHEDULE: 'schedule',
+  MEMBERS: 'members',
+  INVITATIONS: 'invitations',
+  AUDIT: 'auditLog',
+  ANALYTICS_SUMMARY: 'analyticsSummary',
+  ANALYTICS_PREDICTIONS: 'predictions',
+  ANALYTICS_ANOMALIES: 'anomalies',
+  ANALYTICS_TIMESERIES: 'analyticsTimeseries',
+  ANALYTICS_DURATION_DIST: 'analyticsDurationDist',
 } as const;
