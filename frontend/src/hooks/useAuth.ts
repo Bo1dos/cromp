@@ -1,0 +1,14 @@
+// ---------------------------------------------------------------------------
+// useAuth — convenience hook for AuthContext consumption
+// ---------------------------------------------------------------------------
+
+import { useContext } from 'react';
+import { AuthContext, type AuthContextValue } from '@/context/AuthContext';
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (ctx === undefined) {
+    throw new Error('useAuth must be used within an <AuthProvider>');
+  }
+  return ctx;
+}

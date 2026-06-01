@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
+import RootLayout from '@/components/layout/RootLayout';
+import ProtectedRoute from '@/components/common/ProtectedRoute';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import SelectOrganizationPage from '@/pages/organization/SelectOrganizationPage';
@@ -17,42 +19,53 @@ import AuditLogPage from '@/pages/audit/AuditLogPage';
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 
 export const router = createBrowserRouter([
-  // ---- Public routes -------------------------------------------------------
   {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/register',
-    element: <RegisterPage />,
-  },
-  {
-    path: '/select-organization',
-    element: <SelectOrganizationPage />,
-  },
-
-  // ---- Protected dashboard routes ------------------------------------------
-  {
-    path: '/dashboard',
-    element: <DashboardLayout />,
+    path: '/',
+    element: <RootLayout />,
     children: [
-      { index: true, element: <Navigate to="jobs" replace /> },
-      { path: 'jobs', element: <JobListPage /> },
-      { path: 'jobs/new', element: <JobCreatePage /> },
-      { path: 'jobs/:jobUuid', element: <JobDetailPage /> },
-      { path: 'executions', element: <ExecutionListPage /> },
-      { path: 'executions/:executionId', element: <ExecutionDetailPage /> },
-      { path: 'secrets', element: <SecretListPage /> },
-      { path: 'secrets/:secretUuid', element: <SecretDetailPage /> },
-      { path: 'analytics', element: <AnalyticsPage /> },
-      { path: 'members', element: <MembersPage /> },
-      { path: 'audit', element: <AuditLogPage /> },
-    ],
-  },
+      // ---- Public routes -------------------------------------------------
+      {
+        path: 'login',
+        element: <LoginPage />,
+      },
+      {
+        path: 'register',
+        element: <RegisterPage />,
+      },
+      {
+        path: 'select-organization',
+        element: <SelectOrganizationPage />,
+      },
 
-  // ---- Catch-all -----------------------------------------------------------
-  {
-    path: '*',
-    element: <NotFoundPage />,
+      // ---- Protected dashboard routes ------------------------------------
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: 'dashboard',
+            element: <DashboardLayout />,
+            children: [
+              { index: true, element: <Navigate to="jobs" replace /> },
+              { path: 'jobs', element: <JobListPage /> },
+              { path: 'jobs/new', element: <JobCreatePage /> },
+              { path: 'jobs/:jobUuid', element: <JobDetailPage /> },
+              { path: 'executions', element: <ExecutionListPage /> },
+              { path: 'executions/:executionId', element: <ExecutionDetailPage /> },
+              { path: 'secrets', element: <SecretListPage /> },
+              { path: 'secrets/:secretUuid', element: <SecretDetailPage /> },
+              { path: 'analytics', element: <AnalyticsPage /> },
+              { path: 'members', element: <MembersPage /> },
+              { path: 'audit', element: <AuditLogPage /> },
+            ],
+          },
+        ],
+      },
+
+      // ---- Catch-all -----------------------------------------------------
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ],
   },
 ]);
