@@ -10,4 +10,9 @@ export const QUERY_KEYS = {
   JOBS:  'jobs',
   JOB:   'job',
   EXECUTIONS: 'executions',
+  JOB_VERSIONS: 'jobVersions',
+  SECRETS: 'secrets',
+  SECRET:  'secret',
+  SECRET_VERSIONS: 'secretVersions',
+  SCHEDULE: 'schedule',
 } as const;

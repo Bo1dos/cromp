@@ -14,6 +14,7 @@ import {
 import dayjs from 'dayjs';
 import PageHeader from '@/components/common/PageHeader';
 import JobStatusBadge from '@/components/jobs/JobStatusBadge';
+import JobScheduleTab from '@/components/jobs/JobScheduleTab';
 import {
   useJobDetail,
   useDeleteJob,
@@ -175,6 +176,29 @@ export default function JobDetailPage() {
               <Descriptions.Item label="Backoff">{job.retryPolicy.backoffMs} ms × {job.retryPolicy.backoffMultiplier}</Descriptions.Item>
             </Descriptions>
           ),
+        },
+        {
+          key: 'history',
+          label: 'History',
+          children: (
+            <div style={{ padding: 24, textAlign: 'center' }}>
+              <Text type="secondary">Execution history coming soon.</Text>
+            </div>
+          ),
+        },
+        {
+          key: 'executions',
+          label: 'Executions',
+          children: (
+            <div style={{ padding: 24, textAlign: 'center' }}>
+              <Text type="secondary">Executions panel coming soon.</Text>
+            </div>
+          ),
+        },
+        {
+          key: 'schedule',
+          label: 'Schedule',
+          children: <JobScheduleTab jobUuid={job.uuid} />,
         },
       ]} />
     </div>

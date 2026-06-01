@@ -9,7 +9,7 @@ import type { BreadcrumbItemType } from 'antd/es/breadcrumb/Breadcrumb';
 const { Title } = Typography;
 
 interface PageHeaderProps {
-  title: string;
+  title: string | ReactNode;
   subtitle?: string;
   breadcrumbs?: BreadcrumbItemType[];
   extra?: ReactNode;

@@ -1,0 +1,188 @@
+// ---------------------------------------------------------------------------
+// JobHistoryTab — version history table with view / compare / revert actions
+// ---------------------------------------------------------------------------
+
+import { useState } from 'react';
+import { Table, Button, Descriptions, Modal, Tag, Typography, Space } from 'antd';
+import { EyeOutlined, SwapOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import { useJobVersions, useJobVersionDetail } from '@/hooks/useJobVersions';
+import VersionRevertButton from './VersionRevertButton';
+import VersionDiffModal from './VersionDiffModal';
+import type { JobVersionResponse } from '@/types/job';
+
+const { Text } = Typography;
+
+interface JobHistoryTabProps {
+  jobUuid: string;
+}
+
+// ---------------------------------------------------------------------------
+// Version detail modal
+// ---------------------------------------------------------------------------
+function JobVersionDetail({ version, onClose }: { version: JobVersionResponse; onClose: () => void }) {
+  return (
+    <Modal
+      title={`Version #${version.version}`}
+      open
+      onCancel={onClose}
+      footer={<Button onClick={onClose}>Close</Button>}
+      width={720}
+    >
+      <Descriptions bordered column={2} size="small">
+        <Descriptions.Item label="Version" span={2}>
+          <Tag>#{version.version}</Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="Name">{version.name}</Descriptions.Item>
+        <Descriptions.Item label="Created By">{version.createdBy}</Descriptions.Item>
+        <Descriptions.Item label="Created At">
+          {dayjs(version.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+        </Descriptions.Item>
+        <Descriptions.Item label="Description" span={2}>
+          {version.description || <Text type="secondary">—</Text>}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Cron Expression">
+          {version.cronExpression ? <Tag>{version.cronExpression}</Tag> : <Text type="secondary">—</Text>}
+        </Descriptions.Item>
+        <Descriptions.Item label="Timezone">
+          {version.timezone ?? 'UTC'}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="HTTP Config" span={2}>
+          <pre style={{ margin: 0, fontSize: 12, maxHeight: 200, overflow: 'auto' }}>
+            {JSON.stringify(version.httpConfig, null, 2)}
+          </pre>
+        </Descriptions.Item>
+        <Descriptions.Item label="Retry Policy" span={2}>
+          <pre style={{ margin: 0, fontSize: 12 }}>
+            {JSON.stringify(version.retryPolicy, null, 2)}
+          </pre>
+        </Descriptions.Item>
+
+        {version.secretIds && version.secretIds.length > 0 && (
+          <Descriptions.Item label="Secret IDs" span={2}>
+            {version.secretIds.join(', ')}
+          </Descriptions.Item>
+        )}
+      </Descriptions>
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main tab
+// ---------------------------------------------------------------------------
+export default function JobHistoryTab({ jobUuid }: JobHistoryTabProps) {
+  const { data: versions, isLoading } = useJobVersions(jobUuid);
+  const [viewVersion, setViewVersion] = useState<JobVersionResponse | null>(null);
+  const [diffModalOpen, setDiffModalOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<JobVersionResponse[]>([]);
+
+  const columns = [
+    {
+      title: '#',
+      dataIndex: 'version',
+      key: 'version',
+      width: 80,
+      render: (v: number) => <Tag>v{v}</Tag>,
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      ellipsis: true,
+    },
+    {
+      title: 'Changed At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 180,
+      render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      title: 'Changed By',
+      dataIndex: 'createdBy',
+      key: 'createdBy',
+      width: 160,
+      ellipsis: true,
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 240,
+      render: (_: unknown, record: JobVersionResponse) => (
+        <Space>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => setViewVersion(record)}
+          >
+            View
+          </Button>
+          <VersionRevertButton jobUuid={jobUuid} version={record.version} />
+        </Space>
+      ),
+    },
+  ];
+
+  const rowSelection = {
+    type: 'checkbox' as const,
+    selectedRowKeys: selectedRows.map((r) => r.version),
+    onChange: (_: React.Key[], rows: JobVersionResponse[]) => {
+      // Keep only last two selections for compare
+      setSelectedRows(rows.slice(-2));
+    },
+  };
+
+  const canCompare = selectedRows.length === 2;
+
+  return (
+    <div>
+      <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        <Text strong>Version History</Text>
+        <Button
+          icon={<SwapOutlined />}
+          disabled={!canCompare}
+          onClick={() => {
+            if (canCompare) {
+              setDiffModalOpen(true);
+            }
+          }}
+        >
+          Compare Selected{canCompare ? ` (v${selectedRows[0].version} ↔ v${selectedRows[1].version})` : ''}
+        </Button>
+      </Space>
+
+      <Table
+        rowKey="version"
+        dataSource={versions ?? []}
+        columns={columns}
+        loading={isLoading}
+        pagination={false}
+        size="small"
+        rowSelection={rowSelection}
+        locale={{ emptyText: 'No versions found' }}
+      />
+
+      {/* View detail modal */}
+      {viewVersion && (
+        <JobVersionDetail
+          version={viewVersion}
+          onClose={() => setViewVersion(null)}
+        />
+      )}
+
+      {/* Diff modal */}
+      <VersionDiffModal
+        jobUuid={jobUuid}
+        open={diffModalOpen}
+        onClose={() => {
+          setDiffModalOpen(false);
+          setSelectedRows([]);
+        }}
+      />
+    </div>
+  );
+}

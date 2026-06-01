@@ -65,3 +65,26 @@ export interface ListJobsParams {
   limit?: number;
   offset?: number;
 }
+
+// ---------------------------------------------------------------------------
+// Job versioning
+// ---------------------------------------------------------------------------
+
+export interface JobVersionResponse {
+  version: number;
+  name: string;
+  description: string;
+  httpConfig: HttpConfig;
+  retryPolicy: RetryPolicy;
+  cronExpression?: string;
+  timezone?: string;
+  secretIds?: string[];
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface JobVersionCompareResponse {
+  left: JobVersionResponse;
+  right: JobVersionResponse;
+  diff: string;
+}
