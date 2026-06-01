@@ -1,0 +1,87 @@
+databaseChangeLog:
+  # ── Common ──────────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0000-common-extensions.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0001-common-enums.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0002-common-functions.yaml
+      relativeToChangelogFile: false
+
+  # ── IAM ─────────────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0003-iam-organizations.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0004-iam-users.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0005-iam-roles.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0006-iam-role-permissions.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0007-iam-memberships.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0008-iam-invitations.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0009-iam-audit-log.yaml
+      relativeToChangelogFile: false
+
+  # ── Jobs ────────────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0010-jobs-jobs.yaml
+      relativeToChangelogFile: false
+
+  # ── Schedules ───────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0012-schedules-schedules.yaml
+      relativeToChangelogFile: false
+
+  # ── Executions ──────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0013-executions-executions.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0014-executions-execution-attempts.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0015-executions-functions-triggers.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0016-executions-execution-artifacts.yaml
+      relativeToChangelogFile: false
+
+  # ── Secrets ─────────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0017-secrets-secrets.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0018-secrets-secret-versions.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0019-secrets-execution-secret-access.yaml
+      relativeToChangelogFile: false
+
+  # ── Orchestrator ────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0020-orchestrator-agents.yaml
+      relativeToChangelogFile: false
+
+  # ── Analytics ───────────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0021-analytics-views.yaml
+      relativeToChangelogFile: false
+
+  # ── IAM (дополнения) ───────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0022-iam-add-membership-uuid.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0023-iam-add-invitation-uuid.yaml
+      relativeToChangelogFile: false

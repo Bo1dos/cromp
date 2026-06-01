@@ -3,27 +3,19 @@ databaseChangeLog:
       id: create-common-enums
       author: bo1dos
       changes:
-        - createType:
-            typeName: user_role
-            enumValues: OWNER, ADMIN, DEVELOPER, VIEWER
-        - createType:
-            typeName: job_status
-            enumValues: ACTIVE, DISABLED, ARCHIVED
-        - createType:
-            typeName: schedule_status
-            enumValues: ACTIVE, PAUSED
-        - createType:
-            typeName: execution_status
-            enumValues: CREATED, IN_PROGRESS, SUCCEEDED, FAILED, CANCELLED, SKIPPED
-        - createType:
-            typeName: attempt_status
-            enumValues: PENDING, DISPATCHED, RUNNING, SUCCEEDED, FAILED, TIMEOUT, CANCELLED, RETRYING
-        - createType:
-            typeName: secret_scope
-            enumValues: JOB, ORGANIZATION, GLOBAL
-        - createType:
-            typeName: artifact_kind
-            enumValues: LOG_STDOUT, LOG_STDERR, OUTPUT_PAYLOAD, DEBUG_SNAPSHOT
-        - createType:
-            typeName: invitation_status
-            enumValues: PENDING, ACCEPTED, EXPIRED, REVOKED
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS user_role AS ENUM ('OWNER', 'ADMIN', 'DEVELOPER', 'VIEWER');
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS job_status AS ENUM ('ACTIVE', 'DISABLED', 'ARCHIVED');
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS schedule_status AS ENUM ('ACTIVE', 'PAUSED');
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS execution_status AS ENUM ('CREATED', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'SKIPPED');
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS attempt_status AS ENUM ('PENDING', 'DISPATCHED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'TIMEOUT', 'CANCELLED', 'RETRYING');
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS secret_scope AS ENUM ('JOB', 'ORGANIZATION', 'GLOBAL');
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS artifact_kind AS ENUM ('LOG_STDOUT', 'LOG_STDERR', 'OUTPUT_PAYLOAD', 'DEBUG_SNAPSHOT');
+        - sql:
+            sql: CREATE TYPE IF NOT EXISTS invitation_status AS ENUM ('PENDING', 'ACCEPTED', 'EXPIRED', 'REVOKED');

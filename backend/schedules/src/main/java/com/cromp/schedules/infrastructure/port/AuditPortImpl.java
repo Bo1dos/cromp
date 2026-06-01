@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component
+@Component("schedulesAuditPortImpl")
 @RequiredArgsConstructor
 public class AuditPortImpl implements AuditPort {
 
