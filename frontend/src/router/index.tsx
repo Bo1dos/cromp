@@ -9,6 +9,7 @@ import DashboardLayout from '@/pages/dashboard/DashboardLayout';
 import JobListPage from '@/pages/jobs/JobListPage';
 import JobCreatePage from '@/pages/jobs/JobCreatePage';
 import JobDetailPage from '@/pages/jobs/JobDetailPage';
+import JobEditPage from '@/pages/jobs/JobEditPage';
 import ExecutionListPage from '@/pages/executions/ExecutionListPage';
 import ExecutionDetailPage from '@/pages/executions/ExecutionDetailPage';
 import SecretListPage from '@/pages/secrets/SecretListPage';
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
               { index: true, element: <Navigate to="jobs" replace /> },
               { path: 'jobs', element: <JobListPage /> },
               { path: 'jobs/new', element: <JobCreatePage /> },
+              { path: 'jobs/:jobUuid/edit', element: <JobEditPage /> },
               { path: 'jobs/:jobUuid', element: <JobDetailPage /> },
               { path: 'executions', element: <ExecutionListPage /> },
               { path: 'executions/:executionId', element: <ExecutionDetailPage /> },
