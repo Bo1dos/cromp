@@ -13,8 +13,7 @@ import AttemptsTimeline from '@/components/executions/AttemptsTimeline';
 import ArtifactViewer from '@/components/executions/ArtifactViewer';
 import {
   useExecutionDetail,
-  useAttempts,
-  useArtifacts,
+    useArtifacts,
 } from '@/hooks/useExecutions';
 
 const { Text } = Typography;
@@ -39,8 +38,7 @@ export default function ExecutionDetailPage() {
     isError: isExecError,
   } = useExecutionDetail(executionId!);
 
-  const { data: attempts } = useAttempts(executionId!);
-  const { data: artifacts } = useArtifacts(executionId!);
+    const { data: artifacts } = useArtifacts(executionId!);
 
   // ---- Loading / Error --------------------------------------------------
   if (isExecLoading) {
@@ -162,6 +160,9 @@ export default function ExecutionDetailPage() {
     </div>
   );
 }
+
+
+
 
 
 
