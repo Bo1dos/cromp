@@ -2,9 +2,10 @@
 // CancelExecutionButton — cancel a running/pending execution
 // ---------------------------------------------------------------------------
 
-import { Button, Modal, notification } from 'antd';
+import { Button, notification } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { useCancelExecution } from '@/hooks/useExecutions';
+import ConfirmModal from '@/components/common/ConfirmModal';
 import type { ExecutionStatus } from '@/types/execution';
 
 interface CancelExecutionButtonProps {
@@ -20,12 +21,11 @@ export default function CancelExecutionButton({ executionId, status }: CancelExe
   }
 
   const handleClick = () => {
-    Modal.confirm({
+    ConfirmModal.show({
       title: 'Cancel this execution?',
       content: 'The running job will be interrupted and the execution will be marked as cancelled.',
+      danger: true,
       okText: 'Yes, cancel',
-      okType: 'danger',
-      cancelText: 'No',
       onOk: async () => {
         try {
           await cancelMutation.mutateAsync();

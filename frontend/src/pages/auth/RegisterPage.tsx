@@ -2,6 +2,7 @@
 // RegisterPage — new user registration
 // ---------------------------------------------------------------------------
 
+import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Button, Form, Input, Typography } from 'antd';
 import { MailOutlined, LockOutlined, UserOutlined } from '@ant-design/icons';
@@ -20,6 +21,7 @@ interface RegisterFormValues {
 export default function RegisterPage() {
   const { register, isAuthenticated, isLoading } = useAuth();
   const [form] = Form.useForm<RegisterFormValues>();
+  const [submitting, setSubmitting] = useState(false);
 
   // Already authenticated — skip to organisation selection
   if (!isLoading && isAuthenticated) {
@@ -27,7 +29,12 @@ export default function RegisterPage() {
   }
 
   const handleFinish = async (values: RegisterFormValues) => {
-    await register(values.email, values.password, values.name);
+    setSubmitting(true);
+    try {
+      await register(values.email, values.password, values.name);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -101,7 +108,7 @@ export default function RegisterPage() {
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 12 }}>
-            <Button type="primary" htmlType="submit" block size="large">
+            <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
               Create Account
             </Button>
           </Form.Item>

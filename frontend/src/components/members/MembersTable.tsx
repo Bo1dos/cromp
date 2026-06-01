@@ -2,12 +2,14 @@
 // MembersTable — Ant Design Table listing organisation members
 // ---------------------------------------------------------------------------
 
-import { Table, Space, Button, Tag, Select, Modal, Avatar, Typography } from 'antd';
+import { Table, Space, Button, Tag, Select, Avatar, Typography } from 'antd';
 import { DeleteOutlined, UserOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import type { MembershipResponse, OrganizationRole } from '@/types/organization';
 import { useMembersList, useChangeRole, useRemoveMember } from '@/hooks/useMembers';
 import { useOrganization } from '@/hooks/useOrganization';
+import ConfirmModal from '@/components/common/ConfirmModal';
+import EmptyState from '@/components/common/EmptyState';
+import { formatDate } from '@/utils/formatters';
 
 const { Text } = Typography;
 
@@ -40,12 +42,11 @@ function MemberActions({ membership }: { membership: MembershipResponse }) {
 
   const handleRemove = () => {
     const displayName = membership.user?.name ?? membership.user?.email ?? 'this member';
-    Modal.confirm({
+    ConfirmModal.show({
       title: `Remove ${displayName}?`,
       content: `Are you sure you want to remove "${displayName}" from the organization?`,
+      danger: true,
       okText: 'Remove',
-      okType: 'danger',
-      cancelText: 'Cancel',
       onOk: () => removeMember.mutate(membership.uuid),
     });
   };
@@ -125,7 +126,7 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
       key: 'joinedAt',
       width: 180,
       render: (date: string) =>
-        date ? dayjs(date).format('MMM D, YYYY HH:mm') : '—',
+        date ? formatDate(date) : '—',
     },
     {
       title: 'Actions',
@@ -143,6 +144,9 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
       dataSource={members}
       rowKey="uuid"
       loading={isLoading}
+      locale={{
+        emptyText: <EmptyState description="No members" hint="Invite team members to collaborate." />,
+      }}
       pagination={false}
     />
   );

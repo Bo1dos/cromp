@@ -5,10 +5,11 @@
 import { useState } from 'react';
 import { Table, Button, Descriptions, Modal, Tag, Typography, Space } from 'antd';
 import { EyeOutlined, SwapOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import { useJobVersions, useJobVersionDetail } from '@/hooks/useJobVersions';
+import { useJobVersions } from '@/hooks/useJobVersions';
 import VersionRevertButton from './VersionRevertButton';
 import VersionDiffModal from './VersionDiffModal';
+import EmptyState from '@/components/common/EmptyState';
+import { formatDateFull } from '@/utils/formatters';
 import type { JobVersionResponse } from '@/types/job';
 
 const { Text } = Typography;
@@ -36,7 +37,7 @@ function JobVersionDetail({ version, onClose }: { version: JobVersionResponse; o
         <Descriptions.Item label="Name">{version.name}</Descriptions.Item>
         <Descriptions.Item label="Created By">{version.createdBy}</Descriptions.Item>
         <Descriptions.Item label="Created At">
-          {dayjs(version.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+          {formatDateFull(version.createdAt)}
         </Descriptions.Item>
         <Descriptions.Item label="Description" span={2}>
           {version.description || <Text type="secondary">—</Text>}
@@ -98,7 +99,7 @@ export default function JobHistoryTab({ jobUuid }: JobHistoryTabProps) {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
-      render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss'),
+      render: (v: string) => formatDateFull(v),
     },
     {
       title: 'Changed By',
@@ -163,7 +164,7 @@ export default function JobHistoryTab({ jobUuid }: JobHistoryTabProps) {
         pagination={false}
         size="small"
         rowSelection={rowSelection}
-        locale={{ emptyText: 'No versions found' }}
+        locale={{ emptyText: <EmptyState description="No version history" hint="Versions will be created when the job is updated." /> }}
       />
 
       {/* View detail modal */}

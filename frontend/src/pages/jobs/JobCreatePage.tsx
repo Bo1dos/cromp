@@ -25,7 +25,11 @@ export default function JobCreatePage() {
         ]}
       />
 
-      <JobForm mode="create" onSubmit={handleSubmit} loading={createMutation.isPending} />
+      <JobForm
+        mode="create"
+        onSubmit={handleSubmit}
+        loading={createMutation.isPending}
+      />
     </div>
   );
 }

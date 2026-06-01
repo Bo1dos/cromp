@@ -1,11 +1,12 @@
 // ---------------------------------------------------------------------------
-// MembersPage — organisation members management
+// MembersPage — manage organisation members
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';
 import { Button } from 'antd';
-import { UserAddOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import PageHeader from '@/components/common/PageHeader';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import MembersTable from '@/components/members/MembersTable';
 import InviteMemberModal from '@/components/members/InviteMemberModal';
 import { useOrganization } from '@/hooks/useOrganization';
@@ -13,6 +14,10 @@ import { useOrganization } from '@/hooks/useOrganization';
 export default function MembersPage() {
   const { activeOrganization } = useOrganization();
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+
+  if (!activeOrganization) {
+    return <LoadingSpinner tip="Loading organization…" />;
+  }
 
   return (
     <div>
@@ -22,7 +27,7 @@ export default function MembersPage() {
         extra={
           <Button
             type="primary"
-            icon={<UserAddOutlined />}
+            icon={<PlusOutlined />}
             onClick={() => setInviteModalOpen(true)}
           >
             Invite Member
@@ -30,7 +35,7 @@ export default function MembersPage() {
         }
       />
 
-      <MembersTable orgUuid={activeOrganization?.uuid ?? ''} />
+      <MembersTable orgUuid={activeOrganization.uuid} />
 
       <InviteMemberModal
         open={inviteModalOpen}

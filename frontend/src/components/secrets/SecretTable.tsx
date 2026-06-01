@@ -3,14 +3,14 @@
 // ---------------------------------------------------------------------------
 
 import { useNavigate } from 'react-router-dom';
-import { Table, Select, Input, Space, Button, Modal, Tag } from 'antd';
-import { DeleteOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
+import { Table, Select, Space, Button, Tag } from 'antd';
+import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import type { SecretResponse, SecretScope } from '@/types/secret';
 import { useSecretsList, useDeleteSecret } from '@/hooks/useSecrets';
-
-dayjs.extend(relativeTime);
+import ConfirmModal from '@/components/common/ConfirmModal';
+import EmptyState from '@/components/common/EmptyState';
+import SearchInput from '@/components/common/SearchInput';
+import { formatRelative } from '@/utils/formatters';
 
 const SCOPE_CONFIG: Record<SecretScope, { color: string; label: string }> = {
   JOB: { color: 'blue', label: 'Job' },
@@ -23,13 +23,12 @@ function SecretActions({ secret }: { secret: SecretResponse }) {
   const deleteMutation = useDeleteSecret();
 
   const handleDelete = () => {
-    Modal.confirm({
+    ConfirmModal.show({
       title: `Delete "${secret.name}"?`,
       content:
         'This action cannot be undone. The secret will be permanently removed and any jobs relying on it will fail.',
+      danger: true,
       okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
       onOk: () => deleteMutation.mutate(secret.uuid),
     });
   };
@@ -89,6 +88,7 @@ export default function SecretTable({
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
+      sorter: (a: SecretResponse, b: SecretResponse) => a.name.localeCompare(b.name),
       render: (_: string, record: SecretResponse) => (
         <Button
           type="link"
@@ -104,6 +104,11 @@ export default function SecretTable({
       dataIndex: 'scope',
       key: 'scope',
       width: 140,
+      filters: [
+        { text: 'Job', value: 'JOB' },
+        { text: 'Organization', value: 'ORGANIZATION' },
+      ],
+      onFilter: (value: any, record: SecretResponse) => record.scope === value,
       render: (s: SecretScope) => {
         const cfg = SCOPE_CONFIG[s] ?? { color: 'default', label: s };
         return <Tag color={cfg.color}>{cfg.label}</Tag>;
@@ -115,15 +120,18 @@ export default function SecretTable({
       key: 'versionCount',
       width: 100,
       align: 'center' as const,
+      sorter: (a: SecretResponse, b: SecretResponse) => a.versionCount - b.versionCount,
     },
     {
       title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
+      sorter: (a: SecretResponse, b: SecretResponse) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       render: (date: string) => (
-        <span title={dayjs(date).format('YYYY-MM-DD HH:mm:ss')}>
-          {dayjs(date).fromNow()}
+        <span title={new Date(date).toLocaleString()}>
+          {formatRelative(date)}
         </span>
       ),
     },
@@ -151,14 +159,10 @@ export default function SecretTable({
             { label: 'Organization', value: 'ORGANIZATION' },
           ]}
         />
-        <Input.Search
+        <SearchInput
+          value={search ?? ''}
+          onChange={onSearchChange}
           placeholder="Search by name…"
-          prefix={<SearchOutlined />}
-          style={{ width: 260 }}
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          onSearch={(val) => onSearchChange(val)}
-          allowClear
         />
       </Space>
 
@@ -167,6 +171,9 @@ export default function SecretTable({
         columns={columns}
         rowKey="uuid"
         loading={isLoading}
+        locale={{
+          emptyText: <EmptyState description="No secrets found" hint="Create your first secret to get started!" />,
+        }}
         pagination={{
           current: page,
           pageSize,

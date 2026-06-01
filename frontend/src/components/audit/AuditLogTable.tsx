@@ -6,12 +6,11 @@ import { useMemo, useState } from 'react';
 import { Table, Tag, Input, Select, DatePicker, Space, Tooltip, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import type { AuditLogResponse, AuditAction } from '@/types/audit';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useAuditByOrg } from '@/hooks/useAuditLog';
-
-dayjs.extend(relativeTime);
+import EmptyState from '@/components/common/EmptyState';
+import { formatDateFull } from '@/utils/formatters';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -124,8 +123,8 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
         dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf(),
       defaultSortOrder: 'descend' as const,
       render: (val: string) => (
-        <Tooltip title={dayjs(val).format('YYYY-MM-DD HH:mm:ss')}>
-          <Text>{dayjs(val).format('YYYY-MM-DD HH:mm')}</Text>
+        <Tooltip title={formatDateFull(val)}>
+          <Text>{formatDateFull(val)}</Text>
         </Tooltip>
       ),
     },
@@ -222,6 +221,9 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
         columns={columns}
         dataSource={filtered}
         loading={isLoading}
+        locale={{
+          emptyText: <EmptyState description="No audit log entries found" hint="Audit events will appear here as actions are performed." />,
+        }}
         pagination={{
           current: page,
           pageSize,

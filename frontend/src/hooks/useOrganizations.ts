@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useQuery } from '@tanstack/react-query';
-import { getMembershipsByOrganization } from '@/api/memberships.api';
+import { getMembersByOrg } from '@/api/memberships.api';
 import type { MembershipResponse } from '@/types/organization';
 
 /**
@@ -21,7 +21,7 @@ export function useOrganizations(userId: string | undefined) {
       if (!userId) return [];
       // TODO: replace with a user-scoped endpoint when available.
       // For now we fetch memberships for a "personal" org derived from userId.
-      return getMembershipsByOrganization(userId);
+      return getMembersByOrg(userId);
     },
     enabled: Boolean(userId),
     staleTime: 60_000,

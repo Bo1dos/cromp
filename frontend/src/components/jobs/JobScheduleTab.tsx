@@ -10,7 +10,6 @@ import {
   Space,
   Spin,
   Empty,
-  Modal,
   Typography,
 } from 'antd';
 import {
@@ -18,14 +17,10 @@ import {
   EditOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
 import { useSchedule, useDeleteSchedule } from '@/hooks/useSchedules';
 import ScheduleForm from '@/components/jobs/ScheduleForm';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import ConfirmModal from '@/components/common/ConfirmModal';
+import { formatDateWithTz, formatDateFull } from '@/utils/formatters';
 
 const { Text } = Typography;
 
@@ -42,19 +37,18 @@ export default function JobScheduleTab({ jobUuid }: JobScheduleTabProps) {
   const hasSchedule = !!schedule;
 
   // ---- Format nextRunAt with timezone --------------------------------
-  const formatDate = (dateStr: string | undefined, tz: string) => {
+  const renderDate = (dateStr: string | undefined, tz: string) => {
     if (!dateStr) return <Text type="secondary">—</Text>;
-    return <Text>{dayjs(dateStr).tz(tz).format('MMMM D, YYYY HH:mm [UTC]Z')}</Text>;
+    return <Text>{formatDateWithTz(dateStr, tz)}</Text>;
   };
 
   // ---- Delete handler ------------------------------------------------
   const handleDelete = () => {
-    Modal.confirm({
+    ConfirmModal.show({
       title: 'Remove schedule?',
       content: 'The job will stop running on a schedule. This action can be undone by adding a new schedule.',
+      danger: true,
       okText: 'Remove',
-      okType: 'danger',
-      cancelText: 'Cancel',
       onOk: () => deleteMutation.mutate(),
     });
   };
@@ -104,7 +98,7 @@ export default function JobScheduleTab({ jobUuid }: JobScheduleTabProps) {
         </Descriptions.Item>
 
         <Descriptions.Item label="Next Run">
-          {formatDate(schedule.nextRunAt, schedule.timezone)}
+          {renderDate(schedule.nextRunAt, schedule.timezone)}
         </Descriptions.Item>
 
         <Descriptions.Item label="Status">
@@ -114,11 +108,11 @@ export default function JobScheduleTab({ jobUuid }: JobScheduleTabProps) {
         </Descriptions.Item>
 
         <Descriptions.Item label="Created">
-          {dayjs(schedule.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+          {formatDateFull(schedule.createdAt)}
         </Descriptions.Item>
 
         <Descriptions.Item label="Updated">
-          {dayjs(schedule.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+          {formatDateFull(schedule.updatedAt)}
         </Descriptions.Item>
       </Descriptions>
 

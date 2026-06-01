@@ -133,8 +133,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     queryClient.clear();
-    localStorage.removeItem(USER_ID_KEY);
-    localStorage.removeItem('X-Organization-ID');
+    // Clear all auth-related localStorage keys but preserve theme preference
+    const theme = localStorage.getItem('caas-theme');
+    localStorage.clear();
+    if (theme) {
+      localStorage.setItem('caas-theme', theme);
+    }
     setUser(null);
     navigate('/login', { replace: true });
   }, [navigate, queryClient]);

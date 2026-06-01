@@ -1,156 +1,62 @@
 // ---------------------------------------------------------------------------
-// AnalyticsPage — main analytics dashboard
+// AnalyticsPage — execution analytics dashboard
 // ---------------------------------------------------------------------------
 
-import { useState, useCallback } from 'react';
-import { Row, Col, Tabs, Select, Typography, Space, Card, Alert } from 'antd';
-import {
-  useSummary,
-  usePredictions,
-  useAnomalies,
-  useTimeSeries,
-  useDurationDistribution,
-} from '@/hooks/useAnalytics';
-import { useOrganization } from '@/hooks/useOrganization';
+import { Row, Col, Card } from 'antd';
+import PageHeader from '@/components/common/PageHeader';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import SummaryCards from '@/components/analytics/SummaryCards';
 import ExecutionTimeSeries from '@/components/analytics/ExecutionTimeSeries';
 import DurationDistribution from '@/components/analytics/DurationDistribution';
 import PredictionsTable from '@/components/analytics/PredictionsTable';
 import AnomaliesTable from '@/components/analytics/AnomaliesTable';
-
-const { Title } = Typography;
-
-const PERIODS = [
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: '90d', label: 'Last 90 days' },
-];
+import { useSummary, useTimeSeries, useDurationDistribution, usePredictions, useAnomalies } from '@/hooks/useAnalytics';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export default function AnalyticsPage() {
   const { activeOrganization } = useOrganization();
   const orgId = activeOrganization?.uuid ?? '';
 
-  const [period, setPeriod] = useState('7d');
-  const [activeTab, setActiveTab] = useState('predictions');
+  const { data: summary, isLoading: summaryLoading } = useSummary(orgId, '7d');
+  const { data: timeSeries, isLoading: tsLoading } = useTimeSeries(orgId, '7d');
+  const { data: distribution, isLoading: distLoading } = useDurationDistribution(orgId);
+  const { data: predictions, isLoading: predLoading } = usePredictions(orgId);
+  const { data: anomalies, isLoading: anomLoading } = useAnomalies(orgId, '', '');
 
-  const fromDate = new Date(
-    Date.now() -
-      (period === '30d' ? 30 : period === '90d' ? 90 : 7) * 86400000,
-  ).toISOString();
-  const toDate = new Date().toISOString();
+  const isLoading = summaryLoading || tsLoading || distLoading;
 
-  // Queries
-  const {
-    data: summary,
-    isLoading: summaryLoading,
-    isError: summaryError,
-  } = useSummary(orgId, period);
-
-  const {
-    data: predictions,
-    isLoading: predLoading,
-  } = usePredictions(orgId);
-
-  const {
-    data: anomalies,
-    isLoading: anomLoading,
-  } = useAnomalies(orgId, fromDate, toDate);
-
-  const {
-    data: timeSeries,
-    isLoading: tsLoading,
-  } = useTimeSeries(orgId, period);
-
-  const {
-    data: durationDist,
-    isLoading: ddLoading,
-  } = useDurationDistribution(orgId);
-
-  const handlePeriodChange = useCallback((val: string) => {
-    setPeriod(val);
-  }, []);
-
-  const handleTabChange = useCallback((key: string) => {
-    setActiveTab(key);
-  }, []);
+  if (isLoading) {
+    return <LoadingSpinner tip="Loading analytics…" minHeight={400} />;
+  }
 
   return (
-    <div style={{ padding: '0 0 24px' }}>
-      {/* ---- Header ---- */}
-      <Space
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 24,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <Title level={3} style={{ margin: 0 }}>
-          Analytics
-        </Title>
-        <Select
-          value={period}
-          onChange={handlePeriodChange}
-          style={{ width: 160 }}
-          options={PERIODS}
-        />
-      </Space>
+    <div>
+      <PageHeader
+        title="Analytics"
+        breadcrumbs={[{ title: 'Dashboard' }, { title: 'Analytics' }]}
+      />
 
-      {/* ---- Error banner ---- */}
-      {summaryError && (
-        <Alert
-          message="Failed to load summary data"
-          type="error"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-      )}
+      <SummaryCards summary={summary!} />
 
-      {/* ---- Summary Cards ---- */}
-      {summary && (
-        <SummaryCards summary={summary} loading={summaryLoading} />
-      )}
-
-      {/* ---- Charts Row ---- */}
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={12}>
-          <ExecutionTimeSeries data={timeSeries} loading={tsLoading} />
+          <Card title="Execution Time Series">
+            <ExecutionTimeSeries data={timeSeries ?? []} />
+          </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <DurationDistribution data={durationDist} loading={ddLoading} />
+          <Card title="Duration Distribution">
+            <DurationDistribution data={distribution ?? []} />
+          </Card>
         </Col>
       </Row>
 
-      {/* ---- Tabs: Predictions / Anomalies ---- */}
-      <Card style={{ marginTop: 24 }} bodyStyle={{ paddingTop: 0 }}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={[
-            {
-              key: 'predictions',
-              label: `Predictions${predictions ? ` (${predictions.predictions.length})` : ''}`,
-              children: (
-                <PredictionsTable
-                  data={predictions?.predictions}
-                  loading={predLoading}
-                />
-              ),
-            },
-            {
-              key: 'anomalies',
-              label: `Anomalies${anomalies ? ` (${anomalies.anomalies.length})` : ''}`,
-              children: (
-                <AnomaliesTable
-                  data={anomalies?.anomalies}
-                  loading={anomLoading}
-                />
-              ),
-            },
-          ]}
-        />
+      <Card title="ML Predictions" style={{ marginTop: 24 }}>
+        <PredictionsTable data={predictions?.predictions ?? []} loading={predLoading} />
+      </Card>
+
+      <Card title="Anomalies" style={{ marginTop: 24 }}>
+        <AnomaliesTable data={anomalies?.anomalies ?? []} loading={anomLoading} />
       </Card>
     </div>
   );

@@ -4,7 +4,6 @@
 
 import { Table } from 'antd';
 import dayjs from 'dayjs';
-import type { SecretVersionResponse } from '@/types/secret';
 import { useSecretVersions } from '@/hooks/useSecrets';
 
 interface SecretVersionListProps {
@@ -12,7 +11,7 @@ interface SecretVersionListProps {
 }
 
 export default function SecretVersionList({ secretUuid }: SecretVersionListProps) {
-  const { data: versions, isLoading, isError } = useSecretVersions(secretUuid);
+  const { data: versions, isLoading } = useSecretVersions(secretUuid);
 
   const columns = [
     {

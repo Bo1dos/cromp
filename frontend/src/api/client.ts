@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { notification } from 'antd';
 
 // ---------------------------------------------------------------------------
 // Module-level org ID — updated by OrganizationContext (not localStorage)
@@ -38,30 +39,62 @@ apiClient.interceptors.request.use(
 );
 
 // ---------------------------------------------------------------------------
-// Response interceptor — global auth / error handling
+// Response interceptor — global auth / error handling with notifications
 // ---------------------------------------------------------------------------
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    // Prevent duplicate notifications for the same error
+    // (some hooks already show their own messages for specific mutations)
+    const alreadyHandled =
+      error.config?.headers?.['X-Error-Handled'] === 'true';
+
     if (error.response) {
       const { status } = error.response;
 
       switch (status) {
         case 401:
-          // Not authenticated → redirect to login
-          window.location.href = '/login';
+          if (!alreadyHandled) {
+            notification.error({
+              message: 'Session expired',
+              description: 'Redirecting to login…',
+              duration: 3,
+            });
+          }
+          // Redirect after short delay so the notification is visible
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
           break;
         case 403:
-          console.error('[API] Forbidden — insufficient permissions.', error);
+          if (!alreadyHandled) {
+            notification.warning({
+              message: 'Access denied',
+              description: 'You do not have permission to perform this action.',
+            });
+          }
           break;
         default:
           if (status >= 500) {
             console.error('[API] Server error.', error);
+            if (!alreadyHandled) {
+              notification.error({
+                message: 'Server error',
+                description: 'Please try again later.',
+              });
+            }
           }
           break;
       }
     } else {
+      // Network error — no response received
       console.error('[API] Network or request setup error.', error);
+      if (!alreadyHandled) {
+        notification.error({
+          message: 'Cannot connect to server',
+          description: 'Check your connection and try again.',
+        });
+      }
     }
     return Promise.reject(error);
   },

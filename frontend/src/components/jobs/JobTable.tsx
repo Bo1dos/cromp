@@ -3,20 +3,20 @@
 // ---------------------------------------------------------------------------
 
 import { useNavigate } from 'react-router-dom';
-import { Table, Select, Input, Button, Space, Modal } from 'antd';
+import { Table, Select, Button, Space } from 'antd';
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
   DeleteOutlined,
-  SearchOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import type { JobResponse, JobStatus } from '@/types/job';
 import { useJobsList, useDeleteJob, useToggleJobStatus } from '@/hooks/useJobs';
 import JobStatusBadge from './JobStatusBadge';
-
-dayjs.extend(relativeTime);
+import ConfirmModal from '@/components/common/ConfirmModal';
+import EmptyState from '@/components/common/EmptyState';
+import SearchInput from '@/components/common/SearchInput';
+import { formatRelative } from '@/utils/formatters';
 
 /** Small component that renders action buttons with proper hooks context. */
 function JobActions({ job }: { job: JobResponse }) {
@@ -25,12 +25,11 @@ function JobActions({ job }: { job: JobResponse }) {
   const isPaused = job.status === 'PAUSED';
 
   const handleDelete = () => {
-    Modal.confirm({
+    ConfirmModal.show({
       title: `Delete "${job.name}"?`,
       content: 'This action cannot be undone. The job will be permanently removed.',
+      danger: true,
       okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
       onOk: () => deleteMutation.mutate(job.uuid),
     });
   };
@@ -108,6 +107,7 @@ export default function JobTable({
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
+      sorter: (a: JobResponse, b: JobResponse) => a.name.localeCompare(b.name),
       render: (_: string, record: JobResponse) => (
         <Button type="link" style={{ padding: 0 }} onClick={() => navigate(`/dashboard/jobs/${record.uuid}`)}>
           {record.name}
@@ -119,6 +119,12 @@ export default function JobTable({
       dataIndex: 'status',
       key: 'status',
       width: 120,
+      filters: [
+        { text: 'Active', value: 'ACTIVE' },
+        { text: 'Paused', value: 'PAUSED' },
+        { text: 'Disabled', value: 'DISABLED' },
+      ],
+      onFilter: (value: any, record: JobResponse) => record.status === value,
       render: (status: JobStatus) => <JobStatusBadge status={status} />,
     },
     {
@@ -135,10 +141,13 @@ export default function JobTable({
       dataIndex: 'lastExecutionAt',
       key: 'lastExecutionAt',
       width: 160,
+      sorter: (a: JobResponse, b: JobResponse) =>
+        (a.lastExecutionAt ? dayjs(a.lastExecutionAt).valueOf() : 0) -
+        (b.lastExecutionAt ? dayjs(b.lastExecutionAt).valueOf() : 0),
       render: (date: string | undefined) =>
         date ? (
           <span title={dayjs(date).format('YYYY-MM-DD HH:mm:ss')}>
-            {dayjs(date).fromNow()}
+            {formatRelative(date)}
           </span>
         ) : (
           <span style={{ color: '#999' }}>—</span>
@@ -167,14 +176,10 @@ export default function JobTable({
             { label: 'Disabled', value: 'DISABLED' },
           ]}
         />
-        <Input.Search
+        <SearchInput
+          value={search ?? ''}
+          onChange={onSearchChange}
           placeholder="Search by name…"
-          prefix={<SearchOutlined />}
-          style={{ width: 260 }}
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          onSearch={(val) => onSearchChange(val)}
-          allowClear
         />
       </Space>
 
@@ -183,6 +188,9 @@ export default function JobTable({
         columns={columns}
         rowKey="uuid"
         loading={isLoading}
+        locale={{
+          emptyText: <EmptyState description="No jobs found" hint="Create your first job to get started!" />,
+        }}
         pagination={{
           current: page,
           pageSize,

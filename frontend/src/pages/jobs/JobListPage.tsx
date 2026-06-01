@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// JobListPage — list all jobs with table, filters & create button
+// JobListPage — list all jobs with filters, search, and create button
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';
@@ -27,7 +27,11 @@ export default function JobListPage() {
         title="Jobs"
         breadcrumbs={[{ title: 'Dashboard' }, { title: 'Jobs' }]}
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/dashboard/jobs/new')}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/dashboard/jobs/new')}
+          >
             Create Job
           </Button>
         }

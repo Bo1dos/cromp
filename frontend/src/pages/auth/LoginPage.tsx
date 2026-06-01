@@ -2,6 +2,7 @@
 // LoginPage — email / password authentication
 // ---------------------------------------------------------------------------
 
+import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Button, Form, Input, Typography } from 'antd';
 import { MailOutlined, LockOutlined } from '@ant-design/icons';
@@ -18,6 +19,7 @@ interface LoginFormValues {
 export default function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth();
   const [form] = Form.useForm<LoginFormValues>();
+  const [submitting, setSubmitting] = useState(false);
 
   // Already authenticated — skip to organisation selection
   if (!isLoading && isAuthenticated) {
@@ -25,7 +27,12 @@ export default function LoginPage() {
   }
 
   const handleFinish = async (values: LoginFormValues) => {
-    await login(values.email, values.password);
+    setSubmitting(true);
+    try {
+      await login(values.email, values.password);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -72,7 +79,7 @@ export default function LoginPage() {
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 12 }}>
-            <Button type="primary" htmlType="submit" block size="large">
+            <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
               Sign In
             </Button>
           </Form.Item>

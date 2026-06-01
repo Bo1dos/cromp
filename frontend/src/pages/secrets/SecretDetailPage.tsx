@@ -4,13 +4,15 @@
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Descriptions, Tag, Spin, Space, Modal, Typography } from 'antd';
+import { useParams } from 'react-router-dom';
+import { Button, Descriptions, Tag, Space, Typography } from 'antd';
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import PageHeader from '@/components/common/PageHeader';
 import SecretVersionList from '@/components/secrets/SecretVersionList';
 import RotateSecretModal from '@/components/secrets/RotateSecretModal';
+import ConfirmModal from '@/components/common/ConfirmModal';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatDateFull } from '@/utils/formatters';
 import { useSecretDetail, useDeleteSecret } from '@/hooks/useSecrets';
 import type { SecretScope } from '@/types/secret';
 
@@ -23,7 +25,6 @@ const SCOPE_CONFIG: Record<SecretScope, { color: string; label: string }> = {
 
 export default function SecretDetailPage() {
   const { secretUuid } = useParams<{ secretUuid: string }>();
-  const navigate = useNavigate();
   const [rotateModalOpen, setRotateModalOpen] = useState(false);
 
   const { data: secret, isLoading, isError } = useSecretDetail(secretUuid!);
@@ -31,11 +32,7 @@ export default function SecretDetailPage() {
 
   // ---- Loading / Error states ------------------------------------------
   if (isLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingSpinner tip="Loading secret details…" />;
   }
 
   if (isError || !secret) {
@@ -53,13 +50,12 @@ export default function SecretDetailPage() {
 
   // ---- Actions ----------------------------------------------------------
   const handleDelete = () => {
-    Modal.confirm({
+    ConfirmModal.show({
       title: `Delete "${secret.name}"?`,
       content:
         'This action cannot be undone. The secret will be permanently removed and any jobs relying on it will fail.',
+      danger: true,
       okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
       onOk: () => deleteMutation.mutate(secret.uuid),
     });
   };
@@ -109,10 +105,10 @@ export default function SecretDetailPage() {
         </Descriptions.Item>
         <Descriptions.Item label="Versions">{secret.versionCount}</Descriptions.Item>
         <Descriptions.Item label="Created">
-          {dayjs(secret.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+          {formatDateFull(secret.createdAt)}
         </Descriptions.Item>
         <Descriptions.Item label="Updated" span={2}>
-          {dayjs(secret.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+          {formatDateFull(secret.updatedAt)}
         </Descriptions.Item>
       </Descriptions>
 

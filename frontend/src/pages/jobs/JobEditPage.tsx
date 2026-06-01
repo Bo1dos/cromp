@@ -3,8 +3,8 @@
 // ---------------------------------------------------------------------------
 
 import { useParams } from 'react-router-dom';
-import { Spin } from 'antd';
 import PageHeader from '@/components/common/PageHeader';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import JobForm from '@/components/jobs/JobForm';
 import { useJobDetail, useUpdateJob } from '@/hooks/useJobs';
 import type { CreateJobRequest } from '@/types/job';
@@ -15,11 +15,7 @@ export default function JobEditPage() {
   const updateMutation = useUpdateJob(jobUuid!);
 
   if (isLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingSpinner tip="Loading job…" />;
   }
 
   if (isError || !job) {

@@ -4,17 +4,19 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Tabs, Descriptions, Tag, Spin, Space, Modal, Typography } from 'antd';
+import { Button, Tabs, Descriptions, Tag, Space, Typography } from 'antd';
 import {
   EditOutlined,
   PlayCircleOutlined,
   DeleteOutlined,
   PauseCircleOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import PageHeader from '@/components/common/PageHeader';
 import JobStatusBadge from '@/components/jobs/JobStatusBadge';
 import JobScheduleTab from '@/components/jobs/JobScheduleTab';
+import ConfirmModal from '@/components/common/ConfirmModal';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatDateFull } from '@/utils/formatters';
 import {
   useJobDetail,
   useDeleteJob,
@@ -36,11 +38,7 @@ export default function JobDetailPage() {
 
   // ---- Loading / Error states ------------------------------------------
   if (isLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingSpinner tip="Loading job details…" />;
   }
 
   if (isError || !job) {
@@ -58,12 +56,11 @@ export default function JobDetailPage() {
 
   // ---- Actions ----------------------------------------------------------
   const handleDelete = () => {
-    Modal.confirm({
+    ConfirmModal.show({
       title: `Delete "${job.name}"?`,
       content: 'This action cannot be undone. The job will be permanently removed.',
+      danger: true,
       okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
       onOk: () => deleteMutation.mutate(job.uuid),
     });
   };
@@ -140,18 +137,18 @@ export default function JobDetailPage() {
               </Descriptions.Item>
 
               <Descriptions.Item label="Created">
-                {dayjs(job.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                {formatDateFull(job.createdAt)}
               </Descriptions.Item>
               <Descriptions.Item label="Updated">
-                {dayjs(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                {formatDateFull(job.updatedAt)}
               </Descriptions.Item>
 
               <Descriptions.Item label="Next Run">
-                {job.nextRunAt ? dayjs(job.nextRunAt).format('YYYY-MM-DD HH:mm:ss') : <Text type="secondary">—</Text>}
+                {job.nextRunAt ? formatDateFull(job.nextRunAt) : <Text type="secondary">—</Text>}
               </Descriptions.Item>
               <Descriptions.Item label="Last Execution">
                 {job.lastExecutionAt
-                  ? `${dayjs(job.lastExecutionAt).format('YYYY-MM-DD HH:mm:ss')}${job.lastExecutionStatus ? ` (${job.lastExecutionStatus})` : ''}`
+                  ? `${formatDateFull(job.lastExecutionAt)}${job.lastExecutionStatus ? ` (${job.lastExecutionStatus})` : ''}`
                   : <Text type="secondary">—</Text>}
               </Descriptions.Item>
 

@@ -7,12 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Select, DatePicker, Space, Tag, Typography } from 'antd';
 import { ClockCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import { useExecutionsList } from '@/hooks/useExecutions';
 import ExecutionStatusBadge from './ExecutionStatusBadge';
+import EmptyState from '@/components/common/EmptyState';
+import { formatDate, formatDuration } from '@/utils/formatters';
 import type { ExecutionResponse, ExecutionStatus, ExecutionSource } from '@/types/execution';
-
-dayjs.extend(relativeTime);
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -37,15 +36,6 @@ const SOURCE_OPTIONS: { value: ExecutionSource; label: string }[] = [
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function formatDuration(ms?: number): string {
-  if (ms == null) return '—';
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const remainSec = seconds % 60;
-  if (minutes > 0) return `${minutes}m ${remainSec}s`;
-  if (remainSec > 0) return `${remainSec}s`;
-  return `${ms}ms`;
-}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -117,7 +107,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
       width: 180,
       render: (val: string) => (
         <Text title={dayjs(val).format('YYYY-MM-DD HH:mm:ss')}>
-          {dayjs(val).format('YYYY-MM-DD HH:mm')}
+          {formatDate(val)}
         </Text>
       ),
     },
@@ -175,6 +165,9 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
         columns={columns}
         dataSource={data?.content ?? []}
         loading={isLoading}
+        locale={{
+          emptyText: <EmptyState description="No executions found" hint="Executions will appear here when jobs run." />,
+        }}
         pagination={{
           current: page + 1,
           pageSize,

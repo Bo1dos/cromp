@@ -2,7 +2,7 @@
 // AppHeader — top bar with organisation name, switcher, and user profile
 // ---------------------------------------------------------------------------
 
-import { useCallback } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { Layout, Avatar, Dropdown, Typography, Space } from 'antd';
 import {
   UserOutlined,
@@ -19,7 +19,12 @@ import OrganizationSwitcher from './OrganizationSwitcher';
 const { Header } = Layout;
 const { Text } = Typography;
 
-export default function AppHeader() {
+interface AppHeaderProps {
+  /** Optional element rendered on the far left (mobile hamburger) */
+  extraLeft?: ReactNode;
+}
+
+export default function AppHeader({ extraLeft }: AppHeaderProps) {
   const { user, logout } = useAuth();
   const { activeOrganization } = useOrganization();
   const navigate = useNavigate();
@@ -32,14 +37,14 @@ export default function AppHeader() {
     {
       key: 'profile',
       icon: <ProfileOutlined />,
-      label: 'Профиль',
+      label: 'Profile',
       onClick: () => navigate('/profile'),
     },
     { type: 'divider' },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Выход',
+      label: 'Sign Out',
       danger: true,
       onClick: handleLogout,
     },
@@ -59,10 +64,13 @@ export default function AppHeader() {
         justifyContent: 'space-between',
       }}
     >
-      {/* Left — organisation name */}
-      <Text strong style={{ fontSize: 16 }}>
-        {orgName}
-      </Text>
+      {/* Left — hamburger (mobile) + organisation name */}
+      <Space>
+        {extraLeft}
+        <Text strong style={{ fontSize: 16 }}>
+          {orgName}
+        </Text>
+      </Space>
 
       {/* Right — organisation switcher + user profile */}
       <Space size={16}>
@@ -79,7 +87,7 @@ export default function AppHeader() {
               src={user?.avatarUrl}
               alt={user?.name}
             />
-            <Text>{user?.name ?? 'Пользователь'}</Text>
+            <Text>{user?.name ?? 'User'}</Text>
           </Space>
         </Dropdown>
       </Space>

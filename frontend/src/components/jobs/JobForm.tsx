@@ -89,7 +89,7 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
 
   const handleNext = async () => {
     try {
-      const values = await form.validateFields();
+      await form.validateFields();
       form.setFieldValue('step', currentStep + 1);
     } catch {
       // validation failed

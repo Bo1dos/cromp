@@ -116,7 +116,7 @@ export function useDeleteJob() {
 export function useToggleJobStatus(uuid: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<JobResponse, Error, 'ENABLED' | 'DISABLED'>({
+  return useMutation<JobResponse, Error, 'ENABLED' | 'DISABLED', { previous: JobResponse | undefined }>({
     mutationFn: (status) => jobsApi.toggleJobStatus(uuid, status),
     onMutate: async (newStatus) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.JOB, uuid] });

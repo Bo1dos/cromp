@@ -2,9 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntdApp } from 'antd';
 
 import { router } from '@/router';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import '@/styles/global.css';
 
 // ---------------------------------------------------------------------------
@@ -35,10 +36,14 @@ const themeConfig = {
 // ---------------------------------------------------------------------------
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={themeConfig}>
-        <RouterProvider router={router} />
-      </ConfigProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ConfigProvider theme={themeConfig}>
+          <AntdApp>
+            <RouterProvider router={router} />
+          </AntdApp>
+        </ConfigProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

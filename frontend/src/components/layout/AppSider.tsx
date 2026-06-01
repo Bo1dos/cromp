@@ -19,7 +19,14 @@ import { isOwnerOrAdmin, isAdmin } from '@/utils/permissions';
 
 const { Sider } = Layout;
 
-export default function AppSider() {
+interface AppSiderProps {
+  /** When true, renders without the Sider wrapper (used inside Drawer) */
+  isDrawer?: boolean;
+  /** Called after navigation (to close mobile drawer) */
+  onNavigate?: () => void;
+}
+
+export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeRole } = useOrganization();
@@ -71,29 +78,19 @@ export default function AppSider() {
 
   /** Determine the selected key based on the current pathname */
   const selectedKey = useMemo(() => {
-    // Match the most specific path first
     const matched = menuItems.find((item) =>
       location.pathname.startsWith(item.key),
     );
     return matched?.key ?? '/dashboard/jobs';
   }, [location.pathname, menuItems]);
 
-  return (
-    <Sider
-      width={240}
-      collapsible
-      breakpoint="lg"
-      theme="dark"
-      style={{
-        overflow: 'auto',
-        height: '100vh',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        bottom: 0,
-      }}
-    >
-      {/* Logo */}
+  const handleClick = ({ key }: { key: string }) => {
+    navigate(key);
+    onNavigate?.();
+  };
+
+  const navContent = (
+    <>
       <div
         style={{
           height: 64,
@@ -119,8 +116,31 @@ export default function AppSider() {
         mode="inline"
         selectedKeys={[selectedKey]}
         items={menuItems}
-        onClick={({ key }) => navigate(key)}
+        onClick={handleClick}
       />
+    </>
+  );
+
+  if (isDrawer) {
+    return <div style={{ height: '100%' }}>{navContent}</div>;
+  }
+
+  return (
+    <Sider
+      width={240}
+      collapsible
+      breakpoint="lg"
+      theme="dark"
+      style={{
+        overflow: 'auto',
+        height: '100vh',
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        bottom: 0,
+      }}
+    >
+      {navContent}
     </Sider>
   );
 }

@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';
-import { Modal, Select, Button, Space, Spin, Typography, Empty } from 'antd';
+import { Modal, Select, Space, Spin, Typography, Empty } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import VersionDiff from './VersionDiff';
 import {
@@ -38,10 +38,6 @@ export default function VersionDiffModal({
       value: v.version,
       label: `v${v.version} — ${v.name} (${new Date(v.createdAt).toLocaleDateString()})`,
     })) ?? [];
-
-  const handleCompare = () => {
-    // Triggered automatically by useVersionCompare when v1 and v2 are set
-  };
 
   return (
     <Modal
