@@ -4,9 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.lang.reflect.Field;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,41 +67,30 @@ class ExecutorConfigTest {
 
     @Test
     @DisplayName("should wait for tasks to complete on shutdown")
-    void shouldWaitForTasksOnShutdown() {
+    void shouldWaitForTasksOnShutdown() throws Exception {
         OrchestratorProperties props = new OrchestratorProperties();
         ExecutorConfig config = new ExecutorConfig(props);
 
         ThreadPoolTaskExecutor executor = (ThreadPoolTaskExecutor) config.orchestratorTaskExecutor();
 
-        try {
-            Field field = ThreadPoolTaskExecutor.class.getDeclaredField("waitForTasksToCompleteOnShutdown");
-            field.setAccessible(true);
-            Object value = field.get(executor);
-            assertThat(value).isInstanceOf(Boolean.class);
-            assertThat((Boolean) value).isTrue();
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            // If the field is not present, fail the test with the exception
-            throw new RuntimeException(e);
-        }
+        Field waitForTasksField = ThreadPoolTaskExecutor.class.getSuperclass()
+                .getDeclaredField("waitForTasksToCompleteOnShutdown");
+        waitForTasksField.setAccessible(true);
+        assertThat((boolean) waitForTasksField.get(executor)).isTrue();
     }
 
     @Test
     @DisplayName("should have await termination seconds = 30")
-    void shouldHaveAwaitTermination30Seconds() {
+    void shouldHaveAwaitTermination30Seconds() throws Exception {
         OrchestratorProperties props = new OrchestratorProperties();
         ExecutorConfig config = new ExecutorConfig(props);
 
         ThreadPoolTaskExecutor executor = (ThreadPoolTaskExecutor) config.orchestratorTaskExecutor();
 
-        try {
-            Field field = ThreadPoolTaskExecutor.class.getDeclaredField("awaitTerminationSeconds");
-            field.setAccessible(true);
-            Object value = field.get(executor);
-            assertThat(value).isInstanceOf(Integer.class);
-            assertThat((Integer) value).isEqualTo(30);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        Field awaitTerminationSecondsField = ThreadPoolTaskExecutor.class.getSuperclass()
+                .getDeclaredField("awaitTerminationSeconds");
+        awaitTerminationSecondsField.setAccessible(true);
+        assertThat((int) awaitTerminationSecondsField.get(executor)).isEqualTo(30);
     }
 
     @Test
