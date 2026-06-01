@@ -13,6 +13,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 
 import * as authApi from '@/api/auth.api';
+import { setActiveOrgId } from '@/api/client';
 import type {
   MembershipResponse,
   OrganizationResponse,
@@ -58,18 +59,23 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     return m?.role ?? null;
   }, [activeOrganization, memberships]);
 
-  // ---- Persist active org id to localStorage ------------------------------
+  // ---- Persist active org id to localStorage + interceptor ----------------
   useEffect(() => {
     if (activeOrganization) {
       localStorage.setItem(ORG_ID_KEY, activeOrganization.uuid);
+      setActiveOrgId(activeOrganization.uuid);
     } else {
       localStorage.removeItem(ORG_ID_KEY);
+      setActiveOrgId(null);
     }
   }, [activeOrganization]);
 
   // ---- Public API ---------------------------------------------------------
   const setActiveOrganization = useCallback(
     async (org: OrganizationResponse) => {
+      // Sync interceptor immediately (before useEffect fires)
+      setActiveOrgId(org.uuid);
+
       // Inform backend about the chosen organisation (updates JWT claims)
       await authApi.selectOrganization({ organizationId: org.uuid });
       setActiveOrganizationState(org);

@@ -30,3 +30,7 @@ Thumbs.db
 .env.example
 
 tt/
+
+# Frontend dependencies
+frontend/node_modules/
+node_modules/

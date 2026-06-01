@@ -17,6 +17,7 @@ import AnalyticsPage from '@/pages/analytics/AnalyticsPage';
 import MembersPage from '@/pages/members/MembersPage';
 import AuditLogPage from '@/pages/audit/AuditLogPage';
 import NotFoundPage from '@/pages/errors/NotFoundPage';
+import RoleGuard from '@/components/auth/RoleGuard';
 
 export const router = createBrowserRouter([
   {
@@ -54,8 +55,22 @@ export const router = createBrowserRouter([
               { path: 'secrets', element: <SecretListPage /> },
               { path: 'secrets/:secretUuid', element: <SecretDetailPage /> },
               { path: 'analytics', element: <AnalyticsPage /> },
-              { path: 'members', element: <MembersPage /> },
-              { path: 'audit', element: <AuditLogPage /> },
+              {
+                path: 'members',
+                element: (
+                  <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
+                    <MembersPage />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'audit',
+                element: (
+                  <RoleGuard allowedRoles={['ADMIN']}>
+                    <AuditLogPage />
+                  </RoleGuard>
+                ),
+              },
             ],
           },
         ],

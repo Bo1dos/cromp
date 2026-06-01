@@ -1,5 +1,21 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+// ---------------------------------------------------------------------------
+// Module-level org ID — updated by OrganizationContext (not localStorage)
+// This avoids coupling Axios interceptors to React context.
+// ---------------------------------------------------------------------------
+let _activeOrgId: string | null = null;
+
+/** Called by OrganizationContext to keep the interceptor in sync. */
+export function setActiveOrgId(id: string | null) {
+  _activeOrgId = id;
+}
+
+/** Read the current org ID (used by interceptors). */
+export function getActiveOrgId(): string | null {
+  return _activeOrgId;
+}
+
 const apiClient = axios.create({
   baseURL: '/api/v1',
   withCredentials: true,
@@ -9,15 +25,12 @@ const apiClient = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Request interceptor — attaches X-Organization-ID from localStorage
-// TODO: replace localStorage read with a proper context/state once org selection
-//       is wired through React context.
+// Request interceptor — attaches X-Organization-ID from module-level state
 // ---------------------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const orgId = localStorage.getItem('X-Organization-ID');
-    if (orgId && config.headers) {
-      config.headers['X-Organization-ID'] = orgId;
+    if (_activeOrgId && config.headers) {
+      config.headers['X-Organization-ID'] = _activeOrgId;
     }
     return config;
   },
