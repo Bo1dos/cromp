@@ -56,7 +56,7 @@ export default function SecretDetailPage() {
         'This action cannot be undone. The secret will be permanently removed and any jobs relying on it will fail.',
       danger: true,
       okText: 'Delete',
-      onOk: () => deleteMutation.mutate(secret.uuid),
+      onOk: () => deleteMutation.mutate(secret.secretUuid),
     });
   };
 
@@ -94,7 +94,7 @@ export default function SecretDetailPage() {
 
       <Descriptions bordered column={2} size="small" style={{ background: '#fff', marginBottom: 24 }}>
         <Descriptions.Item label="UUID" span={2}>
-          <Text code>{secret.uuid}</Text>
+          <Text code>{secret.secretUuid}</Text>
         </Descriptions.Item>
         <Descriptions.Item label="Name">{secret.name}</Descriptions.Item>
         <Descriptions.Item label="Scope">
@@ -103,7 +103,7 @@ export default function SecretDetailPage() {
         <Descriptions.Item label="Description" span={2}>
           {secret.description || <Text type="secondary">—</Text>}
         </Descriptions.Item>
-        <Descriptions.Item label="Versions">{secret.versionCount}</Descriptions.Item>
+        <Descriptions.Item label="Versions">{secret.currentVersion}</Descriptions.Item>
         <Descriptions.Item label="Created">
           {formatDateFull(secret.createdAt)}
         </Descriptions.Item>
@@ -116,11 +116,11 @@ export default function SecretDetailPage() {
         <Typography.Title level={5} style={{ marginBottom: 16 }}>
           Version History
         </Typography.Title>
-        <SecretVersionList secretUuid={secret.uuid} />
+        <SecretVersionList secretUuid={secret.secretUuid} />
       </div>
 
       <RotateSecretModal
-        secretUuid={secret.uuid}
+        secretUuid={secret.secretUuid}
         secretName={secret.name}
         open={rotateModalOpen}
         onClose={() => setRotateModalOpen(false)}

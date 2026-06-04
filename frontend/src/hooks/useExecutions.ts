@@ -21,7 +21,7 @@ import { useOrganization } from './useOrganization';
 // ---------------------------------------------------------------------------
 export function useExecutionsList(filters: ListExecutionsParams) {
   const { activeOrganization } = useOrganization();
-  const orgId = activeOrganization?.uuid;
+  const orgId = activeOrganization?.orgUuid;
 
   return useQuery<PagedResponse<ExecutionResponse>, Error>({
     queryKey: [QUERY_KEYS.EXECUTIONS, orgId, filters],
@@ -37,7 +37,7 @@ export function useExecutionsList(filters: ListExecutionsParams) {
 // ---------------------------------------------------------------------------
 export function useExecutionDetail(executionId: string) {
   const { activeOrganization } = useOrganization();
-  const orgId = activeOrganization?.uuid;
+  const orgId = activeOrganization?.orgUuid;
 
   return useQuery<ExecutionDetailResponse, Error>({
     queryKey: ['execution', executionId],
@@ -60,7 +60,7 @@ export function useExecutionDetail(executionId: string) {
 export function useCancelExecution(executionId: string) {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganization();
-  const orgId = activeOrganization?.uuid;
+  const orgId = activeOrganization?.orgUuid;
 
   return useMutation<void, Error, void, { previous?: ExecutionDetailResponse }>({
     mutationFn: () => executionsApi.cancelExecution(orgId!, executionId),
@@ -95,7 +95,7 @@ export function useCancelExecution(executionId: string) {
 // ---------------------------------------------------------------------------
 export function useAttempts(executionId: string) {
   const { activeOrganization } = useOrganization();
-  const orgId = activeOrganization?.uuid;
+  const orgId = activeOrganization?.orgUuid;
 
   return useQuery<AttemptResponse[], Error>({
     queryKey: ['attempts', executionId],
@@ -109,7 +109,7 @@ export function useAttempts(executionId: string) {
 // ---------------------------------------------------------------------------
 export function useArtifacts(executionId: string) {
   const { activeOrganization } = useOrganization();
-  const orgId = activeOrganization?.uuid;
+  const orgId = activeOrganization?.orgUuid;
 
   return useQuery<ArtifactResponse[], Error>({
     queryKey: ['artifacts', executionId],

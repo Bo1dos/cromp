@@ -21,4 +21,6 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_artifacts_execution
             tableName: execution_artifacts
-            columns: [ execution_id ]
+            columns:
+              - column:
+                  name: execution_id

@@ -29,7 +29,7 @@ function SecretActions({ secret }: { secret: SecretResponse }) {
         'This action cannot be undone. The secret will be permanently removed and any jobs relying on it will fail.',
       danger: true,
       okText: 'Delete',
-      onOk: () => deleteMutation.mutate(secret.uuid),
+      onOk: () => deleteMutation.mutate(secret.secretUuid),
     });
   };
 
@@ -42,7 +42,7 @@ function SecretActions({ secret }: { secret: SecretResponse }) {
         title="View details"
         onClick={(e) => {
           e.stopPropagation();
-          navigate(`/dashboard/secrets/${secret.uuid}`);
+          navigate(`/dashboard/secrets/${secret.secretUuid}`);
         }}
       />
       <Button
@@ -93,7 +93,7 @@ export default function SecretTable({
         <Button
           type="link"
           style={{ padding: 0 }}
-          onClick={() => navigate(`/dashboard/secrets/${record.uuid}`)}
+          onClick={() => navigate(`/dashboard/secrets/${record.secretUuid}`)}
         >
           {record.name}
         </Button>
@@ -116,11 +116,11 @@ export default function SecretTable({
     },
     {
       title: 'Versions',
-      dataIndex: 'versionCount',
-      key: 'versionCount',
+      dataIndex: 'currentVersion',
+      key: 'currentVersion',
       width: 100,
       align: 'center' as const,
-      sorter: (a: SecretResponse, b: SecretResponse) => a.versionCount - b.versionCount,
+      sorter: (a: SecretResponse, b: SecretResponse) => a.currentVersion - b.currentVersion,
     },
     {
       title: 'Created At',

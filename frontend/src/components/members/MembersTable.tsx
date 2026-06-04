@@ -32,22 +32,22 @@ function MemberActions({ membership }: { membership: MembershipResponse }) {
   const changeRole = useChangeRole();
   const removeMember = useRemoveMember();
 
-  const isOwner = membership.role === 'OWNER';
+  const isOwner = membership.roleName === 'OWNER';
   const canChange = !isOwner && (activeRole === 'OWNER' || activeRole === 'ADMIN');
   const canRemove = !isOwner && (activeRole === 'OWNER' || activeRole === 'ADMIN');
 
   const handleRoleChange = (role: OrganizationRole) => {
-    changeRole.mutate({ membershipUuid: membership.uuid, role });
+    changeRole.mutate({ membershipUuid: membership.membershipUuid, role });
   };
 
   const handleRemove = () => {
-    const displayName = membership.user?.name ?? membership.user?.email ?? 'this member';
+    const displayName = membership.userName || membership.userEmail || 'this member';
     ConfirmModal.show({
       title: `Remove ${displayName}?`,
       content: `Are you sure you want to remove "${displayName}" from the organization?`,
       danger: true,
       okText: 'Remove',
-      onOk: () => removeMember.mutate(membership.uuid),
+      onOk: () => removeMember.mutate(membership.membershipUuid),
     });
   };
 
@@ -57,7 +57,7 @@ function MemberActions({ membership }: { membership: MembershipResponse }) {
         <Select
           size="small"
           style={{ width: 100 }}
-          value={membership.role === 'ADMIN' || membership.role === 'MEMBER' ? membership.role : undefined}
+          value={membership.roleName === 'ADMIN' || membership.roleName === 'MEMBER' ? membership.roleName : undefined}
           placeholder="Role"
           onChange={handleRoleChange}
           options={ROLE_OPTIONS}
@@ -98,13 +98,12 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
           <Avatar
             size={32}
             icon={<UserOutlined />}
-            src={record.user?.avatarUrl}
           />
           <div>
-            <Text strong>{record.user?.name ?? '—'}</Text>
+            <Text strong>{record.userName || '—'}</Text>
             <br />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.user?.email ?? record.userUuid}
+              {record.userEmail || record.userUuid}
             </Text>
           </div>
         </Space>
@@ -112,12 +111,13 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
     },
     {
       title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
+      dataIndex: 'roleName',
+      key: 'roleName',
       width: 120,
-      render: (role: OrganizationRole) => {
+      render: (roleName: string) => {
+        const role = roleName as OrganizationRole;
         const cfg = ROLE_CONFIG[role] ?? { color: 'default' };
-        return <Tag color={cfg.color}>{role}</Tag>;
+        return <Tag color={cfg.color}>{roleName}</Tag>;
       },
     },
     {
@@ -142,7 +142,7 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
     <Table
       columns={columns}
       dataSource={members}
-      rowKey="uuid"
+      rowKey="membershipUuid"
       loading={isLoading}
       locale={{
         emptyText: <EmptyState description="No members" hint="Invite team members to collaborate." />,

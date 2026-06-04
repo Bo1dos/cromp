@@ -5,11 +5,11 @@
 export type SecretScope = 'JOB' | 'ORGANIZATION';
 
 export interface SecretResponse {
-  uuid: string;
+  secretUuid: string;
   name: string;
   description?: string;
   scope: SecretScope;
-  versionCount: number;
+  currentVersion: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,8 +17,9 @@ export interface SecretResponse {
 /** Version metadata — NEVER contains the secret value */
 export interface SecretVersionResponse {
   version: number;
+  isActive: boolean;
   createdAt: string;
-  createdBy: string;
+  deprecatedAt?: string;
 }
 
 export interface CreateSecretRequest {

@@ -15,6 +15,7 @@ const ROLE_COLORS: Record<OrganizationRole, string> = {
   OWNER: 'red',
   ADMIN: 'orange',
   MEMBER: 'blue',
+  VIEWER: 'green',
 };
 
 export default function OrganizationSwitcher() {
@@ -24,7 +25,7 @@ export default function OrganizationSwitcher() {
   const handleChange = useCallback(
     async (orgId: string) => {
       const membership = memberships.find(
-        (m) => m.organization.uuid === orgId,
+        (m) => m.organization.orgUuid === orgId,
       );
       if (!membership) return;
 
@@ -35,25 +36,29 @@ export default function OrganizationSwitcher() {
 
   return (
     <Select
-      value={activeOrganization?.uuid ?? undefined}
+      value={activeOrganization?.orgUuid ?? undefined}
       onChange={handleChange}
       style={{ minWidth: 200 }}
       placeholder="Выберите организацию"
+      loading={memberships.length === 0 && !!activeOrganization}
       options={memberships.map((m) => ({
-        value: m.organization.uuid,
-        label: (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <Text strong>{m.organization.name}</Text>
-            <Tag color={ROLE_COLORS[m.role]}>{m.role}</Tag>
-          </div>
-        ),
+        value: m.organization.orgUuid,
+        label: m.organization.name,
       }))}
+      optionRender={(option) => (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <Text strong>{option.label}</Text>
+          <Tag color={ROLE_COLORS[memberships.find(m => m.organization.orgUuid === option.value)?.roleName as keyof typeof ROLE_COLORS] ?? 'default'}>
+            {memberships.find(m => m.organization.orgUuid === option.value)?.roleName}
+          </Tag>
+        </div>
+      )}
     />
   );
 }

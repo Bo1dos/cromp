@@ -25,6 +25,7 @@ public class ExecutionArtifactJpaEntity {
     private Long executionId;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "kind", nullable = false, columnDefinition = "artifact_kind")
     private ArtifactKind kind;
 

@@ -58,7 +58,7 @@ class MembershipApplicationServiceTest {
                 userRepository,
                 organizationRepository,
                 roleRepository,
-                new MembershipApiMapper(),
+                new MembershipApiMapper(new com.cromp.iam.api.mapper.OrganizationApiMapper()),
                 currentActorPort,
                 permissionCheckerPort
         );
@@ -98,10 +98,10 @@ class MembershipApplicationServiceTest {
         when(currentActorPort.currentUserId()).thenReturn(Optional.of(1L));
         when(membershipRepository.findByMembershipUuid(membershipUuid)).thenReturn(Optional.of(membership));
         when(permissionCheckerPort.hasPermission(1L, 20L, "org:update")).thenReturn(true);
-        when(roleRepository.findByName(UserRole.DEVELOPER)).thenReturn(Optional.of(Role.reconstitute(40L, UserRole.DEVELOPER, "Developer")));
+        when(roleRepository.findByName(UserRole.MEMBER)).thenReturn(Optional.of(Role.reconstitute(40L, UserRole.MEMBER, "Member")));
         when(membershipRepository.save(membership)).thenReturn(membership);
 
-        var response = service.changeRole(membershipUuid, new ChangeMembershipRoleRequest(UserRole.DEVELOPER));
+        var response = service.changeRole(membershipUuid, new ChangeMembershipRoleRequest(UserRole.MEMBER));
 
         assertThat(response.updatedAt()).isAfter(Instant.parse("2024-01-01T00:00:00Z"));
     }

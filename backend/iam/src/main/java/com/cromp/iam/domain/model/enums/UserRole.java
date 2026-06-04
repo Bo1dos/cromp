@@ -4,5 +4,6 @@ public enum UserRole {
     OWNER,
     ADMIN,
     DEVELOPER,
+    MEMBER,
     VIEWER
 }

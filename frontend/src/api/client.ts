@@ -2,10 +2,11 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { notification } from 'antd';
 
 // ---------------------------------------------------------------------------
-// Module-level org ID — updated by OrganizationContext (not localStorage)
+// Module-level state — updated by AuthContext / OrganizationContext
 // This avoids coupling Axios interceptors to React context.
 // ---------------------------------------------------------------------------
 let _activeOrgId: string | null = null;
+let _accessToken: string | null = localStorage.getItem('caas-access-token');
 
 /** Called by OrganizationContext to keep the interceptor in sync. */
 export function setActiveOrgId(id: string | null) {
@@ -17,6 +18,21 @@ export function getActiveOrgId(): string | null {
   return _activeOrgId;
 }
 
+/** Called by AuthContext after login/register/select-org to update the token. */
+export function setAccessToken(token: string | null) {
+  _accessToken = token;
+  if (token) {
+    localStorage.setItem('caas-access-token', token);
+  } else {
+    localStorage.removeItem('caas-access-token');
+  }
+}
+
+/** Read the current access token (used by interceptors). */
+export function getAccessToken(): string | null {
+  return _accessToken;
+}
+
 const apiClient = axios.create({
   baseURL: '/api/v1',
   withCredentials: true,
@@ -26,10 +42,13 @@ const apiClient = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Request interceptor — attaches X-Organization-ID from module-level state
+// Request interceptor — attaches Authorization & X-Organization-ID headers
 // ---------------------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    if (_accessToken && config.headers) {
+      config.headers['Authorization'] = `Bearer ${_accessToken}`;
+    }
     if (_activeOrgId && config.headers) {
       config.headers['X-Organization-ID'] = _activeOrgId;
     }

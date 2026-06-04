@@ -13,7 +13,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 
 import * as authApi from '@/api/auth.api';
-import { setActiveOrgId } from '@/api/client';
+import { setAccessToken, setActiveOrgId } from '@/api/client';
 import type {
   MembershipResponse,
   OrganizationResponse,
@@ -54,16 +54,16 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const activeRole = useMemo<OrganizationRole | null>(() => {
     if (!activeOrganization) return null;
     const m = memberships.find(
-      (mb) => mb.organization.uuid === activeOrganization.uuid,
+      (mb) => mb.organization.orgUuid === activeOrganization.orgUuid,
     );
-    return m?.role ?? null;
+    return (m?.roleName as OrganizationRole) ?? null;
   }, [activeOrganization, memberships]);
 
   // ---- Persist active org id to localStorage + interceptor ----------------
   useEffect(() => {
     if (activeOrganization) {
-      localStorage.setItem(ORG_ID_KEY, activeOrganization.uuid);
-      setActiveOrgId(activeOrganization.uuid);
+      localStorage.setItem(ORG_ID_KEY, activeOrganization.orgUuid);
+      setActiveOrgId(activeOrganization.orgUuid);
     } else {
       localStorage.removeItem(ORG_ID_KEY);
       setActiveOrgId(null);
@@ -74,10 +74,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const setActiveOrganization = useCallback(
     async (org: OrganizationResponse) => {
       // Sync interceptor immediately (before useEffect fires)
-      setActiveOrgId(org.uuid);
+      setActiveOrgId(org.orgUuid);
 
       // Inform backend about the chosen organisation (updates JWT claims)
-      await authApi.selectOrganization({ organizationId: org.uuid });
+      const response = await authApi.selectOrganization({ organizationId: String(org.id) });
+      // Store the new token (now with org-scoped permissions)
+      setAccessToken(response.accessToken);
       setActiveOrganizationState(org);
       // Invalidate cached data that depends on the organisation context
       queryClient.invalidateQueries({ queryKey: ['organizations'] });

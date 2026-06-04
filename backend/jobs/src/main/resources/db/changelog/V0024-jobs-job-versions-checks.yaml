@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-job-versions-check-constraints
+      author: bo1dos
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: job_versions
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'check_config_has_url') THEN
+                  ALTER TABLE job_versions ADD CONSTRAINT check_config_has_url CHECK (jsonb_exists(config, 'url'));
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'check_config_has_method') THEN
+                  ALTER TABLE job_versions ADD CONSTRAINT check_config_has_method CHECK (jsonb_exists(config, 'method'));
+                END IF;
+              END;
+              $$ LANGUAGE plpgsql;

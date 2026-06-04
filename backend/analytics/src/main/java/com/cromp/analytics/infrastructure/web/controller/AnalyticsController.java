@@ -8,6 +8,7 @@ import com.cromp.analytics.domain.model.AnalyticsPeriod;
 import com.cromp.analytics.domain.model.AnomalyDetection;
 import com.cromp.analytics.domain.model.ExecutionSummary;
 import com.cromp.analytics.domain.model.Prediction;
+import com.cromp.iam.application.port.OrganizationLookupPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,25 +18,28 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * REST-контроллер аналитики.
  *
  * Все эндпоинты требуют права {@code analytics:read} и контекст организации.
- * возвращает 200 с пустым payload если данных нет (не 404) —
+ * Возвращает 200 с пустым payload если данных нет (не 404) —
  * отсутствие данных не ошибка, это нормальное состояние для новой организации.
  */
 @Slf4j
 @Tag(name = "Analytics", description = "Аналитика выполнения задач: сводки, прогнозы, аномалии")
 @RestController
-@RequestMapping("/api/v1/organizations/{orgId}/analytics")
+@RequestMapping("/api/v1/organizations/{orgUuid}/analytics")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
 public class AnalyticsController {
@@ -43,6 +47,13 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
     private final PredictionService predictionService;
     private final AnalyticsMapper mapper;
+    private final OrganizationLookupPort organizationLookupPort;
+
+    /** Резолвит UUID организации во внутренний Long ID, либо 404. */
+    private long resolveOrg(UUID orgUuid) {
+        return organizationLookupPort.resolveOrganizationId(orgUuid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found: " + orgUuid));
+    }
 
     // ── Summary ───────────────────────────────────────────────────────────────
 
@@ -51,26 +62,28 @@ public class AnalyticsController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Сводка (может быть пустой для новых организаций)"),
             @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
-            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read")
+            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read"),
+            @ApiResponse(responseCode = "404", description = "Организация не найдена")
     })
     @GetMapping("/executions/summary")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
     public ResponseEntity<AnalyticsDtos.SummaryResponse> getSummary(
-            @Parameter(description = "ID организации") @PathVariable Long orgId,
+            @Parameter(description = "UUID организации") @PathVariable UUID orgUuid,
             @Parameter(description = "Период: 1d, 7d, 30d, 90d (по умолчанию 7d)")
             @RequestParam(defaultValue = "7d") String period,
             @Parameter(description = "Опциональный фильтр по ID задачи")
             @RequestParam(required = false) Long jobId) {
 
+        long organizationId = resolveOrg(orgUuid);
         AnalyticsPeriod analyticsPeriod = parsePeriod(period);
 
         Optional<ExecutionSummary> summary = jobId != null
-                ? analyticsService.getSummaryByJob(orgId, jobId, analyticsPeriod)
-                : analyticsService.getSummary(orgId, analyticsPeriod);
+                ? analyticsService.getSummaryByJob(organizationId, jobId, analyticsPeriod)
+                : analyticsService.getSummary(organizationId, analyticsPeriod);
 
         return summary
                 .map(s -> ResponseEntity.ok(mapper.toSummaryResponse(s)))
-                .orElse(ResponseEntity.ok(emptysummary(orgId, jobId, period)));
+                .orElse(ResponseEntity.ok(emptysummary(organizationId, jobId, period)));
     }
 
     // ── Predictions ───────────────────────────────────────────────────────────
@@ -80,17 +93,19 @@ public class AnalyticsController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Прогнозы (может быть пустым)"),
             @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
-            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read")
+            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read"),
+            @ApiResponse(responseCode = "404", description = "Организация не найдена")
     })
     @GetMapping("/predictions")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
     public ResponseEntity<AnalyticsDtos.PredictionsResponse> getPredictions(
-            @Parameter(description = "ID организации") @PathVariable Long orgId,
+            @Parameter(description = "UUID организации") @PathVariable UUID orgUuid,
             @Parameter(description = "Опциональный фильтр по ID задачи")
             @RequestParam(required = false) Long jobId) {
 
-        List<Prediction> predictions = predictionService.getPredictions(orgId, jobId);
-        return ResponseEntity.ok(mapper.toPredictionsResponse(orgId, jobId, predictions));
+        long organizationId = resolveOrg(orgUuid);
+        List<Prediction> predictions = predictionService.getPredictions(organizationId, jobId);
+        return ResponseEntity.ok(mapper.toPredictionsResponse(organizationId, jobId, predictions));
     }
 
     // ── Anomalies ─────────────────────────────────────────────────────────────
@@ -100,12 +115,13 @@ public class AnalyticsController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список аномалий (может быть пустым)"),
             @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
-            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read")
+            @ApiResponse(responseCode = "403", description = "Нет прав analytics:read"),
+            @ApiResponse(responseCode = "404", description = "Организация не найдена")
     })
     @GetMapping("/anomalies")
     @PreAuthorize("@permissionCheckerPort.hasPermission(authentication.principal, 'analytics:read')")
     public ResponseEntity<AnalyticsDtos.AnomaliesResponse> getAnomalies(
-            @Parameter(description = "ID организации") @PathVariable Long orgId,
+            @Parameter(description = "UUID организации") @PathVariable UUID orgUuid,
             @Parameter(description = "Опциональный фильтр по ID задачи")
             @RequestParam(required = false) Long jobId,
             @Parameter(description = "Начало периода (ISO date, по умолчанию 30 дней назад)")
@@ -115,14 +131,15 @@ public class AnalyticsController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
+        long organizationId = resolveOrg(orgUuid);
         String fromStr = (from != null ? from : LocalDate.now().minusDays(30)).toString();
         String toStr   = (to   != null ? to   : LocalDate.now()).toString();
 
         List<AnomalyDetection> anomalies =
-                predictionService.getAnomalies(orgId, jobId, fromStr, toStr);
+                predictionService.getAnomalies(organizationId, jobId, fromStr, toStr);
 
         return ResponseEntity.ok(
-                mapper.toAnomaliesResponse(orgId, jobId, fromStr, toStr, anomalies));
+                mapper.toAnomaliesResponse(organizationId, jobId, fromStr, toStr, anomalies));
     }
 
     // ── Private ───────────────────────────────────────────────────────────────

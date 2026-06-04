@@ -38,6 +38,7 @@ public class ScheduleJpaEntity {
     private Instant nextRunAt;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "schedule_status")
     private ScheduleStatus status;
 

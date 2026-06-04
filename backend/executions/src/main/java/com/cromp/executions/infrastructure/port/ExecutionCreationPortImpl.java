@@ -12,14 +12,16 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Реализует контракт jobs.application.port.ExecutionCreationPort.
+ * Реализует контракты {@code jobs.application.port.ExecutionCreationPort}
+ * и {@code executions.application.port.ExecutionCreationPort}.
  * @Primary вытесняет StubExecutionCreationPort из модуля jobs.
  */
 @Component
 @Primary
 @RequiredArgsConstructor
 public class ExecutionCreationPortImpl
-        implements com.cromp.jobs.application.port.ExecutionCreationPort {
+        implements com.cromp.jobs.application.port.ExecutionCreationPort,
+                   com.cromp.executions.application.port.ExecutionCreationPort {
 
     private final ExecutionService executionService;
 

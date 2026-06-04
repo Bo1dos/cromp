@@ -19,7 +19,7 @@ export default function SelectOrganizationPage() {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   const { setActiveOrganization, refreshMemberships } = useOrganization();
-  const { data: memberships, isLoading: orgsLoading } = useOrganizations(user?.uuid);
+  const { data: memberships, isLoading: orgsLoading } = useOrganizations(user?.userUuid);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
@@ -130,7 +130,7 @@ export default function SelectOrganizationPage() {
           <>
             <Row gutter={[16, 16]}>
               {orgs.map((org) => (
-                <Col key={org.uuid} xs={24} sm={12}>
+                <Col key={org.orgUuid} xs={24} sm={12}>
                   <Card
                     hoverable
                     onClick={() => handleSelect(org)}
@@ -140,7 +140,7 @@ export default function SelectOrganizationPage() {
                     <Title level={5} style={{ margin: 0 }}>
                       {org.name}
                     </Title>
-                    <Text type="secondary">{org.slug}</Text>
+                    <Text type="secondary">{org.name}</Text>
                   </Card>
                 </Col>
               ))}

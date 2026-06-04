@@ -26,7 +26,7 @@ class ApiMappersTest {
 
     private final UserApiMapper userApiMapper = new UserApiMapper();
     private final OrganizationApiMapper organizationApiMapper = new OrganizationApiMapper();
-    private final MembershipApiMapper membershipApiMapper = new MembershipApiMapper();
+    private final MembershipApiMapper membershipApiMapper = new MembershipApiMapper(organizationApiMapper);
     private final InvitationApiMapper invitationApiMapper = new InvitationApiMapper();
     private final RolePermissionApiMapper rolePermissionApiMapper = new RolePermissionApiMapper();
     private final AuditLogApiMapper auditLogApiMapper = new AuditLogApiMapper();

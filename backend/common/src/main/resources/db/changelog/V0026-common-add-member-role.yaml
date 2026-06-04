@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-member-to-user-role-enum
+      author: bo1dos
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = 'user_role'::regtype AND enumlabel = 'MEMBER') THEN
+                  ALTER TYPE user_role ADD VALUE 'MEMBER';
+                END IF;
+              END $$;
+  - changeSet:
+      id: insert-member-role
+      author: bo1dos
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO roles (name, description) VALUES
+                ('MEMBER', 'Standard member, can create and edit jobs, view secrets')
+              ON CONFLICT (name) DO NOTHING;

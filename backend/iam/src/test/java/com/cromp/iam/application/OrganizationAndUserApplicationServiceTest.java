@@ -69,7 +69,7 @@ class OrganizationAndUserApplicationServiceTest {
                 membershipRepository,
                 roleRepository,
                 new OrganizationApiMapper(),
-                new MembershipApiMapper(),
+                new MembershipApiMapper(new com.cromp.iam.api.mapper.OrganizationApiMapper()),
                 currentActorPort,
                 permissionCheckerPort
         );

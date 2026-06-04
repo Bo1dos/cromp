@@ -8,6 +8,7 @@ import com.cromp.iam.api.service.MembershipFacade;
 import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PermissionCheckerPort;
 import com.cromp.iam.domain.model.Membership;
+import com.cromp.iam.domain.model.Organization;
 import com.cromp.iam.domain.model.Role;
 import com.cromp.iam.domain.model.User;
 import com.cromp.iam.domain.model.exceptions.DomainException;
@@ -112,16 +113,21 @@ public class MembershipApplicationService implements MembershipFacade {
     public List<MembershipResponse> getByOrganization(UUID orgUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
-        Long organizationId = organizationRepository.findByOrgUuid(orgUuid)
-                .orElseThrow(() -> new DomainException("Organization not found"))
-                .getId();
+        Organization organization = organizationRepository.findByOrgUuid(orgUuid)
+                .orElseThrow(() -> new DomainException("Organization not found"));
 
-        if (!permissionCheckerPort.isMember(currentUserId, organizationId)) {
+        if (!permissionCheckerPort.isMember(currentUserId, organization.getId())) {
             throw new SecurityException("You are not a member of this organization");
         }
 
-        return membershipRepository.findByOrganizationId(organizationId).stream()
-                .map(membershipMapper::toResponse)
+        return membershipRepository.findByOrganizationId(organization.getId()).stream()
+                .map(m -> {
+                    User member = userRepository.findById(m.getUserId()).orElse(null);
+                    Role role = roleRepository.findById(m.getRoleId()).orElse(null);
+                    return membershipMapper.toResponse(m,
+                            role != null ? role.getName().name() : null,
+                            organization, member, m.getCreatedAt());
+                })
                 .toList();
     }
 
@@ -130,16 +136,21 @@ public class MembershipApplicationService implements MembershipFacade {
     public List<MembershipResponse> getByUser(UUID userUuid) {
         Long currentUserId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));
-        Long userId = userRepository.findByUserUuid(userUuid)
-                .orElseThrow(() -> new DomainException("User not found"))
-                .getId();
+        User targetUser = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new DomainException("User not found"));
 
-        if (!currentUserId.equals(userId)) {
+        if (!currentUserId.equals(targetUser.getId())) {
             throw new SecurityException("You can only view your own memberships");
         }
 
-        return membershipRepository.findByUserId(userId).stream()
-                .map(membershipMapper::toResponse)
+        return membershipRepository.findByUserId(targetUser.getId()).stream()
+                .map(m -> {
+                    Organization org = organizationRepository.findById(m.getOrganizationId()).orElse(null);
+                    Role role = roleRepository.findById(m.getRoleId()).orElse(null);
+                    return membershipMapper.toResponse(m,
+                            role != null ? role.getName().name() : null,
+                            org, targetUser, m.getCreatedAt());
+                })
                 .toList();
     }
 }

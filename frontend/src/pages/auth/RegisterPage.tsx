@@ -82,7 +82,7 @@ export default function RegisterPage() {
             label="Password"
             rules={[
               { required: true, message: 'Please enter a password' },
-              { min: 6, message: 'Password must be at least 6 characters' },
+              { min: 8, message: 'Password must be at least 8 characters' },
             ]}
           >
             <Input.Password prefix={<LockOutlined />} placeholder="••••••" size="large" />

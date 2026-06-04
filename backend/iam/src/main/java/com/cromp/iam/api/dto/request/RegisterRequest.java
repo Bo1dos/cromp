@@ -13,8 +13,8 @@ public record RegisterRequest(
         @NotBlank @Size(min = 8, max = 255)
         @Schema(description = "Пароль (мин. 8 символов)", example = "securePassword123")
         String password,
-        @NotBlank @Size(max = 255)
-        @Schema(description = "Название организации", example = "My Company")
+        @Size(max = 255)
+        @Schema(description = "Название организации (авто-генерируется, если не указано)", example = "My Company")
         String organizationName,
         @Size(max = 150)
         @Schema(description = "Имя", example = "Иван")

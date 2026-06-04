@@ -1,9 +1,10 @@
 package com.cromp.iam.infrastructure.persistence.jpa.entity;
 
 import com.cromp.iam.domain.model.enums.UserRole;
-import com.cromp.iam.domain.model.support.SchemaLimits;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "roles")
@@ -19,10 +20,11 @@ public class RoleJpaEntity {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "name", nullable = false, unique = true, columnDefinition = "user_role")
     private UserRole name;
 
 
-    @Column(name = "description", length = SchemaLimits.ROLE_DESCRIPTION_MAX_LENGTH)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 }

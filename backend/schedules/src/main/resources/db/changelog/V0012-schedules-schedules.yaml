@@ -18,7 +18,9 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_schedules_next_run
             tableName: schedules
-            columns: [ next_run_at ]
+            columns:
+              - column:
+                  name: next_run_at
             where: status = 'ACTIVE'
         - sql:
             sql: |

@@ -20,11 +20,11 @@ public interface ExecutionJpaRepository extends JpaRepository<ExecutionJpaEntity
     @Query("""
             SELECT e FROM ExecutionJpaEntity e
             WHERE e.organizationId = :orgId
-              AND (:jobId      IS NULL OR e.jobId      = :jobId)
-              AND (:status     IS NULL OR e.finalStatus = :status)
-              AND (:source     IS NULL OR e.source      = :source)
-              AND (:from       IS NULL OR e.createdAt  >= :from)
-              AND (:to         IS NULL OR e.createdAt  <= :to)
+              AND (:jobId  IS NULL OR e.jobId      = :jobId)
+              AND (cast(:status as String) IS NULL OR e.finalStatus = :status)
+              AND (cast(:source as String) IS NULL OR e.source      = :source)
+              AND (cast(:from as Instant) IS NULL OR e.createdAt  >= :from)
+              AND (cast(:to as Instant) IS NULL OR e.createdAt  <= :to)
             ORDER BY e.createdAt DESC
             """)
     List<ExecutionJpaEntity> findByFilter(
@@ -40,11 +40,11 @@ public interface ExecutionJpaRepository extends JpaRepository<ExecutionJpaEntity
     @Query("""
             SELECT COUNT(e) FROM ExecutionJpaEntity e
             WHERE e.organizationId = :orgId
-              AND (:jobId      IS NULL OR e.jobId       = :jobId)
-              AND (:status     IS NULL OR e.finalStatus  = :status)
-              AND (:source     IS NULL OR e.source       = :source)
-              AND (:from       IS NULL OR e.createdAt   >= :from)
-              AND (:to         IS NULL OR e.createdAt   <= :to)
+              AND (:jobId  IS NULL OR e.jobId       = :jobId)
+              AND (cast(:status as String) IS NULL OR e.finalStatus  = :status)
+              AND (cast(:source as String) IS NULL OR e.source       = :source)
+              AND (cast(:from as Instant) IS NULL OR e.createdAt   >= :from)
+              AND (cast(:to as Instant) IS NULL OR e.createdAt   <= :to)
             """)
     long countByFilter(
             @Param("orgId")  Long organizationId,

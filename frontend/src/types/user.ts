@@ -3,8 +3,15 @@
 // ---------------------------------------------------------------------------
 
 export interface UserResponse {
-  uuid: string;
+  id: number;
+  userUuid: string;
   email: string;
-  name: string;
-  avatarUrl?: string | null;
+  firstName: string;
+  lastName: string;
+  middleName?: string;
+  displayName: string;
+  profile?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
 }

@@ -3,6 +3,8 @@ package com.cromp.secrets.infrastructure.persistence.jpa.entity;
 import com.cromp.secrets.domain.model.enums.SecretScope;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -30,6 +32,7 @@ public class SecretJpaEntity {
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false, columnDefinition = "secret_scope")
     private SecretScope scope;
 

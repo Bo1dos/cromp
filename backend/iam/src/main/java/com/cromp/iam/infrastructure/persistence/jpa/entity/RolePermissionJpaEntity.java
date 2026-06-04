@@ -20,6 +20,6 @@ public class RolePermissionJpaEntity {
     @Column(name = "role_id", nullable = false)
     private Long roleId;
 
-    @Column(name = "permission", nullable = false)
+    @Column(name = "permission", nullable = false, columnDefinition = "TEXT")
     private String permission;
 }

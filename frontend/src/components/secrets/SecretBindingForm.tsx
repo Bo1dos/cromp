@@ -28,8 +28,8 @@ export default function SecretBindingForm({ value = [], onChange }: SecretBindin
 
   const handleCreated = (secret: { uuid: string; name: string }) => {
     // Auto-select the newly created secret
-    if (!value.includes(secret.uuid)) {
-      onChange?.([...value, secret.uuid]);
+    if (!value.includes(secret.secretUuid)) {
+      onChange?.([...value, secret.secretUuid]);
     }
   };
 

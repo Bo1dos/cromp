@@ -18,14 +18,19 @@ databaseChangeLog:
               - column: { name: metadata, type: JSONB, defaultValue: "{}" }
               - column: { name: created_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
               - column: { name: updated_at, type: TIMESTAMPTZ, defaultValueComputed: now(), constraints: { nullable: false } }
-        - addCheckConstraint:
-            tableName: agents
-            constraintName: ck_agents_status
-            condition: "status IN ('ONLINE','OFFLINE','STALE','DRAINING')"
+        - sql:
+            sql: |
+              ALTER TABLE agents ADD CONSTRAINT ck_agents_status CHECK (status IN ('ONLINE','OFFLINE','STALE','DRAINING'));
         - createIndex:
             indexName: idx_agents_org_status
             tableName: agents
-            columns: [ organization_id, status, last_heartbeat ]
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: status
+              - column:
+                  name: last_heartbeat
         - sql:
             sql: |
               CREATE TRIGGER tr_agents_updated BEFORE UPDATE ON agents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

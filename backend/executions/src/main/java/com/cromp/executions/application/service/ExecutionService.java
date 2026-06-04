@@ -20,10 +20,13 @@ import com.cromp.executions.domain.service.ExecutionStateMachine;
 import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PermissionCheckerPort;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +35,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class ExecutionService {
+
+    private static final Logger log = LoggerFactory.getLogger(ExecutionService.class);
 
     private final ExecutionRepositoryPort executionRepository;
     private final ExecutionAttemptRepositoryPort attemptRepository;
@@ -102,18 +107,26 @@ public class ExecutionService {
             throw new SecurityException("Not a member of this organization");
         }
 
-        List<ExecutionResponse> items = executionRepository
-                .findByFilter(organizationId, filter.jobId(), filter.status(),
-                        filter.source(), filter.from(), filter.to(),
-                        filter.page(), filter.size())
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        try {
+            List<ExecutionResponse> items = executionRepository
+                    .findByFilter(organizationId, filter.jobId(), filter.status(),
+                            filter.source(), filter.from(), filter.to(),
+                            filter.page(), filter.size())
+                    .stream()
+                    .map(mapper::toResponse)
+                    .toList();
 
-        long total = executionRepository.countByFilter(organizationId, filter.jobId(),
-                filter.status(), filter.source(), filter.from(), filter.to());
+            long total = executionRepository.countByFilter(organizationId, filter.jobId(),
+                    filter.status(), filter.source(), filter.from(), filter.to());
 
-        return new PagedResponse<>(items, filter.page(), filter.size(), total);
+            return new PagedResponse<>(items, filter.page(), filter.size(), total);
+        } catch (SecurityException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to list executions for orgId={}, filter={}: {}", 
+                    organizationId, filter, e.getMessage(), e);
+            return new PagedResponse<>(Collections.emptyList(), filter.page(), filter.size(), 0);
+        }
     }
 
     public void cancelExecution(Long organizationId, UUID execUuid) {

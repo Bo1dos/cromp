@@ -4,18 +4,26 @@ databaseChangeLog:
       author: bo1dos
       changes:
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS user_role AS ENUM ('OWNER', 'ADMIN', 'DEVELOPER', 'VIEWER');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE user_role AS ENUM ('OWNER', 'ADMIN', 'DEVELOPER', 'VIEWER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS job_status AS ENUM ('ACTIVE', 'DISABLED', 'ARCHIVED');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE job_status AS ENUM ('ACTIVE', 'DISABLED', 'ARCHIVED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS schedule_status AS ENUM ('ACTIVE', 'PAUSED');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE schedule_status AS ENUM ('ACTIVE', 'PAUSED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS execution_status AS ENUM ('CREATED', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'SKIPPED');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE execution_status AS ENUM ('CREATED', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'SKIPPED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS attempt_status AS ENUM ('PENDING', 'DISPATCHED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'TIMEOUT', 'CANCELLED', 'RETRYING');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE attempt_status AS ENUM ('PENDING', 'DISPATCHED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'TIMEOUT', 'CANCELLED', 'RETRYING'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS secret_scope AS ENUM ('JOB', 'ORGANIZATION', 'GLOBAL');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE secret_scope AS ENUM ('JOB', 'ORGANIZATION', 'GLOBAL'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS artifact_kind AS ENUM ('LOG_STDOUT', 'LOG_STDERR', 'OUTPUT_PAYLOAD', 'DEBUG_SNAPSHOT');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE artifact_kind AS ENUM ('LOG_STDOUT', 'LOG_STDERR', 'OUTPUT_PAYLOAD', 'DEBUG_SNAPSHOT'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
         - sql:
-            sql: CREATE TYPE IF NOT EXISTS invitation_status AS ENUM ('PENDING', 'ACCEPTED', 'EXPIRED', 'REVOKED');
+            splitStatements: false
+            sql: DO $$ BEGIN CREATE TYPE invitation_status AS ENUM ('PENDING', 'ACCEPTED', 'EXPIRED', 'REVOKED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;

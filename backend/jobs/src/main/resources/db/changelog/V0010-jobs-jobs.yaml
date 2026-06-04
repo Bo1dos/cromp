@@ -22,12 +22,20 @@ databaseChangeLog:
             indexName: ux_jobs_org_name_not_deleted
             tableName: jobs
             unique: true
-            columns: [ organization_id, name ]
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: name
             where: deleted_at IS NULL
         - createIndex:
             indexName: idx_jobs_org_status
             tableName: jobs
-            columns: [ organization_id, status ]
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: status
             where: deleted_at IS NULL
         - sql:
             sql: |

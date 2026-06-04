@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: fix-checksum-sha256-type-to-varchar
+      author: bo1dos
+      changes:
+        - modifyDataType:
+            tableName: execution_artifacts
+            columnName: checksum_sha256
+            newDataType: VARCHAR(64)
+      rollback:
+        - modifyDataType:
+            tableName: execution_artifacts
+            columnName: checksum_sha256
+            newDataType: CHAR(64)

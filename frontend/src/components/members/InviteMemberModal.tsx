@@ -13,7 +13,7 @@ interface InviteMemberModalProps {
 
 interface InviteFormValues {
   email: string;
-  role: 'ADMIN' | 'MEMBER';
+  role: 'ADMIN' | 'MEMBER' | 'VIEWER';
 }
 
 export default function InviteMemberModal({ open, onClose }: InviteMemberModalProps) {
@@ -27,7 +27,7 @@ export default function InviteMemberModal({ open, onClose }: InviteMemberModalPr
     try {
       await inviteMember.mutateAsync({
         email: values.email,
-        organizationUuid: activeOrganization.uuid,
+        organizationUuid: activeOrganization.orgUuid,
         role: values.role,
       });
       form.resetFields();
@@ -72,6 +72,7 @@ export default function InviteMemberModal({ open, onClose }: InviteMemberModalPr
             options={[
               { label: 'Admin', value: 'ADMIN' },
               { label: 'Member', value: 'MEMBER' },
+              { label: 'Viewer', value: 'VIEWER' },
             ]}
           />
         </Form.Item>

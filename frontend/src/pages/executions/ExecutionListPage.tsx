@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// ExecutionListPage — full-page list of executions with filters
+// ExecutionListPage ï¿½ full-page list of executions with filters
 // ---------------------------------------------------------------------------
 
 import PageHeader from '@/components/common/PageHeader';
@@ -10,14 +10,10 @@ export default function ExecutionListPage() {
     <div>
       <PageHeader
         title="Executions"
-        breadcrumbs={[
-          { title: 'Dashboard', href: '/dashboard' },
-          { title: 'Executions' },
-        ]}
+        breadcrumbs={[{ title: 'Dashboard' }, { title: 'Executions' }]}
       />
-      <div style={{ background: '#fff', padding: 24, borderRadius: 6 }}>
-        <ExecutionTable />
-      </div>
+
+      <ExecutionTable />
     </div>
   );
 }

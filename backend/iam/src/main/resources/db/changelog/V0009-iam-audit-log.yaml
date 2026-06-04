@@ -18,12 +18,28 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_audit_org_recorded
             tableName: audit_log
-            columns: [ organization_id, recorded_at ]
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: recorded_at
         - createIndex:
             indexName: idx_audit_actor_recorded
             tableName: audit_log
-            columns: [ actor_id, recorded_at ]
+            columns:
+              - column:
+                  name: actor_id
+              - column:
+                  name: recorded_at
         - createIndex:
             indexName: idx_audit_resource
             tableName: audit_log
-            columns: [ organization_id, resource_type, resource_id, recorded_at ]
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: resource_type
+              - column:
+                  name: resource_id
+              - column:
+                  name: recorded_at

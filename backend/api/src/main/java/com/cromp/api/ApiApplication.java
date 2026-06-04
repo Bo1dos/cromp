@@ -1,11 +1,9 @@
 package com.cromp.api;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication(scanBasePackages = "com.cromp")
+/**
+ * API-модуль не является точкой входа.
+ * Точка входа приложения — {@code com.cromp.orchestrator.OrchestratorApplication}.
+ */
 public class ApiApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(ApiApplication.class, args);
-    }
+    // Точка входа: com.cromp.orchestrator.OrchestratorApplication
 }

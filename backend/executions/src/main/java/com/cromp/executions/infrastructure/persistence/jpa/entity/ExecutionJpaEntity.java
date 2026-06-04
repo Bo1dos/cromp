@@ -51,6 +51,7 @@ public class ExecutionJpaEntity {
     private Instant scheduledAt;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "final_status", nullable = false, columnDefinition = "execution_status")
     private ExecutionStatus finalStatus;
 

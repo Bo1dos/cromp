@@ -232,27 +232,24 @@ services:
     networks:
       - cromp-net
 
-  # ── Frontend (React/TypeScript) — задел на будущее ──────────────────────────
-  # Раскомментируйте и настройте, когда фронтенд будет готов.
-  #
-  # frontend:
-  #   build:
-  #     context: ./tt/frontend
-  #     dockerfile: Dockerfile
-  #     target: dev
-  #   container_name: cromp-frontend
-  #   environment:
-  #     VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8081}
-  #   ports:
-  #     - "${FRONTEND_PORT_HOST:-3001}:5173"
-  #   volumes:
-  #     - ./tt/frontend/src:/app/src:ro
-  #   depends_on:
-  #     app:
-  #       condition: service_healthy
-  #   restart: unless-stopped
-  #   networks:
-  #     - cromp-net
+  # ── Frontend (React/TypeScript, Vite dev-server) ────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cromp-frontend
+    environment:
+      VITE_PROXY_TARGET: ${VITE_PROXY_TARGET:-http://app:8080}
+    ports:
+      - "${FRONTEND_PORT_HOST:-3001}:5173"
+    volumes:
+      - ./frontend/src:/app/src:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - cromp-net
 
 # ── Named volumes (данные переживают перезапуск контейнеров) ─────────────────
 

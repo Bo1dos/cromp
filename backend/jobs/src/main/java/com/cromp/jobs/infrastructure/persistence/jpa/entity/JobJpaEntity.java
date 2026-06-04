@@ -4,6 +4,8 @@ import com.cromp.jobs.domain.model.enums.JobStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class JobJpaEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "job_status")
     private JobStatus status;
 

@@ -15,7 +15,7 @@ import { useOrganization } from '@/hooks/useOrganization';
 
 export default function AnalyticsPage() {
   const { activeOrganization } = useOrganization();
-  const orgId = activeOrganization?.uuid ?? '';
+  const orgId = activeOrganization?.orgUuid ?? '';
 
   const { data: summary, isLoading: summaryLoading } = useSummary(orgId, '7d');
   const { data: timeSeries, isLoading: tsLoading } = useTimeSeries(orgId, '7d');
@@ -36,7 +36,7 @@ export default function AnalyticsPage() {
         breadcrumbs={[{ title: 'Dashboard' }, { title: 'Analytics' }]}
       />
 
-      <SummaryCards summary={summary!} />
+      {summary && <SummaryCards summary={summary} />}
 
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={12}>

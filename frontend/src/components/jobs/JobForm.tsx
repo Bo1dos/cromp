@@ -59,6 +59,14 @@ interface JobFormProps {
 // ---------------------------------------------------------------------------
 const STEPS = ['Basic', 'HTTP Config', 'Retry Policy', 'Schedule'];
 
+// Fields per step — used to validate only visible fields on Next
+const STEP_FIELDS: (string | string[])[] = [
+  ['name'],                                                              // Step 0: Basic
+  [['httpConfig', 'url'], ['httpConfig', 'method'], ['httpConfig', 'timeoutMs']], // Step 1: HTTP
+  [['retryPolicy', 'maxAttempts'], ['retryPolicy', 'backoffMs'], ['retryPolicy', 'backoffMultiplier']], // Step 2: Retry
+  [],                                                                    // Step 3: Schedule (all optional)
+];
+
 export default function JobForm({ mode, initialValues, onSubmit, loading }: JobFormProps) {
   const [form] = Form.useForm();
   const currentStep = Form.useWatch('step', form) ?? 0;
@@ -89,10 +97,14 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
 
   const handleNext = async () => {
     try {
-      await form.validateFields();
+      // Validate only fields visible on the current step
+      const fields = STEP_FIELDS[currentStep];
+      if (fields.length > 0) {
+        await form.validateFields(fields as any);
+      }
       form.setFieldValue('step', currentStep + 1);
     } catch {
-      // validation failed
+      // validation failed — Ant Design shows inline errors
     }
   };
 
@@ -100,40 +112,35 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
     form.setFieldValue('step', currentStep - 1);
   };
 
-  const handleFinish = async () => {
-    try {
-      const values = await form.validateFields();
-      // Transform headers from array of {key, value} to Record<string, string>
-      const headersRecord: Record<string, string> = {};
-      if (values.httpConfig?.headers) {
-        for (const h of values.httpConfig.headers) {
-          if (h.key) headersRecord[h.key] = h.value ?? '';
-        }
+  const handleFinish = (values: Record<string, any>) => {
+    // Transform headers from array of {key, value} to Record<string, string>
+    const headersRecord: Record<string, string> = {};
+    if (values.httpConfig?.headers) {
+      for (const h of values.httpConfig.headers) {
+        if (h.key) headersRecord[h.key] = h.value ?? '';
       }
-
-      const payload: CreateJobRequest = {
-        name: values.name,
-        description: values.description,
-        httpConfig: {
-          url: values.httpConfig.url,
-          method: values.httpConfig.method,
-          headers: headersRecord,
-          body: values.httpConfig.body || undefined,
-          timeoutMs: values.httpConfig.timeoutMs,
-        },
-        retryPolicy: {
-          maxAttempts: values.retryPolicy.maxAttempts,
-          backoffMs: values.retryPolicy.backoffMs,
-          backoffMultiplier: values.retryPolicy.backoffMultiplier,
-        },
-        cronExpression: values.cronExpression || undefined,
-        timezone: values.timezone || undefined,
-      };
-
-      onSubmit(payload);
-    } catch {
-      // validation failed
     }
+
+    const payload: CreateJobRequest = {
+      name: values.name,
+      description: values.description,
+      httpConfig: {
+        url: values.httpConfig.url,
+        method: values.httpConfig.method,
+        headers: headersRecord,
+        body: values.httpConfig.body || undefined,
+        timeoutMs: values.httpConfig.timeoutMs,
+      },
+      retryPolicy: {
+        maxAttempts: values.retryPolicy.maxAttempts,
+        backoffMs: values.retryPolicy.backoffMs,
+        backoffMultiplier: values.retryPolicy.backoffMultiplier,
+      },
+      cronExpression: values.cronExpression || undefined,
+      timezone: values.timezone || undefined,
+    };
+
+    onSubmit(payload);
   };
 
   const isLastStep = currentStep === STEPS.length - 1;
@@ -144,6 +151,12 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
       layout="vertical"
       initialValues={defaultValues}
       onFinish={handleFinish}
+      onFinishFailed={({ errorFields }) => {
+        // Scroll to the first field with an error so the user sees what's wrong
+        if (errorFields?.length > 0) {
+          form.scrollToField(errorFields[0].name, { behavior: 'smooth' });
+        }
+      }}
       style={{ maxWidth: 800 }}
     >
       {/* Hidden field to track current step */}

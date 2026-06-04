@@ -30,13 +30,14 @@ public class JwtTokenIssuer implements TokenIssuerPort {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + jwtConfig.getExpirationMs());
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(user.getId().toString())
-                .claim("org_id", activeOrganization != null ? activeOrganization.getId().toString() : "")
                 .claim("permissions", permissions)
                 .issuedAt(now)
-                .expiration(expiration)
-                .signWith(signingKey)
-                .compact();
+                .expiration(expiration);
+        if (activeOrganization != null) {
+            builder.claim("org_id", activeOrganization.getId().toString());
+        }
+        return builder.signWith(signingKey).compact();
     }
 }

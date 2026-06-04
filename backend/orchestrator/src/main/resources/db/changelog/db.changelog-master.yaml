@@ -37,6 +37,9 @@ databaseChangeLog:
   - include:
       file: db/changelog/V0010-jobs-jobs.yaml
       relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0011-jobs-job-versions.yaml
+      relativeToChangelogFile: false
 
   # ── Schedules ───────────────────────────────────────────────────────────────
   - include:
@@ -84,4 +87,19 @@ databaseChangeLog:
       relativeToChangelogFile: false
   - include:
       file: db/changelog/V0023-iam-add-invitation-uuid.yaml
+      relativeToChangelogFile: false
+
+  # ── Jobs (дополнения) ──────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0024-jobs-job-versions-checks.yaml
+      relativeToChangelogFile: false
+
+  # ── Executions (дополнения) ────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0025-executions-fix-checksum-type.yaml
+      relativeToChangelogFile: false
+
+  # ── Common (дополнения) ────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0026-common-add-member-role.yaml
       relativeToChangelogFile: false

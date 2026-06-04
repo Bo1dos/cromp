@@ -3,6 +3,8 @@ package com.cromp.iam.infrastructure.persistence.jpa.entity;
 import com.cromp.iam.domain.model.enums.InvitationStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -29,7 +31,7 @@ public class InvitationJpaEntity {
     @Column(name = "email", nullable = false, columnDefinition = "citext")
     private String email;
 
-    @Column(name = "token_hash", nullable = false)
+    @Column(name = "token_hash", nullable = false, columnDefinition = "TEXT")
     private String tokenHash;
 
     @Column(name = "role_id", nullable = false)
@@ -48,6 +50,7 @@ public class InvitationJpaEntity {
     private Instant acceptedAt;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "invitation_status")
     private InvitationStatus status;
 }

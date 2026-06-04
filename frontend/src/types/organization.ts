@@ -3,20 +3,26 @@
 // ---------------------------------------------------------------------------
 
 export interface OrganizationResponse {
-  uuid: string;
+  id: number;
+  orgUuid: string;
   name: string;
-  slug: string;
+  settings?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
 }
 
-export type OrganizationRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+export type OrganizationRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
 
 export interface MembershipResponse {
-  uuid: string;
-  userUuid: string;
+  membershipUuid: string;
+  roleName: string;
   organization: OrganizationResponse;
-  role: OrganizationRole;
-  user?: UserBrief;
+  userUuid: string;
+  userName: string;
+  userEmail: string;
   joinedAt?: string;
+  updatedAt?: string;
 }
 
 export interface UserBrief {

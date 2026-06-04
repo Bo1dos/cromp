@@ -45,8 +45,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .getPayload();
 
                 Long userId = Long.parseLong(claims.getSubject());
-                Long orgId = claims.get("org_id", String.class) != null
-                        ? Long.parseLong(claims.get("org_id", String.class))
+                String orgIdStr = claims.get("org_id", String.class);
+                Long orgId = (orgIdStr != null && !orgIdStr.isEmpty())
+                        ? Long.parseLong(orgIdStr)
                         : null;
                 List<String> permissions = claims.get("permissions", List.class);
 

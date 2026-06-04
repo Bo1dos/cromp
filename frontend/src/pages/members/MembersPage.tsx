@@ -35,7 +35,7 @@ export default function MembersPage() {
         }
       />
 
-      <MembersTable orgUuid={activeOrganization.uuid} />
+      <MembersTable orgUuid={activeOrganization.orgUuid} />
 
       <InviteMemberModal
         open={inviteModalOpen}

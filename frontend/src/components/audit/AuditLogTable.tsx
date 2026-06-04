@@ -67,7 +67,7 @@ interface AuditLogTableProps {
 
 export default function AuditLogTable({ dataSource: externalData, loading: externalLoading }: AuditLogTableProps) {
   const { activeOrganization } = useOrganization();
-  const orgUuid = activeOrganization?.uuid;
+  const orgUuid = activeOrganization?.orgUuid;
 
   // --- Server data (when no external data provided) ---
   const { data: serverData, isLoading: serverLoading } = useAuditByOrg(orgUuid);

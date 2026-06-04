@@ -16,6 +16,7 @@ import { notification } from 'antd';
 
 import * as authApi from '@/api/auth.api';
 import * as usersApi from '@/api/users.api';
+import { setAccessToken } from '@/api/client';
 import type { UserResponse } from '@/types/user';
 import type { LoginRequest, RegisterRequest } from '@/types/auth';
 
@@ -80,8 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: (req: LoginRequest) => authApi.login(req),
     onSuccess: (data) => {
+      setAccessToken(data.accessToken);
       setUser(data.user);
-      localStorage.setItem(USER_ID_KEY, data.user.uuid);
+      localStorage.setItem(USER_ID_KEY, data.user.userUuid);
     },
     onError: (err: Error) => {
       notification.error({
@@ -95,8 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useMutation({
     mutationFn: (req: RegisterRequest) => authApi.register(req),
     onSuccess: (data) => {
+      setAccessToken(data.accessToken);
       setUser(data.user);
-      localStorage.setItem(USER_ID_KEY, data.user.uuid);
+      localStorage.setItem(USER_ID_KEY, data.user.userUuid);
     },
     onError: (err: Error) => {
       notification.error({
@@ -139,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (theme) {
       localStorage.setItem('caas-theme', theme);
     }
+    setAccessToken(null);
     setUser(null);
     navigate('/login', { replace: true });
   }, [navigate, queryClient]);

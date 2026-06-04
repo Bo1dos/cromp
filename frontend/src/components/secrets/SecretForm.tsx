@@ -36,7 +36,7 @@ export default function SecretForm({ open, onClose, onCreated }: SecretFormProps
         onSuccess: (secret) => {
           form.resetFields();
           onClose();
-          onCreated?.({ uuid: secret.uuid, name: secret.name });
+          onCreated?.({ uuid: secret.secretUuid, name: secret.name });
         },
       });
     } catch {

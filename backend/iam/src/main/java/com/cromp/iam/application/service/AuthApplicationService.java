@@ -59,7 +59,10 @@ public class AuthApplicationService implements AuthFacade {
         );
         user = userRepository.save(user);
 
-        Organization organization = Organization.create(request.organizationName());
+        String orgName = request.organizationName() != null && !request.organizationName().isBlank()
+                ? request.organizationName()
+                : request.email().split("@")[0] + "'s Organization";
+        Organization organization = Organization.create(orgName);
         organization = organizationRepository.save(organization);
 
         Role ownerRole = roleRepository.findByName(UserRole.OWNER)
