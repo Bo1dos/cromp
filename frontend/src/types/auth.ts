@@ -26,6 +26,10 @@ export interface RegisterRequest {
   email: string;
   password: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
+  organizationName?: string;
 }
 
 export interface SelectOrganizationRequest {

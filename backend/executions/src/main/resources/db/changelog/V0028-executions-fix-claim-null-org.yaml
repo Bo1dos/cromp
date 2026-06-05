@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: fix-claim-attempt-and-stale-executions-v2
+      author: bo1dos
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: execution_attempts
+      changes:
+        # 1. Fix stuck IN_PROGRESS executions: mark old PENDING attempts as TIMEOUT.
+        #    This triggers fn_update_execution_final_status → finalStatus = FAILED.
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE execution_attempts
+              SET status = 'TIMEOUT', updated_at = NOW()
+              WHERE status = 'PENDING'
+                AND created_at < NOW() - INTERVAL '5 minutes';
+        # 2. Recreate claim function WITHOUT org filter — executor is system-wide.
+        #    Also drop the old overload (BIGINT version) to avoid ambiguity.
+        - sql:
+            splitStatements: false
+            sql: |
+              DROP FUNCTION IF EXISTS claim_execution_attempt(BIGINT);
+              DROP FUNCTION IF EXISTS claim_execution_attempt();
+              CREATE OR REPLACE FUNCTION claim_execution_attempt()
+              RETURNS TABLE(attempt_id BIGINT, execution_id BIGINT, attempt_uuid UUID, config JSONB) AS $$
+              BEGIN
+                RETURN QUERY
+                WITH cand AS (
+                  SELECT ea.id, ea.execution_id
+                  FROM execution_attempts ea
+                  JOIN executions e ON e.id = ea.execution_id
+                  WHERE ea.status = 'PENDING'
+                    AND (ea.scheduled_at IS NULL OR ea.scheduled_at <= NOW())
+                  ORDER BY e.priority DESC NULLS LAST, ea.scheduled_at NULLS FIRST, ea.created_at
+                  LIMIT 1
+                  FOR UPDATE SKIP LOCKED
+                )
+                UPDATE execution_attempts ea2
+                SET status = 'DISPATCHED', claimed_at = NOW(), updated_at = NOW()
+                FROM cand
+                WHERE ea2.id = cand.id
+                RETURNING ea2.id, ea2.execution_id, ea2.attempt_uuid,
+                  (SELECT jv.config FROM job_versions jv
+                   WHERE jv.id = (SELECT job_version_id FROM executions WHERE id = ea2.execution_id));
+              END;
+              $$ LANGUAGE plpgsql;

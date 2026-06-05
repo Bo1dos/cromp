@@ -28,14 +28,13 @@ public class ExecutionAttemptCustomRepository {
     @Transactional
     public Optional<ClaimAttemptResult> claimAttempt(Long organizationId) {
         List<ClaimAttemptResult> results = jdbcTemplate.query(
-                "SELECT attempt_id, execution_id, attempt_uuid, config FROM claim_execution_attempt(?)",
+                "SELECT attempt_id, execution_id, attempt_uuid, config FROM claim_execution_attempt()",
                 (rs, rowNum) -> new ClaimAttemptResult(
                         rs.getLong("attempt_id"),
                         rs.getObject("attempt_uuid", UUID.class),
                         rs.getLong("execution_id"),
                         rs.getString("config")
-                ),
-                organizationId
+                )
         );
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }

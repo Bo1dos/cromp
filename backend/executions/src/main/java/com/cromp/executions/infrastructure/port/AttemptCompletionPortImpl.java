@@ -15,6 +15,11 @@ public class AttemptCompletionPortImpl implements AttemptCompletionPort {
     private final AttemptService attemptService;
 
     @Override
+    public void markRunning(UUID attemptUuid) {
+        attemptService.markRunning(attemptUuid);
+    }
+
+    @Override
     public void completeAttempt(UUID attemptUuid, CompleteAttemptRequest request) {
         attemptService.completeAttempt(attemptUuid, request);
     }

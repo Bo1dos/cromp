@@ -9,10 +9,13 @@ import { MailOutlined, LockOutlined, UserOutlined } from '@ant-design/icons';
 
 import { useAuth } from '@/hooks/useAuth';
 
+import type { RegisterRequest } from '@/types/auth';
+
 const { Title, Text } = Typography;
 
 interface RegisterFormValues {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -31,7 +34,14 @@ export default function RegisterPage() {
   const handleFinish = async (values: RegisterFormValues) => {
     setSubmitting(true);
     try {
-      await register(values.email, values.password, values.name);
+      const req: RegisterRequest = {
+        email: values.email,
+        password: values.password,
+        displayName: [values.firstName, values.lastName].filter(Boolean).join(' ') || values.email.split('@')[0],
+        firstName: values.firstName || undefined,
+        lastName: values.lastName || undefined,
+      };
+      await register(req);
     } finally {
       setSubmitting(false);
     }
@@ -59,11 +69,18 @@ export default function RegisterPage() {
           autoComplete="off"
         >
           <Form.Item
-            name="name"
-            label="Full Name"
-            rules={[{ required: true, message: 'Please enter your name' }]}
+            name="firstName"
+            label="First Name"
+            rules={[{ required: true, message: 'Please enter your first name' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="John Doe" size="large" />
+            <Input prefix={<UserOutlined />} placeholder="John" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            name="lastName"
+            label="Last Name"
+          >
+            <Input prefix={<UserOutlined />} placeholder="Doe" size="large" />
           </Form.Item>
 
           <Form.Item

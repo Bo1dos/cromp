@@ -44,6 +44,15 @@ public class AttemptService {
         return customRepository.claimAttempt(organizationId);
     }
 
+    // Вызывается через AttemptCompletionPort — executor отметил, что начал выполнение
+    public void markRunning(UUID attemptUuid) {
+        ExecutionAttempt attempt = attemptRepository.findByAttemptUuid(attemptUuid)
+                .orElseThrow(() -> new AttemptNotFoundException(attemptUuid));
+        AttemptStateMachine.assertTransitionAllowed(attempt.getStatus(), AttemptStatus.RUNNING);
+        attempt.start(null);
+        attemptRepository.save(attempt);
+    }
+
     // Вызывается через AttemptCompletionPort
     public void completeAttempt(UUID attemptUuid, CompleteAttemptRequest request) {
         AttemptStatus newStatus = request.status();

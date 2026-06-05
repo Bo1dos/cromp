@@ -143,7 +143,10 @@ public class ExecutorService {
                 return;
             }
 
-            // 2. Разрешаем секреты батчем
+            // 2. Отмечаем попытку как RUNNING
+            completionPort.markRunning(claimed.attemptUuid());
+
+            // 3. Разрешаем секреты батчем
             List<JobSecretRef> secretRefs = jobConfig.secrets();
             // organizationId нам недоступен напрямую из ClaimAttemptResult —
             // получаем его из Execution через executionId.
@@ -151,7 +154,7 @@ public class ExecutorService {
             // TODO: добавить organizationId в ClaimAttemptResult для полной изоляции.
             Map<String, String> resolvedSecrets = resolveSecrets(claimed, secretRefs);
 
-            // 3. Выполняем HTTP-запрос
+            // 4. Выполняем HTTP-запрос
             HttpTaskResult result = durationTimer.record(() ->
                     httpTaskAdapter.execute(
                             claimed.attemptUuid(),
@@ -160,7 +163,7 @@ public class ExecutorService {
                     )
             );
 
-            // 4. Фиксируем результат
+            // 5. Фиксируем результат
             if (result.success()) {
                 completeAttempt(claimed, result, AttemptStatus.SUCCEEDED);
                 successCounter.increment();

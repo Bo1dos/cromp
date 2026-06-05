@@ -33,7 +33,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (req: RegisterRequest) => Promise<void>;
   logout: () => void;
 }
 
@@ -123,9 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string, displayName: string) => {
+    async (req: RegisterRequest) => {
       try {
-        await registerMutation.mutateAsync({ email, password, displayName });
+        await registerMutation.mutateAsync(req);
         navigate('/select-organization', { replace: true });
       } catch {
         // error notification already shown by onError handler

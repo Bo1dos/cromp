@@ -108,3 +108,8 @@ databaseChangeLog:
   - include:
       file: db/changelog/V0027-jobs-fix-config-constraints.yaml
       relativeToChangelogFile: false
+
+  # ── Executions (фикс claim при null orgId) ───────────────────────────────
+  - include:
+      file: db/changelog/V0028-executions-fix-claim-null-org.yaml
+      relativeToChangelogFile: false
