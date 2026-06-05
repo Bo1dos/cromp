@@ -19,12 +19,12 @@ interface StatusConfig {
 }
 
 const STATUS_CONFIG: Record<ExecutionStatus, StatusConfig> = {
-  PENDING:   { color: 'default', text: 'Pending', icon: <ClockCircleFilled style={{ color: '#8c8c8c' }} /> },
-  RUNNING:   { color: 'processing', text: 'Running', icon: <SyncOutlined spin style={{ color: '#1677ff' }} /> },
-  SUCCESS:   { color: 'success', text: 'Success', icon: <CheckCircleFilled style={{ color: '#52c41a' }} /> },
-  FAILED:    { color: 'error', text: 'Failed', icon: <CloseCircleFilled style={{ color: '#ff4d4f' }} /> },
-  CANCELLED: { color: 'warning', text: 'Cancelled', icon: <MinusCircleFilled style={{ color: '#faad14' }} /> },
-  TIMEOUT:   { color: '#ff7a45', text: 'Timeout', icon: <ClockCircleFilled style={{ color: '#ff7a45' }} /> },
+  CREATED:    { color: 'default', text: 'Created', icon: <ClockCircleFilled style={{ color: '#8c8c8c' }} /> },
+  IN_PROGRESS: { color: 'processing', text: 'In Progress', icon: <SyncOutlined spin style={{ color: '#1677ff' }} /> },
+  SUCCEEDED:  { color: 'success', text: 'Succeeded', icon: <CheckCircleFilled style={{ color: '#52c41a' }} /> },
+  FAILED:     { color: 'error', text: 'Failed', icon: <CloseCircleFilled style={{ color: '#ff4d4f' }} /> },
+  CANCELLED:  { color: 'warning', text: 'Cancelled', icon: <MinusCircleFilled style={{ color: '#faad14' }} /> },
+  SKIPPED:    { color: '#ff7a45', text: 'Skipped', icon: <ClockCircleFilled style={{ color: '#ff7a45' }} /> },
 };
 
 interface ExecutionStatusBadgeProps {

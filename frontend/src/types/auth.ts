@@ -25,7 +25,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  name: string;
+  displayName: string;
 }
 
 export interface SelectOrganizationRequest {

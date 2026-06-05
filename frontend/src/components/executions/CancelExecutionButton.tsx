@@ -16,7 +16,7 @@ interface CancelExecutionButtonProps {
 export default function CancelExecutionButton({ executionId, status }: CancelExecutionButtonProps) {
   const cancelMutation = useCancelExecution(executionId);
 
-  if (status !== 'RUNNING' && status !== 'PENDING') {
+  if (status !== 'IN_PROGRESS' && status !== 'CREATED') {
     return null;
   }
 

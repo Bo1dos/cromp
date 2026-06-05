@@ -7,8 +7,8 @@ import type { JobStatus } from '@/types/job';
 
 const STATUS_CONFIG: Record<JobStatus, { color: string; text: string }> = {
   ACTIVE:   { color: 'green',   text: 'Active' },
-  PAUSED:   { color: 'orange',  text: 'Paused' },
   DISABLED: { color: 'red',     text: 'Disabled' },
+  ARCHIVED: { color: 'default', text: 'Archived' },
 };
 
 interface JobStatusBadgeProps {

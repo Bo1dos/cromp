@@ -2,8 +2,8 @@
 // Execution types — mirrors backend API contract
 // ---------------------------------------------------------------------------
 
-export type ExecutionStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';
-export type ExecutionSource = 'SCHEDULED' | 'MANUAL';
+export type ExecutionStatus = 'CREATED' | 'IN_PROGRESS' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'SKIPPED';
+export type ExecutionSource = 'SCHEDULED' | 'MANUAL' | 'API';
 
 /** Backend ExecutionResponse */
 export interface ExecutionResponse {
@@ -54,11 +54,10 @@ export interface ArtifactResponse {
   createdAt: string;
 }
 
-/** Backend PagedResponse */
+/** Backend PagedResponse — uses "items" and "total" (not "content" / "totalElements") */
 export interface PagedResponse<T> {
-  content: T[];
+  items: T[];
   page: number;
   size: number;
-  totalElements: number;
-  totalPages: number;
+  total: number;
 }

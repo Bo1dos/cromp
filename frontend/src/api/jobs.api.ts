@@ -11,6 +11,7 @@ import type {
   ListJobsParams,
   JobVersionResponse,
   JobVersionCompareResponse,
+  TriggerResponse,
 } from '@/types/job';
 
 export async function createJob(data: CreateJobRequest): Promise<JobResponse> {
@@ -45,8 +46,8 @@ export async function toggleJobStatus(
   return response.data;
 }
 
-export async function triggerJob(uuid: string): Promise<JobResponse> {
-  const response = await apiClient.post<JobResponse>(`/jobs/${uuid}/trigger`);
+export async function triggerJob(uuid: string): Promise<TriggerResponse> {
+  const response = await apiClient.post<TriggerResponse>(`/jobs/${uuid}/trigger`, {});
   return response.data;
 }
 

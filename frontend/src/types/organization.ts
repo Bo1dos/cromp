@@ -12,14 +12,14 @@ export interface OrganizationResponse {
   deletedAt?: string | null;
 }
 
-export type OrganizationRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+export type OrganizationRole = 'OWNER' | 'ADMIN' | 'DEVELOPER' | 'MEMBER' | 'VIEWER';
 
 export interface MembershipResponse {
   membershipUuid: string;
   roleName: string;
   organization: OrganizationResponse;
   userUuid: string;
-  userName: string;
+  userName: string | null;
   userEmail: string;
   joinedAt?: string;
   updatedAt?: string;

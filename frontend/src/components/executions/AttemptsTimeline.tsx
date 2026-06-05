@@ -40,9 +40,9 @@ export default function AttemptsTimeline({ executionId }: AttemptsTimelineProps)
 
   const items = attempts.map((attempt) => ({
     key: attempt.attemptUuid,
-    color: attempt.status === 'SUCCESS' ? 'green' : 'red',
+    color: attempt.status === 'SUCCEEDED' ? 'green' : 'red',
     dot:
-      attempt.status === 'SUCCESS' ? (
+      attempt.status === 'SUCCEEDED' ? (
         <CheckCircleFilled style={{ color: '#52c41a', fontSize: 16 }} />
       ) : (
         <CloseCircleFilled style={{ color: '#ff4d4f', fontSize: 16 }} />

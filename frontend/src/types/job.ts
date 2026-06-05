@@ -2,7 +2,7 @@
 // Job domain types — mirrors backend API contract
 // ---------------------------------------------------------------------------
 
-export type JobStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED';
+export type JobStatus = 'ACTIVE' | 'DISABLED' | 'ARCHIVED';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
 
@@ -104,7 +104,7 @@ export interface UpdateJobRequest {
 }
 
 export interface ToggleStatusRequest {
-  status: 'ENABLED' | 'DISABLED';
+  status: 'ACTIVE' | 'DISABLED';
 }
 
 export interface ListJobsParams {

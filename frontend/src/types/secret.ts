@@ -2,7 +2,7 @@
 // Secret domain types — mirrors backend API contract
 // ---------------------------------------------------------------------------
 
-export type SecretScope = 'JOB' | 'ORGANIZATION';
+export type SecretScope = 'JOB' | 'ORGANIZATION' | 'GLOBAL';
 
 export interface SecretResponse {
   secretUuid: string;

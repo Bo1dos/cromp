@@ -2,7 +2,7 @@
 // Invitation types — mirrors backend DTOs
 // ---------------------------------------------------------------------------
 
-export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
 
 export interface InvitationCreateResponse {
   invitation: InvitationResponse;

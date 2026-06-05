@@ -10,6 +10,7 @@ import type {
   CreateJobRequest,
   UpdateJobRequest,
   ListJobsParams,
+  TriggerResponse,
 } from '@/types/job';
 import * as jobsApi from '@/api/jobs.api';
 import { QUERY_KEYS } from '@/utils/constants';
@@ -116,7 +117,7 @@ export function useDeleteJob() {
 export function useToggleJobStatus(uuid: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<JobResponse, Error, 'ENABLED' | 'DISABLED', { previous: JobResponse | undefined }>({
+  return useMutation<JobResponse, Error, 'ACTIVE' | 'DISABLED', { previous: JobResponse | undefined }>({
     mutationFn: (status) => jobsApi.toggleJobStatus(uuid, status),
     onMutate: async (newStatus) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.JOB, uuid] });
@@ -125,7 +126,7 @@ export function useToggleJobStatus(uuid: string) {
       if (previous) {
         queryClient.setQueryData<JobResponse>([QUERY_KEYS.JOB, uuid], {
           ...previous,
-          status: newStatus === 'ENABLED' ? 'ACTIVE' : 'DISABLED',
+          status: newStatus === 'ACTIVE' ? 'ACTIVE' : 'DISABLED',
         });
       }
 
@@ -150,7 +151,7 @@ export function useToggleJobStatus(uuid: string) {
 export function useTriggerJob(uuid: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<JobResponse, Error, void>({
+  return useMutation<TriggerResponse, Error, void>({
     mutationFn: () => jobsApi.triggerJob(uuid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.JOB, uuid] });

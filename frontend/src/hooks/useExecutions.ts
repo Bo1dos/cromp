@@ -46,7 +46,7 @@ export function useExecutionDetail(executionId: string) {
     enabled: Boolean(orgId) && Boolean(executionId),
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (data && (data.status === 'RUNNING' || data.status === 'PENDING')) {
+      if (data && (data.finalStatus === 'IN_PROGRESS' || data.finalStatus === 'CREATED')) {
         return 10_000;
       }
       return false;

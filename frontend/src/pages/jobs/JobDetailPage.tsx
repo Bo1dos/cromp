@@ -66,7 +66,7 @@ export default function JobDetailPage() {
   };
 
   const handleToggle = () => {
-    const newStatus = job.status === 'ACTIVE' ? 'DISABLED' : 'ENABLED';
+    const newStatus = job.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
     toggleMutation.mutate(newStatus);
   };
 

@@ -22,7 +22,7 @@ import { formatRelative } from '@/utils/formatters';
 function JobActions({ job }: { job: JobResponse }) {
   const deleteMutation = useDeleteJob();
   const toggleMutation = useToggleJobStatus(job.jobUuid);
-  const isPaused = job.status === 'PAUSED';
+  const isActive = job.status === 'ACTIVE';
 
   const handleDelete = () => {
     ConfirmModal.show({
@@ -35,7 +35,7 @@ function JobActions({ job }: { job: JobResponse }) {
   };
 
   const handleToggle = () => {
-    toggleMutation.mutate(isPaused ? 'ENABLED' : 'DISABLED');
+    toggleMutation.mutate(isActive ? 'DISABLED' : 'ACTIVE');
   };
 
   const handleTrigger = async () => {
@@ -59,7 +59,7 @@ function JobActions({ job }: { job: JobResponse }) {
         type="text"
         icon={<PauseCircleOutlined />}
         size="small"
-        title={isPaused ? 'Resume' : 'Pause'}
+        title={isActive ? 'Disable' : 'Enable'}
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
@@ -121,8 +121,8 @@ export default function JobTable({
       width: 120,
       filters: [
         { text: 'Active', value: 'ACTIVE' },
-        { text: 'Paused', value: 'PAUSED' },
         { text: 'Disabled', value: 'DISABLED' },
+        { text: 'Archived', value: 'ARCHIVED' },
       ],
       onFilter: (value: any, record: JobResponse) => record.status === value,
       render: (status: JobStatus) => <JobStatusBadge status={status} />,
@@ -172,8 +172,8 @@ export default function JobTable({
           onChange={(val) => onStatusChange(val ?? '')}
           options={[
             { label: 'Active', value: 'ACTIVE' },
-            { label: 'Paused', value: 'PAUSED' },
             { label: 'Disabled', value: 'DISABLED' },
+            { label: 'Archived', value: 'ARCHIVED' },
           ]}
         />
         <SearchInput

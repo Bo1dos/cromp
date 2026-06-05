@@ -20,17 +20,18 @@ const { RangePicker } = DatePicker;
 // Status filter options
 // ---------------------------------------------------------------------------
 const STATUS_OPTIONS: { value: ExecutionStatus; label: string }[] = [
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'RUNNING', label: 'Running' },
-  { value: 'SUCCESS', label: 'Success' },
+  { value: 'CREATED', label: 'Created' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'SUCCEEDED', label: 'Succeeded' },
   { value: 'FAILED', label: 'Failed' },
   { value: 'CANCELLED', label: 'Cancelled' },
-  { value: 'TIMEOUT', label: 'Timeout' },
+  { value: 'SKIPPED', label: 'Skipped' },
 ];
 
 const SOURCE_OPTIONS: { value: ExecutionSource; label: string }[] = [
   { value: 'SCHEDULED', label: 'Scheduled' },
   { value: 'MANUAL', label: 'Manual' },
+  { value: 'API', label: 'API' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -70,29 +71,31 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
   // ---- Columns ----------------------------------------------------------
   const columns = [
     {
-      title: 'Job Name',
-      dataIndex: 'jobName',
-      key: 'jobName',
-      render: (name: string, record: ExecutionResponse) => (
-        <a onClick={() => navigate(`/dashboard/jobs/${record.jobUuid}`)}>{name}</a>
-      ),
+      title: 'Job ID',
+      dataIndex: 'jobId',
+      key: 'jobId',
+      width: 80,
     },
     {
       title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'finalStatus',
+      key: 'finalStatus',
       width: 140,
-      render: (status: ExecutionStatus) => <ExecutionStatusBadge status={status} />,
+      render: (status: string) => <ExecutionStatusBadge status={status as ExecutionStatus} />,
     },
     {
       title: 'Source',
       dataIndex: 'source',
       key: 'source',
       width: 120,
-      render: (source: ExecutionSource) =>
+      render: (source: string) =>
         source === 'SCHEDULED' ? (
           <Tag icon={<ClockCircleOutlined />} color="blue">
             Scheduled
+          </Tag>
+        ) : source === 'API' ? (
+          <Tag icon={<ThunderboltOutlined />} color="purple">
+            API
           </Tag>
         ) : (
           <Tag icon={<ThunderboltOutlined />} color="orange">
@@ -112,11 +115,18 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
       ),
     },
     {
-      title: 'Duration',
-      dataIndex: 'durationMs',
-      key: 'durationMs',
-      width: 110,
-      render: (val: number | undefined) => formatDuration(val),
+      title: 'Finished At',
+      dataIndex: 'finishedAt',
+      key: 'finishedAt',
+      width: 180,
+      render: (val: string | undefined) =>
+        val ? (
+          <Text title={dayjs(val).format('YYYY-MM-DD HH:mm:ss')}>
+            {formatDate(val)}
+          </Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
     {
       title: 'Attempts',
@@ -163,7 +173,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
       <Table<ExecutionResponse>
         rowKey="execUuid"
         columns={columns}
-        dataSource={data?.content ?? []}
+        dataSource={data?.items ?? []}
         loading={isLoading}
         locale={{
           emptyText: <EmptyState description="No executions found" hint="Executions will appear here when jobs run." />,
@@ -171,7 +181,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
         pagination={{
           current: page + 1,
           pageSize,
-          total: data?.totalElements ?? 0,
+          total: data?.total ?? 0,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
           onChange: (p, ps) => {
