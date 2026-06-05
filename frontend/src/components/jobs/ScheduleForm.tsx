@@ -4,6 +4,7 @@
 
 import { useEffect } from 'react';
 import { Modal, Form, Select } from 'antd';
+import { CronExpressionParser } from 'cron-parser';
 import CronInput from '@/components/jobs/CronInput';
 import type { CreateUpdateScheduleRequest, ScheduleResponse } from '@/types/schedule';
 import { useUpdateSchedule } from '@/hooks/useSchedules';
@@ -85,8 +86,19 @@ export default function ScheduleForm({ jobUuid, open, onClose, initialValues }: 
           rules={[
             { required: true, message: 'Please enter a cron expression' },
             {
-              pattern: /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/[0-9]+)(\s+(\*|([0-9]|1[0-9]|2[0-3])|\*\/[0-9]+)){4}$/,
-              message: 'Invalid 5-field cron expression',
+              validator: (_: any, value: string) => {
+                if (!value?.trim()) return Promise.resolve();
+                const parts = value.trim().split(/\s+/);
+                if (parts.length < 5 || parts.length > 7) {
+                  return Promise.reject(new Error('Cron expression must have 5-7 fields'));
+                }
+                try {
+                  CronExpressionParser.parse(value.trim());
+                  return Promise.resolve();
+                } catch {
+                  return Promise.reject(new Error('Invalid cron expression'));
+                }
+              },
             },
           ]}
         >

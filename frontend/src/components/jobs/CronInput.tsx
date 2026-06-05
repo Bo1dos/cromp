@@ -24,10 +24,10 @@ export default function CronInput({ value = '', onChange }: CronInputProps) {
   // ---- Parse next 5 run dates -----------------------------------------
   const nextRuns = useMemo<string[]>(() => {
     const parts = value.trim().split(/\s+/);
-    // Accept both 5-field (standard) and 6-field (with seconds, from react-cron-generator)
-    if (!value || (parts.length !== 5 && parts.length !== 6)) return [];
+    // Accept 5-field, 6-field (with seconds), or 7-field (with seconds + year)
+    // react-cron-generator produces 7-field expressions
+    if (!value || parts.length < 5 || parts.length > 7) return [];
     try {
-      // cron-parser expects 5-field or 6-field (with optional seconds)
       const interval = CronExpressionParser.parse(value);
       const dates: string[] = [];
       for (let i = 0; i < 5; i++) {
@@ -90,7 +90,25 @@ export default function CronInput({ value = '', onChange }: CronInputProps) {
           }}
         >
           <CronGenerator
-            onChange={(expr: string) => onChange?.(expr)}
+            onChange={(expr: string) => {
+              // react-cron-generator outputs Quartz-style cron (with ? and optional seconds/year).
+              // Backend cron-utils expects UNIX cron (5-field, no ?, no seconds, no year).
+              const parts = expr.trim().split(/\s+/);
+              let normalized: string;
+              if (parts.length >= 7) {
+                // 7-field: drop seconds [0] and year [6], keep middle 5
+                normalized = parts.slice(1, 6).join(' ');
+              } else if (parts.length === 6) {
+                // 6-field: drop seconds [0], keep remaining 5
+                normalized = parts.slice(1).join(' ');
+              } else {
+                // 5-field or less: use as-is
+                normalized = expr;
+              }
+              // Replace Quartz ? with * for UNIX compatibility
+              normalized = normalized.replace(/\?/g, '*');
+              onChange?.(normalized);
+            }}
             value={value}
             showResultText
             showResultCron
