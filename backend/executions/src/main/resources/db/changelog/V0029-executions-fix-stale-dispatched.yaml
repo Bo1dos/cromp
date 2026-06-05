@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: fix-stale-dispatched-attempts
+      author: bo1dos
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: execution_attempts
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE execution_attempts
+              SET status = 'TIMEOUT', updated_at = NOW()
+              WHERE status IN ('PENDING', 'DISPATCHED')
+                AND created_at < NOW() - INTERVAL '5 minutes';

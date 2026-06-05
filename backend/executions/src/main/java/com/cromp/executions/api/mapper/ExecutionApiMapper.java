@@ -66,6 +66,7 @@ public class ExecutionApiMapper {
                 a.getFinishedAt(),
                 a.getDurationMs(),
                 a.getTraceId(),
+                a.getOutputSummary(),
                 a.getCreatedAt(),
                 a.getUpdatedAt()
         );

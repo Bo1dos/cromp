@@ -23,8 +23,11 @@ export default function CronInput({ value = '', onChange }: CronInputProps) {
 
   // ---- Parse next 5 run dates -----------------------------------------
   const nextRuns = useMemo<string[]>(() => {
-    if (!value || value.split(/\s+/).length !== 5) return [];
+    const parts = value.trim().split(/\s+/);
+    // Accept both 5-field (standard) and 6-field (with seconds, from react-cron-generator)
+    if (!value || (parts.length !== 5 && parts.length !== 6)) return [];
     try {
+      // cron-parser expects 5-field or 6-field (with optional seconds)
       const interval = CronExpressionParser.parse(value);
       const dates: string[] = [];
       for (let i = 0; i < 5; i++) {

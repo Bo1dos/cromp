@@ -15,6 +15,7 @@ public record AttemptResponse(
         Instant finishedAt,
         Integer durationMs,
         UUID traceId,
+        String outputSummary,
         Instant createdAt,
         Instant updatedAt
 ) {}

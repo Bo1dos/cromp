@@ -41,6 +41,7 @@ export interface AttemptResponse {
   finishedAt?: string;
   durationMs?: number;
   traceId: string;
+  outputSummary?: string;
   createdAt: string;
   updatedAt: string;
 }

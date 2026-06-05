@@ -113,3 +113,8 @@ databaseChangeLog:
   - include:
       file: db/changelog/V0028-executions-fix-claim-null-org.yaml
       relativeToChangelogFile: false
+
+  # ── Executions (фикс старых DISPATCHED попыток) ──────────────────────────
+  - include:
+      file: db/changelog/V0029-executions-fix-stale-dispatched.yaml
+      relativeToChangelogFile: false

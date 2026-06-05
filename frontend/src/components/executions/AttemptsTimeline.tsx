@@ -53,10 +53,12 @@ export default function AttemptsTimeline({ executionId }: AttemptsTimelineProps)
           Attempt #{attempt.attemptNumber} — {attempt.status}
         </Text>
         <div style={{ marginTop: 4 }}>
-          <Text type="secondary">
-            Started: {dayjs(attempt.startedAt).format('YYYY-MM-DD HH:mm:ss')}
-          </Text>
-          <br />
+          {attempt.startedAt && (
+            <Text type="secondary">
+              Started: {dayjs(attempt.startedAt).format('YYYY-MM-DD HH:mm:ss')}
+            </Text>
+          )}
+          {attempt.startedAt && <br />}
           {attempt.finishedAt && (
             <Text type="secondary">
               Completed: {dayjs(attempt.finishedAt).format('YYYY-MM-DD HH:mm:ss')}
@@ -70,12 +72,28 @@ export default function AttemptsTimeline({ executionId }: AttemptsTimelineProps)
               <Text type="danger">Error: {attempt.statusReason || attempt.errorClass}</Text>
             </>
           )}
-          {attempt.statusCode && (
-            <>
-              <br />
-              <Text>Status Code: {attempt.statusCode}</Text>
-            </>
-          )}
+          {attempt.outputSummary && (() => {
+            try {
+              const s = JSON.parse(attempt.outputSummary);
+              return (
+                <>
+                  <br />
+                  <Text>Status: {s.statusCode}</Text>
+                  {s.body && (
+                    <>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>Response:</Text>
+                      <pre style={{ margin: '4px 0 0', fontSize: 12, maxHeight: 120, overflow: 'auto', background: '#f5f5f5', padding: 8, borderRadius: 4 }}>
+                        {typeof s.body === 'string' ? s.body : JSON.stringify(s.body, null, 2)}
+                      </pre>
+                    </>
+                  )}
+                </>
+              );
+            } catch {
+              return null;
+            }
+          })()}
         </div>
       </div>
     ),
