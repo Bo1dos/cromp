@@ -42,7 +42,7 @@ export default function JobEditPage() {
         breadcrumbs={[
           { title: 'Dashboard', href: '/dashboard' },
           { title: 'Jobs', href: '/dashboard/jobs' },
-          { title: job.name, href: `/dashboard/jobs/${job.uuid}` },
+          { title: job.name, href: `/dashboard/jobs/${job.jobUuid}` },
           { title: 'Edit' },
         ]}
       />

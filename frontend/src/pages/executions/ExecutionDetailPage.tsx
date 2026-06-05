@@ -10,7 +10,7 @@ import ExecutionStatusBadge from '@/components/executions/ExecutionStatusBadge';
 import CancelExecutionButton from '@/components/executions/CancelExecutionButton';
 import AttemptsTimeline from '@/components/executions/AttemptsTimeline';
 import ArtifactViewer from '@/components/executions/ArtifactViewer';
-import { formatDateFull, formatDuration } from '@/utils/formatters';
+import { formatDateFull } from '@/utils/formatters';
 import { useExecutionDetail } from '@/hooks/useExecutions';
 
 const { Text } = Typography;
@@ -43,13 +43,13 @@ export default function ExecutionDetailPage() {
       children: (
         <Descriptions bordered column={2} size="small" style={{ background: '#fff' }}>
           <Descriptions.Item label="Execution ID" span={2}>
-            <Text code>{execution.uuid}</Text>
+            <Text code>{execution.execUuid}</Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Job">
-            <a href={`/dashboard/jobs/${execution.jobUuid}`}>{execution.jobName}</a>
+          <Descriptions.Item label="Job ID">
+            <Text>{execution.jobId}</Text>
           </Descriptions.Item>
           <Descriptions.Item label="Status">
-            <ExecutionStatusBadge status={execution.status} />
+            <ExecutionStatusBadge status={execution.finalStatus as any} />
           </Descriptions.Item>
           <Descriptions.Item label="Source">
             <Tag>{execution.source}</Tag>
@@ -58,16 +58,10 @@ export default function ExecutionDetailPage() {
             {formatDateFull(execution.startedAt)}
           </Descriptions.Item>
           <Descriptions.Item label="Completed At">
-            {execution.completedAt ? formatDateFull(execution.completedAt) : <Text type="secondary">—</Text>}
-          </Descriptions.Item>
-          <Descriptions.Item label="Duration">
-            {formatDuration(execution.durationMs)}
+            {execution.finishedAt ? formatDateFull(execution.finishedAt) : <Text type="secondary">—</Text>}
           </Descriptions.Item>
           <Descriptions.Item label="Attempts">
-            {execution.attemptCount}
-          </Descriptions.Item>
-          <Descriptions.Item label="Error Message" span={2}>
-            {execution.errorMessage ?? <Text type="secondary">—</Text>}
+            {execution.totalAttempts}
           </Descriptions.Item>
         </Descriptions>
       ),
@@ -75,12 +69,12 @@ export default function ExecutionDetailPage() {
     {
       key: 'attempts',
       label: 'Attempts',
-      children: <AttemptsTimeline executionId={execution!.uuid} />,
+      children: <AttemptsTimeline executionId={execution!.execUuid} />,
     },
     {
       key: 'artifacts',
       label: 'Artifacts',
-      children: <ArtifactViewer executionId={execution!.uuid} />,
+      children: <ArtifactViewer executionId={execution!.execUuid} />,
     },
   ];
 
@@ -89,19 +83,19 @@ export default function ExecutionDetailPage() {
       <PageHeader
         title={
           <Space>
-            <span>{execution.jobName}</span>
-            <ExecutionStatusBadge status={execution.status} />
+            <span>Execution {execution.execUuid}</span>
+            <ExecutionStatusBadge status={execution.finalStatus as any} />
           </Space>
         }
         breadcrumbs={[
           { title: 'Dashboard', href: '/dashboard' },
           { title: 'Executions', href: '/dashboard/executions' },
-          { title: execution.jobName },
+          { title: `Job #${execution.jobId}` },
         ]}
         extra={
           <CancelExecutionButton
-            executionId={execution.uuid}
-            status={execution.status}
+            executionId={execution.execUuid}
+            status={execution.finalStatus as any}
           />
         }
       />

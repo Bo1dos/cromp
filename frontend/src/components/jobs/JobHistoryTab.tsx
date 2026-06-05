@@ -22,6 +22,7 @@ interface JobHistoryTabProps {
 // Version detail modal
 // ---------------------------------------------------------------------------
 function JobVersionDetail({ version, onClose }: { version: JobVersionResponse; onClose: () => void }) {
+  const c = version.config;
   return (
     <Modal
       title={`Version #${version.version}`}
@@ -34,36 +35,28 @@ function JobVersionDetail({ version, onClose }: { version: JobVersionResponse; o
         <Descriptions.Item label="Version" span={2}>
           <Tag>#{version.version}</Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Name">{version.name}</Descriptions.Item>
-        <Descriptions.Item label="Created By">{version.createdBy}</Descriptions.Item>
-        <Descriptions.Item label="Created At">
+        <Descriptions.Item label="Job UUID" span={2}>
+          <Text code>{version.jobUuid}</Text>
+        </Descriptions.Item>
+        <Descriptions.Item label="Created At" span={2}>
           {formatDateFull(version.createdAt)}
-        </Descriptions.Item>
-        <Descriptions.Item label="Description" span={2}>
-          {version.description || <Text type="secondary">—</Text>}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Cron Expression">
-          {version.cronExpression ? <Tag>{version.cronExpression}</Tag> : <Text type="secondary">—</Text>}
-        </Descriptions.Item>
-        <Descriptions.Item label="Timezone">
-          {version.timezone ?? 'UTC'}
         </Descriptions.Item>
 
         <Descriptions.Item label="HTTP Config" span={2}>
           <pre style={{ margin: 0, fontSize: 12, maxHeight: 200, overflow: 'auto' }}>
-            {JSON.stringify(version.httpConfig, null, 2)}
+            {JSON.stringify(c.target, null, 2)}
           </pre>
         </Descriptions.Item>
         <Descriptions.Item label="Retry Policy" span={2}>
           <pre style={{ margin: 0, fontSize: 12 }}>
-            {JSON.stringify(version.retryPolicy, null, 2)}
+            {JSON.stringify(c.retryPolicy, null, 2)}
           </pre>
         </Descriptions.Item>
+        <Descriptions.Item label="Timeout">{c.timeoutMs} ms</Descriptions.Item>
 
-        {version.secretIds && version.secretIds.length > 0 && (
-          <Descriptions.Item label="Secret IDs" span={2}>
-            {version.secretIds.join(', ')}
+        {c.secrets && c.secrets.length > 0 && (
+          <Descriptions.Item label="Secrets" span={2}>
+            {c.secrets.map((s) => `${s.envName} (${s.secretId})`).join(', ')}
           </Descriptions.Item>
         )}
       </Descriptions>

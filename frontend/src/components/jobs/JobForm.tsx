@@ -2,7 +2,7 @@
 // JobForm — multi-step form for creating & editing jobs
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   Form,
   Input,
@@ -13,6 +13,7 @@ import {
   Typography,
   Space,
   Divider,
+  notification,
 } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type { CreateJobRequest, HttpMethod, JobResponse } from '@/types/job';
@@ -71,29 +72,38 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
   const [form] = Form.useForm();
   const currentStep = Form.useWatch('step', form) ?? 0;
 
-  // Derive default values for create mode
-  const defaultValues = useMemo(
-    () => ({
+  // Derive default values for create / edit mode.
+  // Applied once via useEffect — NOT via Form initialValues prop, because
+  // Form.useWatch re-renders cause initialValues to overwrite user input.
+  const defaultValues = useMemo(() => {
+    const cfg = initialValues?.currentConfig;
+    return {
       step: 0,
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? '',
-      httpConfig: initialValues?.httpConfig ?? {
-        url: '',
-        method: 'GET' as HttpMethod,
-        headers: [],
-        body: '',
-        timeoutMs: 30_000,
+      httpConfig: {
+        url: cfg?.target?.url ?? '',
+        method: (cfg?.target?.method ?? 'GET') as HttpMethod,
+        headers: cfg?.target?.headers
+          ? Object.entries(cfg.target.headers).map(([key, value]) => ({ key, value }))
+          : [],
+        body: cfg?.target?.body ?? '',
+        timeoutMs: cfg?.timeoutMs ?? 30_000,
       },
-      retryPolicy: initialValues?.retryPolicy ?? {
-        maxAttempts: 3,
-        backoffMs: 1_000,
-        backoffMultiplier: 2,
+      retryPolicy: {
+        maxAttempts: cfg?.retryPolicy?.maxAttempts ?? 3,
+        backoffMs: cfg?.retryPolicy?.backoffMs ?? 1_000,
+        backoffMultiplier: cfg?.retryPolicy?.backoffMultiplier ?? 2,
       },
       cronExpression: initialValues?.cronExpression ?? '',
       timezone: initialValues?.timezone ?? 'UTC',
-    }),
-    [initialValues],
-  );
+    };
+  }, [initialValues]);
+
+  useEffect(() => {
+    form.setFieldsValue(defaultValues);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultValues]);
 
   const handleNext = async () => {
     try {
@@ -112,7 +122,13 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
     form.setFieldValue('step', currentStep - 1);
   };
 
-  const handleFinish = (values: Record<string, any>) => {
+  const handleFinish = () => {
+    // Read ALL fields directly from the store (including unmounted ones).
+    // The onFinish argument can be stale when Form.useWatch re-renders
+    // cause initialValues to race against user input.
+    const values = form.getFieldsValue(true) as Record<string, any>;
+    console.log('[JobForm] handleFinish — raw store values:', values);
+
     // Transform headers from array of {key, value} to Record<string, string>
     const headersRecord: Record<string, string> = {};
     if (values.httpConfig?.headers) {
@@ -121,25 +137,34 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
       }
     }
 
+    // Map form fields → backend CreateJobRequest shape:
+    //   httpConfig.{url,method,headers,body} → config.target.{url,method,headers,body}
+    //   httpConfig.timeoutMs               → config.timeoutMs
+    //   retryPolicy                        → config.retryPolicy
     const payload: CreateJobRequest = {
       name: values.name,
-      description: values.description,
-      httpConfig: {
-        url: values.httpConfig.url,
-        method: values.httpConfig.method,
-        headers: headersRecord,
-        body: values.httpConfig.body || undefined,
-        timeoutMs: values.httpConfig.timeoutMs,
+      description: values.description || '',
+      config: {
+        target: {
+          type: 'HTTP',
+          url: values.httpConfig?.url ?? '',
+          method: values.httpConfig?.method ?? 'GET',
+          headers: headersRecord,
+          body: values.httpConfig?.body || undefined,
+        },
+        retryPolicy: {
+          maxAttempts: values.retryPolicy?.maxAttempts ?? 3,
+          backoffMs: values.retryPolicy?.backoffMs ?? 1_000,
+          backoffMultiplier: values.retryPolicy?.backoffMultiplier ?? 2,
+        },
+        timeoutMs: values.httpConfig?.timeoutMs ?? 30_000,
+        secrets: [],
       },
-      retryPolicy: {
-        maxAttempts: values.retryPolicy.maxAttempts,
-        backoffMs: values.retryPolicy.backoffMs,
-        backoffMultiplier: values.retryPolicy.backoffMultiplier,
-      },
-      cronExpression: values.cronExpression || undefined,
-      timezone: values.timezone || undefined,
+      queueName: undefined,
+      priority: 0,
     };
 
+    console.log('[JobForm] Submitting payload:', payload);
     onSubmit(payload);
   };
 
@@ -149,10 +174,21 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
     <Form
       form={form}
       layout="vertical"
-      initialValues={defaultValues}
       onFinish={handleFinish}
-      onFinishFailed={({ errorFields }) => {
-        // Scroll to the first field with an error so the user sees what's wrong
+      onFinishFailed={({ errorFields, values }) => {
+        console.error('[JobForm] Validation failed:', { errorFields, values });
+
+        // Show notification with human-readable field names
+        const fieldNames = errorFields
+          .map((f) => (Array.isArray(f.name) ? f.name.join(' > ') : String(f.name)))
+          .join(', ');
+        notification.error({
+          message: 'Validation failed',
+          description: `Please fix the following fields: ${fieldNames || 'unknown fields'}`,
+          duration: 5,
+        });
+
+        // Scroll to the first field with an error
         if (errorFields?.length > 0) {
           form.scrollToField(errorFields[0].name, { behavior: 'smooth' });
         }
@@ -322,7 +358,14 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
             Next
           </Button>
         ) : (
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button
+            type="primary"
+            loading={loading}
+            onClick={() => {
+              console.log('[JobForm] Submit button clicked, calling form.submit()');
+              form.submit();
+            }}
+          >
             {mode === 'create' ? 'Create Job' : 'Save Changes'}
           </Button>
         )}

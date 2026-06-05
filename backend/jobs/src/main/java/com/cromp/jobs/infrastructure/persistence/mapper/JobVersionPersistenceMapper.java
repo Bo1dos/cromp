@@ -17,11 +17,16 @@ public class JobVersionPersistenceMapper {
     }
 
     public JobVersionJpaEntity toJpa(JobVersion version) {
+        JobConfig config = version.getConfig();
         return JobVersionJpaEntity.builder()
                 .id(version.getId())
                 .jobId(version.getJobId())
                 .version(version.getVersion())
-                .config(toJson(version.getConfig()))
+                .config(toJson(config))
+                .method(config.target().method())
+                .targetUrl(config.target().url())
+                .timeoutMs(config.timeoutMs())
+                .retryPolicy(toJson(config.retryPolicy()))
                 .createdBy(version.getCreatedBy())
                 .createdAt(version.getCreatedAt())
                 .build();
@@ -38,11 +43,11 @@ public class JobVersionPersistenceMapper {
         );
     }
 
-    private String toJson(JobConfig config) {
+    private String toJson(Object obj) {
         try {
-            return objectMapper.writeValueAsString(config);
+            return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize JobConfig", e);
+            throw new RuntimeException("Failed to serialize " + obj.getClass().getSimpleName(), e);
         }
     }
 

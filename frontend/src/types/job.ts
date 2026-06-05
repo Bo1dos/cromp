@@ -6,54 +6,101 @@ export type JobStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
 
-export interface HttpConfig {
+// =========================================================================
+// Response types (backend → frontend)
+// =========================================================================
+
+/** Backend JobResponse */
+export interface JobResponse {
+  jobUuid: string;
+  name: string;
+  description: string;
+  status: JobStatus;
+  queueName: string;
+  priority: number;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+  currentConfig: JobConfigResponse;
+  currentVersion: number;
+  versionCount: number;
+}
+
+/** Backend JobConfigResponse */
+export interface JobConfigResponse {
+  target: JobTargetResponse;
+  retryPolicy: RetryPolicyResponse;
+  timeoutMs: number;
+  secrets: SecretRefResponse[];
+}
+
+/** Backend JobTargetResponse */
+export interface JobTargetResponse {
+  type: string;
   url: string;
   method: HttpMethod;
   headers?: Record<string, string>;
   body?: string;
-  timeoutMs: number;
 }
 
-export interface RetryPolicy {
+/** Backend RetryPolicyResponse */
+export interface RetryPolicyResponse {
+  maxAttempts: number;
+  backoffMs: number;
+  backoffMultiplier: number;
+  retryableErrors: string[];
+}
+
+/** Backend SecretRefResponse */
+export interface SecretRefResponse {
+  secretId: string;
+  envName: string;
+}
+
+// =========================================================================
+// Request types (frontend → backend)
+// =========================================================================
+
+export interface CreateJobRequest {
+  name: string;
+  description: string;
+  config: JobConfigRequest;
+  queueName?: string;
+  priority?: number;
+}
+
+export interface JobConfigRequest {
+  target: JobTargetRequest;
+  retryPolicy: RetryPolicyRequest;
+  timeoutMs: number;
+  secrets?: SecretRefRequest[];
+}
+
+export interface JobTargetRequest {
+  type: string;
+  url: string;
+  method: HttpMethod;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+export interface RetryPolicyRequest {
   maxAttempts: number;
   backoffMs: number;
   backoffMultiplier: number;
 }
 
-export interface JobResponse {
-  uuid: string;
-  name: string;
-  description: string;
-  status: JobStatus;
-  httpConfig: HttpConfig;
-  retryPolicy: RetryPolicy;
-  cronExpression?: string;
-  timezone?: string;
-  nextRunAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  lastExecutionAt?: string;
-  lastExecutionStatus?: string;
-}
-
-export interface CreateJobRequest {
-  name: string;
-  description: string;
-  httpConfig: HttpConfig;
-  retryPolicy: RetryPolicy;
-  cronExpression?: string;
-  timezone?: string;
-  secretIds?: string[];
+export interface SecretRefRequest {
+  secretId: string;
+  key: string;
 }
 
 export interface UpdateJobRequest {
   name?: string;
   description?: string;
-  httpConfig?: HttpConfig;
-  retryPolicy?: RetryPolicy;
-  cronExpression?: string;
-  timezone?: string;
-  secretIds?: string[];
+  config?: JobConfigRequest;
+  queueName?: string;
+  priority?: number;
 }
 
 export interface ToggleStatusRequest {
@@ -66,25 +113,42 @@ export interface ListJobsParams {
   offset?: number;
 }
 
-// ---------------------------------------------------------------------------
-// Job versioning
-// ---------------------------------------------------------------------------
+// =========================================================================
+// Versioning
+// =========================================================================
 
 export interface JobVersionResponse {
+  jobUuid: string;
   version: number;
-  name: string;
-  description: string;
-  httpConfig: HttpConfig;
-  retryPolicy: RetryPolicy;
-  cronExpression?: string;
-  timezone?: string;
-  secretIds?: string[];
+  config: JobConfigResponse;
   createdAt: string;
-  createdBy: string;
 }
 
 export interface JobVersionCompareResponse {
-  left: JobVersionResponse;
-  right: JobVersionResponse;
-  diff: string;
+  fromVersion: number;
+  toVersion: number;
+  diffs: JobVersionDiff[];
+  summary: JobVersionCompareSummary;
+}
+
+export interface JobVersionDiff {
+  field: string;
+  oldValue: string;
+  newValue: string;
+  type: string;
+}
+
+export interface JobVersionCompareSummary {
+  totalChanges: number;
+  breakingChanges: number;
+  addedSecrets: string[];
+}
+
+// =========================================================================
+// Trigger
+// =========================================================================
+
+export interface TriggerResponse {
+  executionId: string;
+  message: string;
 }

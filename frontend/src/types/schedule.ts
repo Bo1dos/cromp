@@ -4,10 +4,11 @@
 
 export type ScheduleStatus = 'ACTIVE' | 'PAUSED';
 
+/** Backend ScheduleResponse */
 export interface ScheduleResponse {
-  jobUuid: string;
   cronExpression: string;
   timezone: string;
+  rules?: string;
   nextRunAt?: string;
   status: ScheduleStatus;
   createdAt: string;

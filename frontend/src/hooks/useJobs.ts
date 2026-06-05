@@ -63,7 +63,7 @@ export function useCreateJob() {
     onSuccess: (job) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.JOBS] });
       notification.success({ message: 'Job created', description: `Job "${job.name}" has been created.` });
-      navigate(`/dashboard/jobs/${job.uuid}`);
+      navigate(`/dashboard/jobs/${job.jobUuid}`);
     },
     onError: (error) => {
       notification.error({ message: 'Failed to create job', description: error.message });

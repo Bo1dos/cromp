@@ -39,7 +39,7 @@ export default function AttemptsTimeline({ executionId }: AttemptsTimelineProps)
   }
 
   const items = attempts.map((attempt) => ({
-    key: attempt.uuid,
+    key: attempt.attemptUuid,
     color: attempt.status === 'SUCCESS' ? 'green' : 'red',
     dot:
       attempt.status === 'SUCCESS' ? (
@@ -57,17 +57,17 @@ export default function AttemptsTimeline({ executionId }: AttemptsTimelineProps)
             Started: {dayjs(attempt.startedAt).format('YYYY-MM-DD HH:mm:ss')}
           </Text>
           <br />
-          {attempt.completedAt && (
+          {attempt.finishedAt && (
             <Text type="secondary">
-              Completed: {dayjs(attempt.completedAt).format('YYYY-MM-DD HH:mm:ss')}
+              Completed: {dayjs(attempt.finishedAt).format('YYYY-MM-DD HH:mm:ss')}
             </Text>
           )}
           <br />
           <Text type="secondary">Duration: {formatDuration(attempt.durationMs)}</Text>
-          {attempt.errorMessage && (
+          {(attempt.statusReason || attempt.errorClass) && (
             <>
               <br />
-              <Text type="danger">Error: {attempt.errorMessage}</Text>
+              <Text type="danger">Error: {attempt.statusReason || attempt.errorClass}</Text>
             </>
           )}
           {attempt.statusCode && (

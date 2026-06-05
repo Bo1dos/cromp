@@ -1,57 +1,60 @@
 // ---------------------------------------------------------------------------
-// Execution types for CaaS
+// Execution types — mirrors backend API contract
 // ---------------------------------------------------------------------------
 
 export type ExecutionStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';
 export type ExecutionSource = 'SCHEDULED' | 'MANUAL';
 
+/** Backend ExecutionResponse */
 export interface ExecutionResponse {
-  uuid: string;
-  jobUuid: string;
-  jobName: string;
-  status: ExecutionStatus;
-  source: ExecutionSource;
+  execUuid: string;
+  jobId: number;
+  jobVersionId: number;
+  priority: number;
+  source: string;
+  finalStatus: string;
+  totalAttempts: number;
+  triggeredAt: string;
+  scheduledAt: string;
   startedAt: string;
-  completedAt?: string;
-  durationMs?: number;
-  attemptCount: number;
+  finishedAt?: string;
+  correlationId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
+/** Backend ExecutionDetailResponse = ExecutionResponse + attempts */
 export interface ExecutionDetailResponse extends ExecutionResponse {
-  httpConfig: {
-    url: string;
-    method: string;
-    headers?: Record<string, string>;
-    body?: string;
-    timeoutMs: number;
-  };
-  retryPolicy: {
-    maxAttempts: number;
-    backoffMs: number;
-    backoffMultiplier: number;
-  };
-  payload?: object;
+  attempts: AttemptResponse[];
 }
 
+/** Backend AttemptResponse */
 export interface AttemptResponse {
-  uuid: string;
+  attemptUuid: string;
   attemptNumber: number;
-  status: ExecutionStatus;
+  status: string;
+  statusReason?: string;
+  errorClass?: string;
+  scheduledAt: string;
+  claimedAt?: string;
   startedAt: string;
-  completedAt?: string;
+  finishedAt?: string;
   durationMs?: number;
-  errorMessage?: string;
-  statusCode?: number;
+  traceId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
+/** Backend ArtifactResponse */
 export interface ArtifactResponse {
-  uuid: string;
+  artifactUuid: string;
   type: 'stdout' | 'stderr';
   content: string;
   sizeBytes: number;
   createdAt: string;
 }
 
+/** Backend PagedResponse */
 export interface PagedResponse<T> {
   content: T[];
   page: number;

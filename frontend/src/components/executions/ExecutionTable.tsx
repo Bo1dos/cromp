@@ -120,11 +120,11 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
     },
     {
       title: 'Attempts',
-      dataIndex: 'attemptCount',
-      key: 'attemptCount',
+      dataIndex: 'totalAttempts',
+      key: 'totalAttempts',
       width: 90,
       render: (val: number, record: ExecutionResponse) => (
-        <a onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/executions/${record.uuid}`); }}>
+        <a onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/executions/${record.execUuid}`); }}>
           {val}
         </a>
       ),
@@ -161,7 +161,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
       </Space>
 
       <Table<ExecutionResponse>
-        rowKey="uuid"
+        rowKey="execUuid"
         columns={columns}
         dataSource={data?.content ?? []}
         loading={isLoading}
@@ -181,7 +181,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
           showTotal: (total) => `Total ${total} executions`,
         }}
         onRow={(record) => ({
-          onClick: () => navigate(`/dashboard/executions/${record.uuid}`),
+          onClick: () => navigate(`/dashboard/executions/${record.execUuid}`),
           style: { cursor: 'pointer' },
         })}
         scroll={{ x: 900 }}

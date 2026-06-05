@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Tabs, Descriptions, Tag, Space, Typography } from 'antd';
+import { Button, Tabs, Descriptions, Space, Typography } from 'antd';
 import {
   EditOutlined,
   PlayCircleOutlined,
@@ -61,7 +61,7 @@ export default function JobDetailPage() {
       content: 'This action cannot be undone. The job will be permanently removed.',
       danger: true,
       okText: 'Delete',
-      onOk: () => deleteMutation.mutate(job.uuid),
+      onOk: () => deleteMutation.mutate(job.jobUuid),
     });
   };
 
@@ -93,7 +93,7 @@ export default function JobDetailPage() {
         ]}
         extra={
           <Space wrap>
-            <Button icon={<EditOutlined />} onClick={() => navigate(`/dashboard/jobs/${job.uuid}/edit`)}>
+            <Button icon={<EditOutlined />} onClick={() => navigate(`/dashboard/jobs/${job.jobUuid}/edit`)}>
               Edit
             </Button>
             <Button
@@ -119,7 +119,7 @@ export default function JobDetailPage() {
           children: (
             <Descriptions bordered column={2} size="small" style={{ background: '#fff' }}>
               <Descriptions.Item label="UUID" span={2}>
-                <Text code>{job.uuid}</Text>
+                <Text code>{job.jobUuid}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Name">{job.name}</Descriptions.Item>
               <Descriptions.Item label="Status">
@@ -129,12 +129,11 @@ export default function JobDetailPage() {
                 {job.description || <Text type="secondary">—</Text>}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Schedule">
-                {job.cronExpression ? <Tag>{job.cronExpression}</Tag> : <Text type="secondary">Manual</Text>}
-              </Descriptions.Item>
-              <Descriptions.Item label="Timezone">
-                {job.timezone ?? 'UTC'}
-              </Descriptions.Item>
+              <Descriptions.Item label="Queue">{job.queueName}</Descriptions.Item>
+              <Descriptions.Item label="Priority">{job.priority}</Descriptions.Item>
+
+              <Descriptions.Item label="Version">{job.currentVersion} / {job.versionCount}</Descriptions.Item>
+              <Descriptions.Item label="Created By">User #{job.createdBy}</Descriptions.Item>
 
               <Descriptions.Item label="Created">
                 {formatDateFull(job.createdAt)}
@@ -143,34 +142,25 @@ export default function JobDetailPage() {
                 {formatDateFull(job.updatedAt)}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Next Run">
-                {job.nextRunAt ? formatDateFull(job.nextRunAt) : <Text type="secondary">—</Text>}
-              </Descriptions.Item>
-              <Descriptions.Item label="Last Execution">
-                {job.lastExecutionAt
-                  ? `${formatDateFull(job.lastExecutionAt)}${job.lastExecutionStatus ? ` (${job.lastExecutionStatus})` : ''}`
-                  : <Text type="secondary">—</Text>}
-              </Descriptions.Item>
-
               <Descriptions.Item label="HTTP URL" span={2}>
-                <Text code>{job.httpConfig.method}</Text>&nbsp;
-                <Text>{job.httpConfig.url}</Text>
+                <Text code>{job.currentConfig.target.method}</Text>&nbsp;
+                <Text>{job.currentConfig.target.url}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Timeout">{job.httpConfig.timeoutMs} ms</Descriptions.Item>
+              <Descriptions.Item label="Timeout">{job.currentConfig.timeoutMs} ms</Descriptions.Item>
               <Descriptions.Item label="Request Body">
-                {job.httpConfig.body ? <pre style={{ margin: 0, fontSize: 12 }}>{job.httpConfig.body}</pre> : <Text type="secondary">—</Text>}
+                {job.currentConfig.target.body ? <pre style={{ margin: 0, fontSize: 12 }}>{job.currentConfig.target.body}</pre> : <Text type="secondary">—</Text>}
               </Descriptions.Item>
 
-              {job.httpConfig.headers && Object.keys(job.httpConfig.headers).length > 0 && (
+              {job.currentConfig.target.headers && Object.keys(job.currentConfig.target.headers).length > 0 && (
                 <Descriptions.Item label="Headers" span={2}>
                   <pre style={{ margin: 0, fontSize: 12 }}>
-                    {JSON.stringify(job.httpConfig.headers, null, 2)}
+                    {JSON.stringify(job.currentConfig.target.headers, null, 2)}
                   </pre>
                 </Descriptions.Item>
               )}
 
-              <Descriptions.Item label="Max Attempts">{job.retryPolicy.maxAttempts}</Descriptions.Item>
-              <Descriptions.Item label="Backoff">{job.retryPolicy.backoffMs} ms × {job.retryPolicy.backoffMultiplier}</Descriptions.Item>
+              <Descriptions.Item label="Max Attempts">{job.currentConfig.retryPolicy.maxAttempts}</Descriptions.Item>
+              <Descriptions.Item label="Backoff">{job.currentConfig.retryPolicy.backoffMs} ms × {job.currentConfig.retryPolicy.backoffMultiplier}</Descriptions.Item>
             </Descriptions>
           ),
         },
@@ -195,7 +185,7 @@ export default function JobDetailPage() {
         {
           key: 'schedule',
           label: 'Schedule',
-          children: <JobScheduleTab jobUuid={job.uuid} />,
+          children: <JobScheduleTab jobUuid={job.jobUuid} />,
         },
       ]} />
     </div>

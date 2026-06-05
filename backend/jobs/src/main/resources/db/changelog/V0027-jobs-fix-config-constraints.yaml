@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: fix-job-versions-config-constraints-for-nested-target-v0027
+      author: bo1dos
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: job_versions
+      changes:
+        # 1. Drop old constraints that checked top-level keys (broken after JobConfig refactoring)
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE job_versions DROP CONSTRAINT IF EXISTS check_config_has_url;
+              ALTER TABLE job_versions DROP CONSTRAINT IF EXISTS check_config_has_method;
+        # 2. Update trigger to extract fields from nested config->'target'
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE OR REPLACE FUNCTION sync_job_version_fields()
+              RETURNS TRIGGER AS $$
+              BEGIN
+                NEW.target_url := NEW.config->'target'->>'url';
+                NEW.method     := NEW.config->'target'->>'method';
+                NEW.timeout_ms := (NEW.config->>'timeoutMs')::INTEGER;
+                NEW.retry_policy := NEW.config->'retryPolicy';
+                RETURN NEW;
+              END;
+              $$ LANGUAGE plpgsql;
+        # 3. Re-create constraints checking nested paths inside config->'target'
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE job_versions ADD CONSTRAINT check_config_has_url
+                CHECK (config->'target'->>'url' IS NOT NULL AND config->'target'->>'url' <> '');
+              ALTER TABLE job_versions ADD CONSTRAINT check_config_has_method
+                CHECK (config->'target'->>'method' IS NOT NULL AND config->'target'->>'method' <> '');

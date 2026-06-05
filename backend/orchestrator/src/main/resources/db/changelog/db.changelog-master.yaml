@@ -103,3 +103,8 @@ databaseChangeLog:
   - include:
       file: db/changelog/V0026-common-add-member-role.yaml
       relativeToChangelogFile: false
+
+  # ── Jobs (фикс constraint после рефакторинга JobConfig) ────────────────────
+  - include:
+      file: db/changelog/V0027-jobs-fix-config-constraints.yaml
+      relativeToChangelogFile: false

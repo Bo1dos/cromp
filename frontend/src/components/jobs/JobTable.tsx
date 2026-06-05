@@ -21,7 +21,7 @@ import { formatRelative } from '@/utils/formatters';
 /** Small component that renders action buttons with proper hooks context. */
 function JobActions({ job }: { job: JobResponse }) {
   const deleteMutation = useDeleteJob();
-  const toggleMutation = useToggleJobStatus(job.uuid);
+  const toggleMutation = useToggleJobStatus(job.jobUuid);
   const isPaused = job.status === 'PAUSED';
 
   const handleDelete = () => {
@@ -30,7 +30,7 @@ function JobActions({ job }: { job: JobResponse }) {
       content: 'This action cannot be undone. The job will be permanently removed.',
       danger: true,
       okText: 'Delete',
-      onOk: () => deleteMutation.mutate(job.uuid),
+      onOk: () => deleteMutation.mutate(job.jobUuid),
     });
   };
 
@@ -40,7 +40,7 @@ function JobActions({ job }: { job: JobResponse }) {
 
   const handleTrigger = async () => {
     const { triggerJob } = await import('@/api/jobs.api');
-    await triggerJob(job.uuid);
+    await triggerJob(job.jobUuid);
   };
 
   return (
@@ -109,7 +109,7 @@ export default function JobTable({
       key: 'name',
       sorter: (a: JobResponse, b: JobResponse) => a.name.localeCompare(b.name),
       render: (_: string, record: JobResponse) => (
-        <Button type="link" style={{ padding: 0 }} onClick={() => navigate(`/dashboard/jobs/${record.uuid}`)}>
+        <Button type="link" style={{ padding: 0 }} onClick={() => navigate(`/dashboard/jobs/${record.jobUuid}`)}>
           {record.name}
         </Button>
       ),
