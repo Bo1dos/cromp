@@ -21,9 +21,10 @@ function getProbabilityColor(prob: number): string {
 const columns: ColumnsType<PredictionItem> = [
   {
     title: 'Job',
-    dataIndex: 'jobName',
-    key: 'jobName',
-    sorter: (a: PredictionItem, b: PredictionItem) => a.jobName.localeCompare(b.jobName),
+    dataIndex: 'jobId',
+    key: 'jobId',
+    sorter: (a: PredictionItem, b: PredictionItem) => a.jobId - b.jobId,
+    render: (id: number) => `#${id}`,
   },
   {
     title: 'Failure Probability',
@@ -44,8 +45,9 @@ const columns: ColumnsType<PredictionItem> = [
     title: 'Expected Duration',
     dataIndex: 'expectedDurationMs',
     key: 'expectedDurationMs',
-    sorter: (a: PredictionItem, b: PredictionItem) => a.expectedDurationMs - b.expectedDurationMs,
-    render: (ms: number) => {
+    sorter: (a: PredictionItem, b: PredictionItem) => (a.expectedDurationMs ?? 0) - (b.expectedDurationMs ?? 0),
+    render: (ms: number | null) => {
+      if (ms == null) return '—';
       if (ms < 1000) return `${ms}ms`;
       return `${(ms / 1000).toFixed(1)}s`;
     },
@@ -66,12 +68,13 @@ const columns: ColumnsType<PredictionItem> = [
   },
   {
     title: 'Next Run',
-    dataIndex: 'nextExpectedRunAt',
-    key: 'nextExpectedRunAt',
+    dataIndex: 'nextRunAt',
+    key: 'nextRunAt',
     sorter: (a: PredictionItem, b: PredictionItem) =>
-      new Date(a.nextExpectedRunAt).getTime() -
-      new Date(b.nextExpectedRunAt).getTime(),
-    render: (iso: string) => {
+      new Date(a.nextRunAt ?? 0).getTime() -
+      new Date(b.nextRunAt ?? 0).getTime(),
+    render: (iso: string | null) => {
+      if (!iso) return '—';
       const d = dayjs(iso);
       const now = dayjs();
       const diffDays = d.diff(now, 'day');
@@ -95,7 +98,7 @@ export default function PredictionsTable({ data, loading }: Props) {
       columns={columns}
       dataSource={data}
       loading={loading}
-      rowKey="jobUuid"
+      rowKey="jobId"
       locale={{ emptyText: <Empty description="No predictions available" /> }}
       pagination={false}
     />

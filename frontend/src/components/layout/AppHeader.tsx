@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useLanguage } from '@/hooks/useLanguage';
 import OrganizationSwitcher from './OrganizationSwitcher';
 
 const { Header } = Layout;
@@ -29,6 +30,7 @@ export default function AppHeader({ extraLeft }: AppHeaderProps) {
   const { activeOrganization } = useOrganization();
   const navigate = useNavigate();
   const { token } = theme.useToken();
+  const { t } = useLanguage();
 
   const handleLogout = useCallback(() => {
     logout();
@@ -38,14 +40,14 @@ export default function AppHeader({ extraLeft }: AppHeaderProps) {
     {
       key: 'profile',
       icon: <ProfileOutlined />,
-      label: 'Profile',
+      label: t.nav.profile,
       onClick: () => navigate('/dashboard/profile'),
     },
     { type: 'divider' },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Sign Out',
+      label: t.nav.signOut,
       danger: true,
       onClick: handleLogout,
     },

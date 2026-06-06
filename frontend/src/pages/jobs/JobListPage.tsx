@@ -8,9 +8,11 @@ import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import PageHeader from '@/components/common/PageHeader';
 import JobTable from '@/components/jobs/JobTable';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function JobListPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -24,15 +26,15 @@ export default function JobListPage() {
   return (
     <div>
       <PageHeader
-        title="Jobs"
-        breadcrumbs={[{ title: 'Dashboard' }, { title: 'Jobs' }]}
+        title={t.nav.jobs}
+        breadcrumbs={[{ title: t.nav.dashboard }, { title: t.nav.jobs }]}
         extra={
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/dashboard/jobs/new')}
           >
-            Create Job
+            {t.jobs.createJob}
           </Button>
         }
       />

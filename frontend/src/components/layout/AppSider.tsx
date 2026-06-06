@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
 import {
+  DashboardOutlined,
   ScheduleOutlined,
   HistoryOutlined,
   KeyOutlined,
@@ -16,6 +17,7 @@ import {
 } from '@ant-design/icons';
 
 import { useOrganization } from '@/hooks/useOrganization';
+import { useLanguage } from '@/hooks/useLanguage';
 import { isOwnerOrAdmin, isAdmin } from '@/utils/permissions';
 
 const { Sider } = Layout;
@@ -31,28 +33,34 @@ export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps
   const location = useLocation();
   const navigate = useNavigate();
   const { activeRole } = useOrganization();
+  const { t } = useLanguage();
 
   const menuItems = useMemo(() => {
     const items = [
       {
+        key: '/dashboard',
+        icon: <DashboardOutlined />,
+        label: t.nav.dashboard,
+      },
+      {
         key: '/dashboard/jobs',
         icon: <ScheduleOutlined />,
-        label: 'Jobs',
+        label: t.nav.jobs,
       },
       {
         key: '/dashboard/executions',
         icon: <HistoryOutlined />,
-        label: 'Executions',
+        label: t.nav.executions,
       },
       {
         key: '/dashboard/secrets',
         icon: <KeyOutlined />,
-        label: 'Secrets',
+        label: t.nav.secrets,
       },
       {
         key: '/dashboard/analytics',
         icon: <BarChartOutlined />,
-        label: 'Analytics',
+        label: t.nav.analytics,
       },
     ];
 
@@ -61,7 +69,7 @@ export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps
       items.push({
         key: '/dashboard/members',
         icon: <TeamOutlined />,
-        label: 'Members',
+        label: t.nav.members,
       });
     }
 
@@ -70,7 +78,7 @@ export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps
       items.push({
         key: '/dashboard/audit',
         icon: <AuditOutlined />,
-        label: 'Audit',
+        label: t.nav.audit,
       });
     }
 
@@ -78,11 +86,11 @@ export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps
     items.push({
       key: '/dashboard/profile',
       icon: <UserOutlined />,
-      label: 'Profile',
+      label: t.nav.profile,
     });
 
     return items;
-  }, [activeRole]);
+  }, [activeRole, t]);
 
   /** Determine the selected key based on the current pathname */
   const selectedKey = useMemo(() => {

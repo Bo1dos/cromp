@@ -18,6 +18,7 @@ import PageHeader from '@/components/common/PageHeader';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useLanguage } from '@/hooks/useLanguage';
 import { formatDateFull } from '@/utils/formatters';
 import SettingsTab from './SettingsTab';
 
@@ -27,9 +28,10 @@ export default function ProfilePage() {
   const { user, isLoading } = useAuth();
   const { memberships } = useOrganization();
   const [activeTab, setActiveTab] = useState('profile');
+  const { t } = useLanguage();
 
   if (isLoading || !user) {
-    return <LoadingSpinner tip="Loading profile…" />;
+    return <LoadingSpinner tip={t.common.loading} />;
   }
 
   const orgCount = memberships.length;
@@ -37,8 +39,8 @@ export default function ProfilePage() {
   return (
     <div>
       <PageHeader
-        title="Profile"
-        breadcrumbs={[{ title: 'Profile' }]}
+        title={t.nav.profile}
+        breadcrumbs={[{ title: t.nav.profile }]}
       />
 
       <Tabs
@@ -47,7 +49,7 @@ export default function ProfilePage() {
         items={[
           {
             key: 'profile',
-            label: 'Profile',
+            label: t.nav.profile,
             children: (
               <Space direction="vertical" size="large" style={{ width: '100%' }}>
                 {/* ---- Identity card ---- */}
@@ -70,28 +72,28 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* ---- Details ---- */}
-                <Card title="Account Details">
+                <Card title={t.profile.accountDetails}>
                   <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-                    <Descriptions.Item label="User UUID">
+                    <Descriptions.Item label={t.profile.userUuid}>
                       <Text code>{user.userUuid}</Text>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Email">{user.email}</Descriptions.Item>
-                    <Descriptions.Item label="First Name">
+                    <Descriptions.Item label={t.profile.email}>{user.email}</Descriptions.Item>
+                    <Descriptions.Item label={t.profile.firstName}>
                       {user.firstName || <Text type="secondary">—</Text>}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Last Name">
+                    <Descriptions.Item label={t.profile.lastName}>
                       {user.lastName || <Text type="secondary">—</Text>}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Display Name">
+                    <Descriptions.Item label={t.profile.displayName}>
                       {user.displayName || <Text type="secondary">—</Text>}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Organisations">
+                    <Descriptions.Item label={t.profile.organisations}>
                       <Tag color="blue">{orgCount}</Tag>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Registered">
+                    <Descriptions.Item label={t.profile.registered}>
                       {formatDateFull(user.createdAt)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Last Updated">
+                    <Descriptions.Item label={t.profile.lastUpdated}>
                       {formatDateFull(user.updatedAt)}
                     </Descriptions.Item>
                   </Descriptions>
@@ -101,7 +103,7 @@ export default function ProfilePage() {
           },
           {
             key: 'settings',
-            label: 'Settings',
+            label: t.nav.settings,
             children: <SettingsTab />,
           },
         ]}

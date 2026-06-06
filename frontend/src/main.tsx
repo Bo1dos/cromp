@@ -7,6 +7,7 @@ import { App as AntdApp } from 'antd';
 import { router } from '@/router';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import '@/styles/global.css';
 
 // ---------------------------------------------------------------------------
@@ -30,9 +31,11 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AntdApp>
-            <RouterProvider router={router} />
-          </AntdApp>
+          <LanguageProvider>
+            <AntdApp>
+              <RouterProvider router={router} />
+            </AntdApp>
+          </LanguageProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

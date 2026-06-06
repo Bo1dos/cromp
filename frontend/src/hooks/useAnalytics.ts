@@ -8,8 +8,6 @@ import type {
   SummaryResponse,
   PredictionsResponse,
   AnomaliesResponse,
-  TimeSeriesPoint,
-  DurationBucket,
 } from '@/types/analytics';
 import { QUERY_KEYS } from '@/utils/constants';
 
@@ -23,6 +21,7 @@ export function useSummary(orgId: string, period: string) {
     queryFn: () => analyticsApi.getSummary(orgId, { period }),
     staleTime: 5 * 60 * 1000, // 5 min
     enabled: Boolean(orgId),
+    retry: false,
   });
 }
 
@@ -36,6 +35,7 @@ export function usePredictions(orgId: string) {
     queryFn: () => analyticsApi.getPredictions(orgId),
     staleTime: 10 * 60 * 1000, // 10 min
     enabled: Boolean(orgId),
+    retry: false,
   });
 }
 
@@ -49,31 +49,6 @@ export function useAnomalies(orgId: string, from: string, to: string) {
     queryFn: () => analyticsApi.getAnomalies(orgId, { from, to }),
     staleTime: 5 * 60 * 1000, // 5 min
     enabled: Boolean(orgId),
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Time series chart data
-// ---------------------------------------------------------------------------
-
-export function useTimeSeries(orgId: string, period: string) {
-  return useQuery<TimeSeriesPoint[], Error>({
-    queryKey: [QUERY_KEYS.ANALYTICS_TIMESERIES, orgId, period],
-    queryFn: () => analyticsApi.getTimeSeries(period),
-    staleTime: 5 * 60 * 1000,
-    enabled: Boolean(orgId),
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Duration distribution chart data
-// ---------------------------------------------------------------------------
-
-export function useDurationDistribution(orgId: string) {
-  return useQuery<DurationBucket[], Error>({
-    queryKey: [QUERY_KEYS.ANALYTICS_DURATION_DIST, orgId],
-    queryFn: () => analyticsApi.getDurationDistribution(),
-    staleTime: 10 * 60 * 1000,
-    enabled: Boolean(orgId),
+    retry: false,
   });
 }

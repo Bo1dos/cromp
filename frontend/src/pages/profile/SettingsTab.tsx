@@ -2,7 +2,7 @@
 // SettingsTab — appearance, language & notifications settings
 // ---------------------------------------------------------------------------
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Tabs,
   Card,
@@ -21,8 +21,43 @@ import {
 } from '@ant-design/icons';
 
 import { useTheme } from '@/hooks/useTheme';
+import { useLanguage, type Locale } from '@/hooks/useLanguage';
 
 const { Text, Title, Paragraph } = Typography;
+
+// ---------------------------------------------------------------------------
+// Notification prefs — localStorage helpers
+// ---------------------------------------------------------------------------
+const NOTIF_CHANNELS_KEY = 'caas-notif-channels';
+const NOTIF_EVENTS_KEY = 'caas-notif-events';
+
+interface ChannelPrefs {
+  email: boolean;
+  inApp: boolean;
+  webhook: boolean;
+}
+
+interface EventPrefs {
+  jobFailed: boolean;
+  jobSucceeded: boolean;
+  jobDisabled: boolean;
+  jobTimeout: boolean;
+}
+
+const defaultChannels: ChannelPrefs = { email: true, inApp: true, webhook: false };
+const defaultEvents: EventPrefs = { jobFailed: true, jobSucceeded: true, jobDisabled: true, jobTimeout: true };
+
+function readPrefs<T>(key: string, defaults: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return { ...defaults, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return defaults;
+}
+
+function writePrefs<T>(key: string, val: T) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* ignore */ }
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -31,16 +66,15 @@ const { Text, Title, Paragraph } = Typography;
 /** Appearance — theme toggle */
 function AppearanceTab() {
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const isDark = theme === 'dark';
 
   return (
     <Card>
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <div>
-          <Title level={5}>Theme</Title>
-          <Paragraph type="secondary">
-            Choose between light and dark appearance for the application.
-          </Paragraph>
+          <Title level={5}>{t.settings.theme}</Title>
+          <Paragraph type="secondary">{t.settings.themeDescription}</Paragraph>
         </div>
 
         <div
@@ -56,10 +90,10 @@ function AppearanceTab() {
           <Space>
             <BgColorsOutlined />
             <div>
-              <Text strong>Dark Mode</Text>
+              <Text strong>{t.settings.darkMode}</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {isDark ? 'Dark theme is active' : 'Switch to dark theme'}
+                {isDark ? t.settings.darkActive : t.settings.darkInactive}
               </Text>
             </div>
           </Space>
@@ -75,22 +109,22 @@ function AppearanceTab() {
   );
 }
 
-/** Language — placeholder for future i18n */
+/** Language — functional locale switcher */
 function LanguageTab() {
+  const { locale, setLocale, t } = useLanguage();
+
   return (
     <Card>
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <div>
-          <Title level={5}>Language</Title>
-          <Paragraph type="secondary">
-            Select your preferred language for the application interface.
-          </Paragraph>
+          <Title level={5}>{t.settings.language}</Title>
+          <Paragraph type="secondary">{t.settings.languageDescription}</Paragraph>
         </div>
 
         <Select
-          defaultValue="en"
-          style={{ width: 200 }}
-          disabled
+          value={locale}
+          onChange={(val) => setLocale(val as Locale)}
+          style={{ width: 220 }}
           options={[
             { value: 'en', label: '🇬🇧 English' },
             { value: 'ru', label: '🇷🇺 Русский' },
@@ -100,41 +134,72 @@ function LanguageTab() {
         <Alert
           type="info"
           showIcon
-          message="Coming soon"
-          description="Multi-language support (i18n) will be implemented in a future update."
+          message={t.common.loading.replace('…', '')}
+          description={t.settings.languageComingSoon}
         />
       </Space>
     </Card>
   );
 }
 
-/** Notifications — placeholder for future notification module */
+/** Notifications — functional toggles with localStorage persistence */
 function NotificationsTab() {
-  const channels = [
-    { key: 'email', label: 'Email', description: 'Receive notifications via email', enabled: true },
-    { key: 'in-app', label: 'In-App', description: 'Show notifications inside the application', enabled: true },
-    { key: 'webhook', label: 'Webhook', description: 'Send notifications to a custom URL', enabled: false },
+  const { t } = useLanguage();
+
+  const [channels, setChannels] = useState<ChannelPrefs>(() =>
+    readPrefs(NOTIF_CHANNELS_KEY, defaultChannels),
+  );
+  const [events, setEvents] = useState<EventPrefs>(() =>
+    readPrefs(NOTIF_EVENTS_KEY, defaultEvents),
+  );
+
+  const toggleChannel = useCallback(
+    (key: keyof ChannelPrefs) => {
+      setChannels((prev) => {
+        const next = { ...prev, [key]: !prev[key] };
+        writePrefs(NOTIF_CHANNELS_KEY, next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const toggleEvent = useCallback(
+    (key: keyof EventPrefs) => {
+      setEvents((prev) => {
+        const next = { ...prev, [key]: !prev[key] };
+        writePrefs(NOTIF_EVENTS_KEY, next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const channelItems = [
+    { key: 'email' as const, label: t.notifications.emailChannel, description: t.notifications.emailDesc },
+    { key: 'inApp' as const, label: t.notifications.inAppChannel, description: t.notifications.inAppDesc },
+    { key: 'webhook' as const, label: t.notifications.webhookChannel, description: t.notifications.webhookDesc },
   ];
 
-  const eventTypes = [
-    { key: 'job-failed', label: 'Job Failed', description: 'When a job execution fails', tag: 'error' as const },
-    { key: 'job-succeeded', label: 'Job Succeeded', description: 'When a job execution succeeds', tag: 'success' as const },
-    { key: 'job-disabled', label: 'Job Disabled', description: 'When a job is manually disabled', tag: 'warning' as const },
-    { key: 'job-timeout', label: 'Job Timeout', description: 'When a job exceeds its timeout', tag: 'error' as const },
+  const eventItems = [
+    { key: 'jobFailed' as const, label: t.notifications.jobFailed, description: t.notifications.jobFailedDesc, tag: 'error' as const },
+    { key: 'jobSucceeded' as const, label: t.notifications.jobSucceeded, description: t.notifications.jobSucceededDesc, tag: 'success' as const },
+    { key: 'jobDisabled' as const, label: t.notifications.jobDisabled, description: t.notifications.jobDisabledDesc, tag: 'warning' as const },
+    { key: 'jobTimeout' as const, label: t.notifications.jobTimeout, description: t.notifications.jobTimeoutDesc, tag: 'error' as const },
   ];
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       {/* ---- Channels ---- */}
-      <Card title="Notification Channels">
+      <Card title={t.notifications.channels}>
         <List
-          dataSource={channels}
+          dataSource={channelItems}
           renderItem={(item) => (
             <List.Item
               extra={
                 <Switch
-                  defaultChecked={item.enabled}
-                  disabled
+                  checked={channels[item.key]}
+                  onChange={() => toggleChannel(item.key)}
                 />
               }
             >
@@ -148,15 +213,15 @@ function NotificationsTab() {
       </Card>
 
       {/* ---- Event types ---- */}
-      <Card title="Event Types">
+      <Card title={t.notifications.eventTypes}>
         <List
-          dataSource={eventTypes}
+          dataSource={eventItems}
           renderItem={(item) => (
             <List.Item
               extra={
                 <Switch
-                  defaultChecked
-                  disabled
+                  checked={events[item.key]}
+                  onChange={() => toggleEvent(item.key)}
                 />
               }
             >
@@ -176,8 +241,8 @@ function NotificationsTab() {
       <Alert
         type="info"
         showIcon
-        message="Coming soon"
-        description="The notification module is under development. Preferences saved here will be applied once it launches."
+        message={t.common.loading.replace('…', '')}
+        description={t.settings.notificationsComingSoon}
       />
     </Space>
   );
@@ -187,6 +252,7 @@ function NotificationsTab() {
 // SettingsTab — top-level tabs
 // ---------------------------------------------------------------------------
 export default function SettingsTab() {
+  const { t } = useLanguage();
   const [tab, setTab] = useState('appearance');
 
   return (
@@ -201,7 +267,7 @@ export default function SettingsTab() {
           label: (
             <Space>
               <BgColorsOutlined />
-              <span>Appearance</span>
+              <span>{t.settings.appearance}</span>
             </Space>
           ),
           children: <AppearanceTab />,
@@ -211,7 +277,7 @@ export default function SettingsTab() {
           label: (
             <Space>
               <GlobalOutlined />
-              <span>Language</span>
+              <span>{t.settings.language}</span>
             </Space>
           ),
           children: <LanguageTab />,
@@ -221,7 +287,7 @@ export default function SettingsTab() {
           label: (
             <Space>
               <BellOutlined />
-              <span>Notifications</span>
+              <span>{t.settings.notifications}</span>
             </Space>
           ),
           children: <NotificationsTab />,

@@ -47,9 +47,10 @@ export default function AnomaliesTable({ data, loading }: Props) {
     },
     {
       title: 'Description',
-      dataIndex: 'description',
       key: 'description',
       ellipsis: true,
+      render: (_: unknown, record: AnomalyItem) =>
+        `${record.metric}: ${record.value} (expected ${record.expectedMin}–${record.expectedMax})`,
     },
     {
       title: 'Severity',
@@ -93,7 +94,7 @@ export default function AnomaliesTable({ data, loading }: Props) {
         columns={columns}
         dataSource={filtered}
         loading={loading}
-        rowKey="uuid"
+        rowKey={(record) => `${record.jobId}-${record.detectedAt}`}
         locale={{ emptyText: <Empty description="No anomalies detected" /> }}
         pagination={false}
       />

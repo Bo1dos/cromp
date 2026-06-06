@@ -17,24 +17,16 @@ interface Props {
 }
 
 export default function SummaryCards({ summary, loading }: Props) {
-  const {
-    totalExecutions,
-    successfulExecutions,
-    failedExecutions,
-    avgDurationMs,
-  } = summary;
+  const { total, succeeded, failed, avgDurationMs } = summary;
 
   const successRate =
-    totalExecutions > 0
-      ? ((successfulExecutions / totalExecutions) * 100).toFixed(1)
-      : '0';
+    total > 0 ? ((succeeded / total) * 100).toFixed(1) : '0';
 
   const failureRate =
-    totalExecutions > 0
-      ? ((failedExecutions / totalExecutions) * 100).toFixed(1)
-      : '0';
+    total > 0 ? ((failed / total) * 100).toFixed(1) : '0';
 
-  const formatDuration = (ms: number): string => {
+  const formatDuration = (ms: number | null): string => {
+    if (ms == null) return '—';
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
   };
@@ -45,7 +37,7 @@ export default function SummaryCards({ summary, loading }: Props) {
         <Card bordered={false}>
           <Statistic
             title="Total Executions"
-            value={totalExecutions}
+            value={total}
             prefix={<BarChartOutlined style={{ color: '#1677ff' }} />}
             loading={loading}
             valueStyle={{ color: '#1677ff' }}
@@ -57,7 +49,7 @@ export default function SummaryCards({ summary, loading }: Props) {
         <Card bordered={false}>
           <Statistic
             title="Successful"
-            value={successfulExecutions}
+            value={succeeded}
             suffix={`/ ${successRate}%`}
             prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
             loading={loading}
@@ -70,7 +62,7 @@ export default function SummaryCards({ summary, loading }: Props) {
         <Card bordered={false}>
           <Statistic
             title="Failed"
-            value={failedExecutions}
+            value={failed}
             suffix={`/ ${failureRate}%`}
             prefix={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
             loading={loading}

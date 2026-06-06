@@ -177,7 +177,7 @@ class JobControllerTest {
                         new RetryPolicyResponse(3, 1000, 2.0, List.of("5xx")),
                         1000,
                         List.of()
-                ), currentVersion, 1);
+                ), currentVersion, 1, false);
     }
 
     private static JobConfig sampleConfig() {

@@ -12,25 +12,27 @@ import AttemptsTimeline from '@/components/executions/AttemptsTimeline';
 import ArtifactViewer from '@/components/executions/ArtifactViewer';
 import { formatDateFull } from '@/utils/formatters';
 import { useExecutionDetail } from '@/hooks/useExecutions';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const { Text } = Typography;
 
 export default function ExecutionDetailPage() {
   const { executionId } = useParams<{ executionId: string }>();
   const { data: execution, isLoading, isError } = useExecutionDetail(executionId!);
+  const { t } = useLanguage();
 
   if (isLoading) {
-    return <LoadingSpinner tip="Loading execution details…" />;
+    return <LoadingSpinner tip={t.common.loading} />;
   }
 
   if (isError || !execution) {
     return (
       <PageHeader
-        title="Execution not found"
+        title={t.common.noData}
         breadcrumbs={[
-          { title: 'Dashboard', href: '/dashboard' },
-          { title: 'Executions', href: '/dashboard/executions' },
-          { title: 'Not Found' },
+          { title: t.nav.dashboard, href: '/dashboard' },
+          { title: t.nav.executions, href: '/dashboard/executions' },
+          { title: t.common.noData },
         ]}
       />
     );
@@ -39,7 +41,7 @@ export default function ExecutionDetailPage() {
   const tabItems = [
     {
       key: 'overview',
-      label: 'Overview',
+      label: t.jobs.overview,
       children: (
         <Descriptions bordered column={2} size="small">
           <Descriptions.Item label="Execution ID" span={2}>
@@ -48,7 +50,7 @@ export default function ExecutionDetailPage() {
           <Descriptions.Item label="Job ID">
             <Text>{execution.jobId}</Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label={t.common.status}>
             <ExecutionStatusBadge status={execution.finalStatus as any} />
           </Descriptions.Item>
           <Descriptions.Item label="Source">
@@ -88,8 +90,8 @@ export default function ExecutionDetailPage() {
           </Space>
         }
         breadcrumbs={[
-          { title: 'Dashboard', href: '/dashboard' },
-          { title: 'Executions', href: '/dashboard/executions' },
+          { title: t.nav.dashboard, href: '/dashboard' },
+          { title: t.nav.executions, href: '/dashboard/executions' },
           { title: `Job #${execution.jobId}` },
         ]}
         extra={

@@ -6,6 +6,7 @@ import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import SelectOrganizationPage from '@/pages/organization/SelectOrganizationPage';
 import DashboardLayout from '@/pages/dashboard/DashboardLayout';
+import DashboardPage from '@/pages/dashboard/DashboardPage';
 import JobListPage from '@/pages/jobs/JobListPage';
 import JobCreatePage from '@/pages/jobs/JobCreatePage';
 import JobDetailPage from '@/pages/jobs/JobDetailPage';
@@ -50,7 +51,7 @@ export const router = createBrowserRouter([
             path: 'dashboard',
             element: <DashboardLayout />,
             children: [
-              { index: true, element: <Navigate to="jobs" replace /> },
+              { index: true, element: <DashboardPage /> },
               { path: 'jobs', element: <JobListPage /> },
               { path: 'jobs/new', element: <JobCreatePage /> },
               { path: 'jobs/:jobUuid', element: <JobDetailPage /> },

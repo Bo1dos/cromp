@@ -42,13 +42,15 @@ class JobApplicationServiceTest {
     @Mock private PermissionCheckerPort permissionCheckerPort;
     @Mock private AuditPort auditPort;
     @Mock private ExecutionCreationPort executionCreationPort;
+    @Mock private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private JobApplicationService service;
 
     @BeforeEach
     void setUp() {
         service = new JobApplicationService(jobRepository, versionRepository, currentActorPort,
-                permissionCheckerPort, auditPort, executionCreationPort, new JobApiMapper());
+                permissionCheckerPort, auditPort, executionCreationPort, new JobApiMapper(),
+                jdbcTemplate);
         when(currentActorPort.currentUserId()).thenReturn(Optional.of(11L));
         when(currentActorPort.currentOrganizationId()).thenReturn(Optional.of(101L));
         when(permissionCheckerPort.isMember(11L, 101L)).thenReturn(true);
