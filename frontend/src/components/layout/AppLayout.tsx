@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Layout, Drawer, Button } from 'antd';
+import { Layout, Drawer, Button, theme } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 
 import AppSider from './AppSider';
@@ -16,6 +16,13 @@ const { Content } = Layout;
 export default function AppLayout() {
   const { isMobile } = useBreakpoint();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { token } = theme.useToken();
+
+  const contentStyle = {
+    padding: isMobile ? 16 : 24,
+    minHeight: 'calc(100vh - 64px)',
+    background: token.colorBgLayout,
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -32,13 +39,7 @@ export default function AppLayout() {
                 />
               }
             />
-            <Content
-              style={{
-                padding: 16,
-                minHeight: 'calc(100vh - 64px)',
-                background: '#f5f5f5',
-              }}
-            >
+            <Content style={contentStyle}>
               <Outlet />
             </Content>
           </Layout>
@@ -46,7 +47,7 @@ export default function AppLayout() {
             placement="left"
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
-            styles={{ body: { padding: 0, background: '#001529' } }}
+            styles={{ body: { padding: 0, background: token.colorBgElevated } }}
             width={240}
           >
             <AppSider isDrawer onNavigate={() => setDrawerOpen(false)} />
@@ -58,13 +59,7 @@ export default function AppLayout() {
           <AppSider />
           <Layout style={{ marginLeft: 240 }}>
             <AppHeader />
-            <Content
-              style={{
-                padding: 24,
-                minHeight: 'calc(100vh - 64px)',
-                background: '#f5f5f5',
-              }}
-            >
+            <Content style={contentStyle}>
               <Outlet />
             </Content>
           </Layout>

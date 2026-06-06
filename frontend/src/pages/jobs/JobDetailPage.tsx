@@ -117,7 +117,7 @@ export default function JobDetailPage() {
           key: 'overview',
           label: 'Overview',
           children: (
-            <Descriptions bordered column={2} size="small" style={{ background: '#fff' }}>
+            <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="UUID" span={2}>
                 <Text code>{job.jobUuid}</Text>
               </Descriptions.Item>

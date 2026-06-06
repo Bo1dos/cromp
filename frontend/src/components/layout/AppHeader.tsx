@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useCallback, type ReactNode } from 'react';
-import { Layout, Avatar, Dropdown, Typography, Space } from 'antd';
+import { Layout, Avatar, Dropdown, Typography, Space, theme } from 'antd';
 import {
   UserOutlined,
   LogoutOutlined,
@@ -28,6 +28,7 @@ export default function AppHeader({ extraLeft }: AppHeaderProps) {
   const { user, logout } = useAuth();
   const { activeOrganization } = useOrganization();
   const navigate = useNavigate();
+  const { token } = theme.useToken();
 
   const handleLogout = useCallback(() => {
     logout();
@@ -38,7 +39,7 @@ export default function AppHeader({ extraLeft }: AppHeaderProps) {
       key: 'profile',
       icon: <ProfileOutlined />,
       label: 'Profile',
-      onClick: () => navigate('/profile'),
+      onClick: () => navigate('/dashboard/profile'),
     },
     { type: 'divider' },
     {
@@ -57,8 +58,8 @@ export default function AppHeader({ extraLeft }: AppHeaderProps) {
       style={{
         height: 64,
         padding: '0 24px',
-        background: '#fff',
-        borderBottom: '1px solid #f0f0f0',
+        background: token.colorBgContainer,
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',

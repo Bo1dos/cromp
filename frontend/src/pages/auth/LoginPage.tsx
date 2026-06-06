@@ -42,10 +42,10 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f5f5f5',
+        background: 'var(--color-bg-layout, #f5f5f5)',
       }}
     >
-      <div style={{ width: 400, padding: 32, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.09)' }}>
+      <div style={{ width: 400, padding: 32, background: 'var(--color-bg-base, #fff)', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.09)' }}>
         <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
           Sign in to CaaS
         </Title>

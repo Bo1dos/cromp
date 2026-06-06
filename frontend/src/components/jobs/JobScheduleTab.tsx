@@ -86,7 +86,7 @@ export default function JobScheduleTab({ jobUuid }: JobScheduleTabProps) {
   // ---- Render schedule details ---------------------------------------
   return (
     <div>
-      <Descriptions bordered column={1} size="small" style={{ background: '#fff' }}>
+      <Descriptions bordered column={1} size="small">
         <Descriptions.Item label="Cron Expression">
           <Tag color="blue" style={{ fontFamily: 'monospace', fontSize: 14 }}>
             {schedule.cronExpression}

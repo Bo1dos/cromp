@@ -30,5 +30,7 @@ public record JobResponse(
         @Schema(description = "Номер текущей версии")
         int currentVersion,
         @Schema(description = "Общее количество версий")
-        int versionCount
+        int versionCount,
+        @Schema(description = "Есть ли расписание")
+        boolean hasSchedule
 ) {}

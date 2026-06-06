@@ -1,12 +1,10 @@
 // ---------------------------------------------------------------------------
-// CronInput — wrapper around react-cron-generator with human-readable preview
+// CronInput — manual input with preset buttons + live preview
 // ---------------------------------------------------------------------------
 
 import { useState, useMemo } from 'react';
-import { Input, Space, Button, List, Typography, Popover } from 'antd';
-import { ClockCircleOutlined } from '@ant-design/icons';
-import CronGenerator from 'react-cron-generator';
-import 'react-cron-generator/dist/cron-builder.css';
+import { Input, Space, Button, List, Typography, Popover, Tag } from 'antd';
+import { ClockCircleOutlined, DownOutlined } from '@ant-design/icons';
 import { CronExpressionParser } from 'cron-parser';
 import dayjs from 'dayjs';
 
@@ -17,15 +15,26 @@ interface CronInputProps {
   onChange?: (value: string) => void;
 }
 
+const PRESETS: { label: string; value: string }[] = [
+  { label: 'Every minute',      value: '* * * * *' },
+  { label: 'Every 5 min',       value: '*/5 * * * *' },
+  { label: 'Every 15 min',      value: '*/15 * * * *' },
+  { label: 'Every 30 min',      value: '*/30 * * * *' },
+  { label: 'Every hour',        value: '0 * * * *' },
+  { label: 'Every 6 hours',     value: '0 */6 * * *' },
+  { label: 'Every 12 hours',    value: '0 */12 * * *' },
+  { label: 'Daily at midnight', value: '0 0 * * *' },
+  { label: 'Mon-Fri at 9 AM',   value: '0 9 * * 1-5' },
+  { label: '1st of month 3 AM', value: '0 3 1 * *' },
+];
+
 export default function CronInput({ value = '', onChange }: CronInputProps) {
-  const [showGenerator, setShowGenerator] = useState(false);
+  const [showPresets, setShowPresets] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   // ---- Parse next 5 run dates -----------------------------------------
   const nextRuns = useMemo<string[]>(() => {
     const parts = value.trim().split(/\s+/);
-    // Accept 5-field, 6-field (with seconds), or 7-field (with seconds + year)
-    // react-cron-generator produces 7-field expressions
     if (!value || parts.length < 5 || parts.length > 7) return [];
     try {
       const interval = CronExpressionParser.parse(value);
@@ -63,10 +72,16 @@ export default function CronInput({ value = '', onChange }: CronInputProps) {
         placeholder="* * * * *"
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        onFocus={() => setShowGenerator(true)}
       />
 
-      <Space>
+      <Space wrap>
+        <Button
+          size="small"
+          icon={<DownOutlined rotate={showPresets ? 180 : 0} />}
+          onClick={() => setShowPresets(!showPresets)}
+        >
+          Quick presets
+        </Button>
         <Popover
           content={previewContent}
           title="Next 5 runs"
@@ -80,39 +95,18 @@ export default function CronInput({ value = '', onChange }: CronInputProps) {
         </Popover>
       </Space>
 
-      {showGenerator && (
-        <div
-          style={{
-            border: '1px solid #d9d9d9',
-            borderRadius: 6,
-            padding: 16,
-            background: '#fafafa',
-          }}
-        >
-          <CronGenerator
-            onChange={(expr: string) => {
-              // react-cron-generator outputs Quartz-style cron (with ? and optional seconds/year).
-              // Backend cron-utils expects UNIX cron (5-field, no ?, no seconds, no year).
-              const parts = expr.trim().split(/\s+/);
-              let normalized: string;
-              if (parts.length >= 7) {
-                // 7-field: drop seconds [0] and year [6], keep middle 5
-                normalized = parts.slice(1, 6).join(' ');
-              } else if (parts.length === 6) {
-                // 6-field: drop seconds [0], keep remaining 5
-                normalized = parts.slice(1).join(' ');
-              } else {
-                // 5-field or less: use as-is
-                normalized = expr;
-              }
-              // Replace Quartz ? with * for UNIX compatibility
-              normalized = normalized.replace(/\?/g, '*');
-              onChange?.(normalized);
-            }}
-            value={value}
-            showResultText
-            showResultCron
-          />
+      {showPresets && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {PRESETS.map((p) => (
+            <Tag.CheckableTag
+              key={p.value}
+              checked={value === p.value}
+              onChange={() => onChange?.(p.value)}
+              style={{ cursor: 'pointer', padding: '4px 12px' }}
+            >
+              {p.label}
+            </Tag.CheckableTag>
+          ))}
         </div>
       )}
     </Space>

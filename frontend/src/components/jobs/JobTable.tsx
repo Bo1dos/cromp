@@ -3,20 +3,20 @@
 // ---------------------------------------------------------------------------
 
 import { useNavigate } from 'react-router-dom';
-import { Table, Select, Button, Space } from 'antd';
+import { Table, Select, Button, Space, Tag, Typography } from 'antd';
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import type { JobResponse, JobStatus } from '@/types/job';
 import { useJobsList, useDeleteJob, useToggleJobStatus } from '@/hooks/useJobs';
 import JobStatusBadge from './JobStatusBadge';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import EmptyState from '@/components/common/EmptyState';
 import SearchInput from '@/components/common/SearchInput';
-import { formatRelative } from '@/utils/formatters';
+
+const { Text } = Typography;
 
 /** Small component that renders action buttons with proper hooks context. */
 function JobActions({ job }: { job: JobResponse }) {
@@ -129,29 +129,14 @@ export default function JobTable({
     },
     {
       title: 'Schedule',
-      dataIndex: 'cronExpression',
+      dataIndex: 'hasSchedule',
       key: 'schedule',
-      width: 160,
-      render: (cron: string | undefined) => (
-        <span>{cron ? <code>{cron}</code> : 'Manual'}</span>
+      width: 100,
+      render: (has: boolean) => (
+        has
+          ? <Tag color="blue" style={{ margin: 0 }}>Scheduled</Tag>
+          : <Text type="secondary" style={{ fontSize: 12 }}>Manual</Text>
       ),
-    },
-    {
-      title: 'Last Execution',
-      dataIndex: 'lastExecutionAt',
-      key: 'lastExecutionAt',
-      width: 160,
-      sorter: (a: JobResponse, b: JobResponse) =>
-        (a.lastExecutionAt ? dayjs(a.lastExecutionAt).valueOf() : 0) -
-        (b.lastExecutionAt ? dayjs(b.lastExecutionAt).valueOf() : 0),
-      render: (date: string | undefined) =>
-        date ? (
-          <span title={dayjs(date).format('YYYY-MM-DD HH:mm:ss')}>
-            {formatRelative(date)}
-          </span>
-        ) : (
-          <span style={{ color: '#999' }}>—</span>
-        ),
     },
     {
       title: 'Actions',

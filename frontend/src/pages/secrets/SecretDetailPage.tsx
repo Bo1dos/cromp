@@ -92,7 +92,7 @@ export default function SecretDetailPage() {
         }
       />
 
-      <Descriptions bordered column={2} size="small" style={{ background: '#fff', marginBottom: 24 }}>
+      <Descriptions bordered column={2} size="small" style={{ marginBottom: 24 }}>
         <Descriptions.Item label="UUID" span={2}>
           <Text code>{secret.secretUuid}</Text>
         </Descriptions.Item>
@@ -112,7 +112,7 @@ export default function SecretDetailPage() {
         </Descriptions.Item>
       </Descriptions>
 
-      <div style={{ background: '#fff', padding: '16px 24px', borderRadius: 8 }}>
+      <div style={{ background: 'var(--color-bg-base, #fff)', padding: '16px 24px', borderRadius: 8 }}>
         <Typography.Title level={5} style={{ marginBottom: 16 }}>
           Version History
         </Typography.Title>

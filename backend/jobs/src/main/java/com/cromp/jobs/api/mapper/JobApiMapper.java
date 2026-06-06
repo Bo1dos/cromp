@@ -12,6 +12,10 @@ import java.util.List;
 public class JobApiMapper {
 
     public JobResponse toJobResponse(Job job, JobVersion currentVersion, int versionCount) {
+        return toJobResponse(job, currentVersion, versionCount, false);
+    }
+
+    public JobResponse toJobResponse(Job job, JobVersion currentVersion, int versionCount, boolean hasSchedule) {
         return new JobResponse(
                 job.getJobUuid(),
                 job.getName(),
@@ -24,7 +28,8 @@ public class JobApiMapper {
                 job.getUpdatedAt(),
                 toConfigResponse(currentVersion != null ? currentVersion.getConfig() : null),
                 currentVersion != null ? currentVersion.getVersion() : 0,
-                versionCount
+                versionCount,
+                hasSchedule
         );
     }
 

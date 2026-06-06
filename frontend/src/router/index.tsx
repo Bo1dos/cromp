@@ -17,6 +17,7 @@ import AnalyticsPage from '@/pages/analytics/AnalyticsPage';
 import MembersPage from '@/pages/members/MembersPage';
 import AuditLogPage from '@/pages/audit/AuditLogPage';
 import NotFoundPage from '@/pages/errors/NotFoundPage';
+import ProfilePage from '@/pages/profile/ProfilePage';
 import RoleGuard from '@/components/auth/RoleGuard';
 
 export const router = createBrowserRouter([
@@ -73,6 +74,10 @@ export const router = createBrowserRouter([
                     <AuditLogPage />
                   </RoleGuard>
                 ),
+              },
+              {
+                path: 'profile',
+                element: <ProfilePage />,
               },
             ],
           },

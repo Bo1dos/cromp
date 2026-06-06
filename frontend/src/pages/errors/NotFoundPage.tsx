@@ -15,7 +15,7 @@ export default function NotFoundPage() {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '100vh',
-        background: '#f5f5f5',
+        background: 'var(--color-bg-layout, #f5f5f5)',
       }}
     >
       <Result

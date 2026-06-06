@@ -14,6 +14,7 @@ import com.cromp.jobs.domain.model.exceptions.*;
 import com.cromp.jobs.domain.repository.JobRepositoryPort;
 import com.cromp.jobs.domain.repository.JobVersionRepositoryPort;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class JobApplicationService implements JobFacade {
     private final AuditPort auditPort;
     private final ExecutionCreationPort executionCreationPort;
     private final JobApiMapper jobApiMapper;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public JobResponse createJob(CreateJobRequest request) {
@@ -160,10 +162,16 @@ public class JobApplicationService implements JobFacade {
         int toIndex = Math.min(offset + limit, jobs.size());
         if (offset >= jobs.size()) return List.of();
 
+        // Query all job IDs in this org that have schedules
+        Set<Long> scheduledJobIds = new HashSet<>(jdbcTemplate.queryForList(
+                "SELECT s.job_id FROM schedules s JOIN jobs j ON j.id = s.job_id WHERE j.organization_id = ?",
+                Long.class, organizationId));
+
         return jobs.subList(offset, toIndex).stream().map(job -> {
             JobVersion ver = versionRepository.findLatestByJobId(job.getId()).orElse(null);
             int vCount = versionRepository.findByJobIdOrderByVersionDesc(job.getId()).size();
-            return jobApiMapper.toJobResponse(job, ver, vCount);
+            boolean hasSched = scheduledJobIds.contains(job.getId());
+            return jobApiMapper.toJobResponse(job, ver, vCount, hasSched);
         }).toList();
     }
 

@@ -83,7 +83,7 @@ export default function AttemptsTimeline({ executionId }: AttemptsTimelineProps)
                     <>
                       <br />
                       <Text type="secondary" style={{ fontSize: 12 }}>Response:</Text>
-                      <pre style={{ margin: '4px 0 0', fontSize: 12, maxHeight: 120, overflow: 'auto', background: '#f5f5f5', padding: 8, borderRadius: 4 }}>
+                      <pre style={{ margin: '4px 0 0', fontSize: 12, maxHeight: 120, overflow: 'auto', background: 'var(--color-bg-layout, #f5f5f5)', padding: 8, borderRadius: 4 }}>
                         {typeof s.body === 'string' ? s.body : JSON.stringify(s.body, null, 2)}
                       </pre>
                     </>

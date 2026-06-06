@@ -51,7 +51,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             alignItems: 'center',
             minHeight: '100vh',
             padding: 24,
-            background: '#f5f5f5',
+            background: 'var(--color-bg-layout, #f5f5f5)',
           }}
         >
           <Result

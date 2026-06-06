@@ -41,7 +41,7 @@ export default function ExecutionDetailPage() {
       key: 'overview',
       label: 'Overview',
       children: (
-        <Descriptions bordered column={2} size="small" style={{ background: '#fff' }}>
+        <Descriptions bordered column={2} size="small">
           <Descriptions.Item label="Execution ID" span={2}>
             <Text code>{execution.execUuid}</Text>
           </Descriptions.Item>

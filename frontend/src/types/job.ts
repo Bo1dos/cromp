@@ -24,6 +24,7 @@ export interface JobResponse {
   currentConfig: JobConfigResponse;
   currentVersion: number;
   versionCount: number;
+  hasSchedule: boolean;
 }
 
 /** Backend JobConfigResponse */

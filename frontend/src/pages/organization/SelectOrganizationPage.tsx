@@ -96,7 +96,7 @@ export default function SelectOrganizationPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f5f5f5',
+        background: 'var(--color-bg-layout, #f5f5f5)',
       }}
     >
       <div style={{ width: 640, padding: 32 }}>

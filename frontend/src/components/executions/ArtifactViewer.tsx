@@ -56,7 +56,7 @@ export default function ArtifactViewer({ executionId }: ArtifactViewerProps) {
                   style={{
                     margin: 0,
                     padding: 16,
-                    background: '#f6f8fa',
+                    background: 'var(--color-bg-layout, #f6f8fa)',
                     border: '1px solid #d9d9d9',
                     borderRadius: 6,
                     maxHeight: 400,
@@ -94,7 +94,7 @@ export default function ArtifactViewer({ executionId }: ArtifactViewerProps) {
                   style={{
                     margin: 0,
                     padding: 16,
-                    background: '#fff1f0',
+                    background: 'var(--color-bg-layout, #fff1f0)',
                     border: '1px solid #ffa39e',
                     borderRadius: 6,
                     maxHeight: 400,

@@ -12,6 +12,7 @@ import {
   BarChartOutlined,
   TeamOutlined,
   AuditOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 
 import { useOrganization } from '@/hooks/useOrganization';
@@ -72,6 +73,13 @@ export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps
         label: 'Audit',
       });
     }
+
+    // Profile — always visible
+    items.push({
+      key: '/dashboard/profile',
+      icon: <UserOutlined />,
+      label: 'Profile',
+    });
 
     return items;
   }, [activeRole]);
