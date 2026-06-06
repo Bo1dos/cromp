@@ -224,6 +224,7 @@ class ExecutionControllerTest {
                 UUID.randomUUID(), 1, "RUNNING", "reason", null,
                 Instant.parse("2024-01-01T00:00:00Z"), Instant.parse("2024-01-01T00:01:00Z"),
                 Instant.parse("2024-01-01T00:02:00Z"), null, null, UUID.randomUUID(),
+                "output summary",
                 Instant.parse("2024-01-01T00:00:00Z"), Instant.parse("2024-01-01T00:00:00Z")
         );
     }

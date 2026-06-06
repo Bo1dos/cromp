@@ -7,6 +7,8 @@ import java.util.UUID;
 
 @Schema(description = "Ответ с данными задачи")
 public record JobResponse(
+        @Schema(description = "Числовой ID задачи (для фильтрации в executions)")
+        Long id,
         @Schema(description = "UUID задачи")
         UUID jobUuid,
         @Schema(description = "Название задачи")

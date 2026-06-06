@@ -65,7 +65,7 @@ export default function DashboardPage() {
     isLoading: summaryLoading,
     isError: summaryError,
   } = useSummary(orgId, '7d');
-  const { data: executionsPage } = useExecutionsList({ page: 1, size: 6 });
+  const { data: executionsPage } = useExecutionsList({ page: 0, size: 6 });
 
   // ---- Derived counts ---------------------------------------------------
   const totalJobs = jobs.length;

@@ -170,7 +170,7 @@ class JobControllerTest {
     }
 
     private static JobResponse jobResponse(UUID jobUuid, int currentVersion) {
-        return new JobResponse(jobUuid, "Daily sync", "desc", "ACTIVE", "default", 1, 11L,
+        return new JobResponse(1L, jobUuid, "Daily sync", "desc", "ACTIVE", "default", 1, 11L,
                 Instant.parse("2024-01-01T00:00:00Z"), Instant.parse("2024-01-01T01:00:00Z"),
                 new JobConfigResponse(
                         new JobTargetResponse("HTTP", "https://example.com", "POST", Map.of(), ""),

@@ -15,6 +15,7 @@ import PageHeader from '@/components/common/PageHeader';
 import JobStatusBadge from '@/components/jobs/JobStatusBadge';
 import JobScheduleTab from '@/components/jobs/JobScheduleTab';
 import JobHistoryTab from '@/components/jobs/JobHistoryTab';
+import JobExecutionsTab from '@/components/jobs/JobExecutionsTab';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatDateFull } from '@/utils/formatters';
@@ -175,11 +176,7 @@ export default function JobDetailPage() {
         {
           key: 'executions',
           label: t.jobs.executions,
-          children: (
-            <div style={{ padding: 24, textAlign: 'center' }}>
-              <Text type="secondary">Executions panel coming soon.</Text>
-            </div>
-          ),
+          children: <JobExecutionsTab jobId={job.id} />,
         },
         {
           key: 'schedule',
