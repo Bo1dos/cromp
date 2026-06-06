@@ -12,7 +12,6 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 
 
 /** Backend JobResponse */
 export interface JobResponse {
-  id: number;
   jobUuid: string;
   name: string;
   description: string;

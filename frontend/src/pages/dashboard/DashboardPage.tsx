@@ -23,6 +23,9 @@ import {
   PauseCircleOutlined,
   ThunderboltOutlined,
   ArrowRightOutlined,
+  WarningOutlined,
+  StopOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 
 import PageHeader from '@/components/common/PageHeader';
@@ -66,11 +69,21 @@ export default function DashboardPage() {
     isError: summaryError,
   } = useSummary(orgId, '7d');
   const { data: executionsPage } = useExecutionsList({ page: 0, size: 6 });
+  const { data: failedPage } = useExecutionsList({ status: 'FAILED', page: 0, size: 5 });
 
   // ---- Derived counts ---------------------------------------------------
   const totalJobs = jobs.length;
   const activeJobs = jobs.filter((j) => j.status === 'ACTIVE').length;
   const disabledJobs = jobs.filter((j) => j.status === 'DISABLED').length;
+  const archivedJobs = jobs.filter((j) => j.status === 'ARCHIVED').length;
+
+  // ---- Unscheduled active jobs ------------------------------------------
+  const unscheduledActive = jobs.filter(
+    (j) => j.status === 'ACTIVE' && !j.hasSchedule,
+  );
+
+  // ---- Failed executions for quick list ---------------------------------
+  const lastFailures = failedPage?.items ?? [];
 
   const successRate = summary && summary.total > 0
     ? Math.round((summary.succeeded / summary.total) * 100)
@@ -204,7 +217,39 @@ export default function DashboardPage() {
         </Col>
       </Row>
 
-      {/* ---- Row 2: Status Breakdown + Success Rate ---- */}
+      {/* ---- Unscheduled Active Jobs Alert ---- */}
+      {unscheduledActive.length > 0 && (
+        <Card
+          size="small"
+          style={{ marginBottom: 24, borderLeft: '3px solid #faad14' }}
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size="small">
+            <Space>
+              <WarningOutlined style={{ color: '#faad14', fontSize: 16 }} />
+              <Text strong>
+                {unscheduledActive.length} active job{unscheduledActive.length > 1 ? 's' : ''} without schedule
+              </Text>
+            </Space>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {unscheduledActive.slice(0, 5).map((job) => (
+                <Button
+                  key={job.jobUuid}
+                  size="small"
+                  type="dashed"
+                  onClick={() => navigate(`/dashboard/jobs/${job.jobUuid}`)}
+                >
+                  {job.name}
+                </Button>
+              ))}
+              {unscheduledActive.length > 5 && (
+                <Text type="secondary">+{unscheduledActive.length - 5} more</Text>
+              )}
+            </div>
+          </Space>
+        </Card>
+      )}
+
+      {/* ---- Row 2: Status Breakdown + Job Donut ---- */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {/* Status breakdown bars */}
         <Col xs={24} lg={16}>
@@ -270,8 +315,50 @@ export default function DashboardPage() {
           </Card>
         </Col>
 
-        {/* Success rate circle + legend */}
+        {/* Right column: Job Status Donut + Success Rate */}
         <Col xs={24} lg={8}>
+          {/* ---- Job Status Donut ---- */}
+          <Card title="Job Status" style={{ marginBottom: 16 }}>
+            <div style={{ textAlign: 'center' }}>
+              <Progress
+                type="circle"
+                percent={Math.round((activeJobs / Math.max(totalJobs, 1)) * 100)}
+                strokeColor="#52c41a"
+                trailColor="var(--color-bg-layout, #f0f0f0)"
+                size={100}
+                format={() => `${activeJobs}/${totalJobs}`}
+              />
+              <div style={{ marginTop: 8 }}>
+                <Space direction="vertical" size={2}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24 }}>
+                    <Space size={4}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: '#52c41a', display: 'inline-block' }} />
+                      <Text type="secondary">Active</Text>
+                    </Space>
+                    <Text strong>{activeJobs}</Text>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24 }}>
+                    <Space size={4}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: '#d9d9d9', display: 'inline-block' }} />
+                      <Text type="secondary">Disabled</Text>
+                    </Space>
+                    <Text strong>{disabledJobs}</Text>
+                  </div>
+                  {archivedJobs > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24 }}>
+                      <Space size={4}>
+                        <StopOutlined style={{ fontSize: 12 }} />
+                        <Text type="secondary">Archived</Text>
+                      </Space>
+                      <Text strong>{archivedJobs}</Text>
+                    </div>
+                  )}
+                </Space>
+              </div>
+            </div>
+          </Card>
+
+          {/* ---- Success Rate ---- */}
           <Card title={t.dashboard.statusDistribution}>
             {summaryError ? (
               <Text type="secondary">{t.common.noData}</Text>
@@ -327,6 +414,61 @@ export default function DashboardPage() {
           </Card>
         </Col>
       </Row>
+
+      {/* ---- Last Failures ---- */}
+      {lastFailures.length > 0 && (
+        <Card
+          size="small"
+          style={{ marginBottom: 24 }}
+          title={
+            <Space>
+              <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+              <span>Last Failures</span>
+            </Space>
+          }
+          extra={
+            <Button type="link" size="small" onClick={() => navigate('/dashboard/executions')}>
+              {t.dashboard.viewAll} <ArrowRightOutlined />
+            </Button>
+          }
+        >
+          <Table<ExecutionResponse>
+            columns={[
+              {
+                title: 'Job',
+                dataIndex: 'jobId',
+                key: 'jobId',
+                width: 80,
+                render: (id: number) => <Text>#{id}</Text>,
+              },
+              {
+                title: 'Status',
+                dataIndex: 'finalStatus',
+                key: 'status',
+                width: 100,
+                render: (s: string) => <Tag color={statusColors[s] || 'default'}>{s}</Tag>,
+              },
+              {
+                title: 'When',
+                dataIndex: 'triggeredAt',
+                key: 'triggeredAt',
+                render: (d: string) => (
+                  <Text type="secondary" style={{ fontSize: 12 }}>{formatRelative(d)}</Text>
+                ),
+              },
+            ]}
+            dataSource={lastFailures}
+            rowKey="execUuid"
+            size="small"
+            pagination={false}
+            showHeader={false}
+            onRow={(r) => ({
+              onClick: () => navigate(`/dashboard/executions/${r.execUuid}`),
+              style: { cursor: 'pointer' },
+            })}
+          />
+        </Card>
+      )}
 
       {/* ---- Recent Executions ---- */}
       <Card
