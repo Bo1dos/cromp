@@ -82,10 +82,18 @@ export default function JobHistoryTab({ jobUuid }: JobHistoryTabProps) {
       render: (v: number) => <Tag>v{v}</Tag>,
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Config',
+      key: 'config',
       ellipsis: true,
+      render: (_: unknown, record: JobVersionResponse) => {
+        const cfg = record.config;
+        if (!cfg?.target) return <Text type="secondary">—</Text>;
+        return (
+          <Text code style={{ fontSize: 12 }}>
+            {cfg.target.method ?? 'GET'} {cfg.target.url ?? '—'}
+          </Text>
+        );
+      },
     },
     {
       title: 'Changed At',
@@ -93,13 +101,6 @@ export default function JobHistoryTab({ jobUuid }: JobHistoryTabProps) {
       key: 'createdAt',
       width: 180,
       render: (v: string) => formatDateFull(v),
-    },
-    {
-      title: 'Changed By',
-      dataIndex: 'createdBy',
-      key: 'createdBy',
-      width: 160,
-      ellipsis: true,
     },
     {
       title: 'Actions',

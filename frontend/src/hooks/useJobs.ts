@@ -83,6 +83,7 @@ export function useUpdateJob(uuid: string) {
     onSuccess: (job) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.JOB, uuid] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.JOBS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.JOB_VERSIONS, uuid] });
       notification.success({ message: 'Job updated', description: `Job "${job.name}" has been updated.` });
     },
     onError: (error) => {

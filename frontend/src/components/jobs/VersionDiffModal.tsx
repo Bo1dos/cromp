@@ -1,15 +1,12 @@
 // ---------------------------------------------------------------------------
-// VersionDiffModal — modal for selecting two versions and viewing their diff
+// VersionDiffModal — select two versions and view config diff side-by-side
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';
 import { Modal, Select, Space, Spin, Typography, Empty } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import VersionDiff from './VersionDiff';
-import {
-  useJobVersions,
-  useVersionCompare,
-} from '@/hooks/useJobVersions';
+import { useJobVersions, useJobVersionDetail } from '@/hooks/useJobVersions';
 import type { JobVersionResponse } from '@/types/job';
 
 interface VersionDiffModalProps {
@@ -27,16 +24,16 @@ export default function VersionDiffModal({
   const [v1, setV1] = useState<number | null>(null);
   const [v2, setV2] = useState<number | null>(null);
 
-  const {
-    data: compareResult,
-    isLoading: compareLoading,
-    isFetching: compareFetching,
-  } = useVersionCompare(jobUuid, v1, v2);
+  // Fetch full config of each selected version
+  const { data: version1, isLoading: v1Loading } = useJobVersionDetail(jobUuid, v1);
+  const { data: version2, isLoading: v2Loading } = useJobVersionDetail(jobUuid, v2);
+
+  const isLoading = v1Loading || v2Loading;
 
   const versionOptions =
     versions?.map((v: JobVersionResponse) => ({
       value: v.version,
-      label: `v${v.version} — ${v.name} (${new Date(v.createdAt).toLocaleDateString()})`,
+      label: `v${v.version} (${new Date(v.createdAt).toLocaleDateString()})`,
     })) ?? [];
 
   return (
@@ -56,7 +53,7 @@ export default function VersionDiffModal({
           <Space direction="vertical" style={{ width: '100%' }}>
             <Space>
               <Select
-                style={{ width: 280 }}
+                style={{ width: 260 }}
                 placeholder="Select first version"
                 options={versionOptions}
                 value={v1}
@@ -65,7 +62,7 @@ export default function VersionDiffModal({
               />
               <SwapOutlined style={{ fontSize: 18, color: '#999' }} />
               <Select
-                style={{ width: 280 }}
+                style={{ width: 260 }}
                 placeholder="Select second version"
                 options={versionOptions}
                 value={v2}
@@ -82,20 +79,22 @@ export default function VersionDiffModal({
           </Space>
 
           <div style={{ marginTop: 16 }}>
-            {(compareLoading || compareFetching) && (
+            {isLoading && (
               <div style={{ textAlign: 'center', padding: 40 }}>
                 <Spin tip="Loading diff..." />
               </div>
             )}
 
-            {compareResult && !compareLoading && !compareFetching && (
+            {version1 && version2 && !isLoading && (
               <VersionDiff
-                oldConfig={compareResult.left as unknown as Record<string, unknown>}
-                newConfig={compareResult.right as unknown as Record<string, unknown>}
+                oldConfig={version1.config as unknown as Record<string, unknown>}
+                newConfig={version2.config as unknown as Record<string, unknown>}
+                oldVersion={v1 ?? undefined}
+                newVersion={v2 ?? undefined}
               />
             )}
 
-            {!compareResult && !compareLoading && !compareFetching && v1 !== null && v2 !== null && (
+            {!isLoading && v1 !== null && v2 !== null && (!version1 || !version2) && (
               <Empty description="No diff data available" />
             )}
           </div>

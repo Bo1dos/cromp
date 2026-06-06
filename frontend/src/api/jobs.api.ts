@@ -72,14 +72,14 @@ export async function compareVersions(
 ): Promise<JobVersionCompareResponse> {
   const response = await apiClient.get<JobVersionCompareResponse>(
     `/jobs/${uuid}/versions/compare`,
-    { params: { v1, v2 } },
+    { params: { fromVersion: v1, toVersion: v2 } },
   );
   return response.data;
 }
 
 export async function revertJob(uuid: string, targetVersion: number): Promise<JobResponse> {
   const response = await apiClient.post<JobResponse>(`/jobs/${uuid}/revert`, {
-    targetVersion,
+    version: targetVersion,
   });
   return response.data;
 }

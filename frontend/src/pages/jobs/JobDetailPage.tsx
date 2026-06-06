@@ -14,6 +14,7 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 import JobStatusBadge from '@/components/jobs/JobStatusBadge';
 import JobScheduleTab from '@/components/jobs/JobScheduleTab';
+import JobHistoryTab from '@/components/jobs/JobHistoryTab';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatDateFull } from '@/utils/formatters';
@@ -169,11 +170,7 @@ export default function JobDetailPage() {
         {
           key: 'history',
           label: t.jobs.history,
-          children: (
-            <div style={{ padding: 24, textAlign: 'center' }}>
-              <Text type="secondary">Execution history coming soon.</Text>
-            </div>
-          ),
+          children: <JobHistoryTab jobUuid={job.jobUuid} />,
         },
         {
           key: 'executions',
