@@ -23,6 +23,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
                 "com.cromp.executions",
                 "com.cromp.secrets",
                 "com.cromp.analytics",
+                "com.cromp.notifications",
                 "com.cromp.orchestrator"
         }
 )

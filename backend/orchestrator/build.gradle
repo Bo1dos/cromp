@@ -11,6 +11,7 @@ dependencies {
     implementation project(':backend:executions')
     implementation project(':backend:secrets')
     implementation project(':backend:analytics')
+    implementation project(':backend:notifications')
     // api не включаем
     
     implementation 'org.springframework.boot:spring-boot-starter'

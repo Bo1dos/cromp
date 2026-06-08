@@ -10,6 +10,7 @@ dependencies {
     api project(':backend:executions')
     api project(':backend:secrets')
     api project(':backend:analytics')
+    api project(':backend:notifications')
     // orchestrator не включаем, чтобы не создавать циклических зависимостей;
     // если нужны ручные запуски, они могут быть в orchestrator, тогда api будет вызывать orchestrator через его интерфейс.
     // Но для простоты оставим так: api напрямую вызывает сервисы других модулей.
