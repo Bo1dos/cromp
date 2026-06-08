@@ -1,0 +1,86 @@
+databaseChangeLog:
+  - changeSet:
+      id: V0030-create-notifications
+      author: cromp
+      changes:
+        - createTable:
+            tableName: notifications
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: notification_uuid
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: BIGINT
+              - column:
+                  name: event_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: TEXT
+              - column:
+                  name: metadata_json
+                  type: JSONB
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: 'UNREAD'
+              - column:
+                  name: email_sent_to
+                  type: VARCHAR(255)
+              - column:
+                  name: email_sent_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: read_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notifications_user_status_created
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+                  descending: true
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notifications_uuid
+            columns:
+              - column:
+                  name: notification_uuid
