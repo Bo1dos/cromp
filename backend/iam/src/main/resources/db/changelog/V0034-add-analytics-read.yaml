@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-analytics-read-permission
+      author: cromp
+      changes:
+        - insert:
+            tableName: role_permissions
+            columns:
+              - column:
+                  name: role_id
+                  valueComputed: "(SELECT id FROM roles WHERE name = 'ADMIN')"
+              - column:
+                  name: permission
+                  value: "analytics:read"
+        - insert:
+            tableName: role_permissions
+            columns:
+              - column:
+                  name: role_id
+                  valueComputed: "(SELECT id FROM roles WHERE name = 'DEVELOPER')"
+              - column:
+                  name: permission
+                  value: "analytics:read"
+        - insert:
+            tableName: role_permissions
+            columns:
+              - column:
+                  name: role_id
+                  valueComputed: "(SELECT id FROM roles WHERE name = 'ADMIN')"
+              - column:
+                  name: permission
+                  value: "org:audit"
+        - insert:
+            tableName: role_permissions
+            columns:
+              - column:
+                  name: role_id
+                  valueComputed: "(SELECT id FROM roles WHERE name = 'DEVELOPER')"
+              - column:
+                  name: permission
+                  value: "org:audit"
