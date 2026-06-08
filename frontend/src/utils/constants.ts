@@ -23,4 +23,7 @@ export const QUERY_KEYS = {
   ANALYTICS_ANOMALIES: 'analyticsAnomalies',
   ANALYTICS_TIMESERIES: 'analyticsTimeseries',
   ANALYTICS_DURATION_DIST: 'analyticsDurationDist',
+  NOTIFICATIONS: 'notifications',
+  UNREAD_COUNT: 'unreadCount',
+  NOTIFICATION_PREFS: 'notificationPrefs',
 } as const;
