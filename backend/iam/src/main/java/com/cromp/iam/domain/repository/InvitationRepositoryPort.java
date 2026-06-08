@@ -14,5 +14,6 @@ public interface InvitationRepositoryPort {
     Optional<Invitation> findByInvitationUuid(UUID invitationUuid);
     List<Invitation> findByOrganizationId(Long organizationId);
     List<Invitation> findByOrganizationIdAndStatus(Long organizationId, InvitationStatus status);
+    List<Invitation> findByEmail(String email);
     void deleteById(Long id);
 }

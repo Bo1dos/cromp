@@ -51,6 +51,11 @@ public class InvitationRepositoryAdapter implements InvitationRepositoryPort {
     }
 
     @Override
+    public List<Invitation> findByEmail(String email) {
+        return repository.findByEmail(email).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public void deleteById(Long id) {
         repository.deleteById(id);
     }

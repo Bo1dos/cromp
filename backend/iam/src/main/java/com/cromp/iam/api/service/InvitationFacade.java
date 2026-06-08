@@ -17,5 +17,8 @@ public interface InvitationFacade {
     InvitationResponse revoke(RevokeInvitationRequest request);
 
     InvitationResponse getById(UUID invitationUuid);
+    InvitationResponse acceptByUuid(UUID invitationUuid);
+    void rejectByUuid(UUID invitationUuid);
     List<InvitationResponse> getByOrganization(UUID orgUuid);
+    List<InvitationResponse> getMyInvitations();
 }

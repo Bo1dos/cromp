@@ -98,6 +98,28 @@ public class InvitationController {
         return invitationFacade.getById(invitationUuid);
     }
 
+    @Operation(summary = "Принять приглашение по UUID")
+    @PostMapping("/{invitationUuid}/accept")
+    @PreAuthorize("isAuthenticated()")
+    public InvitationResponse acceptByUuid(@PathVariable UUID invitationUuid) {
+        return invitationFacade.acceptByUuid(invitationUuid);
+    }
+
+    @Operation(summary = "Отклонить приглашение по UUID")
+    @PostMapping("/{invitationUuid}/reject")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void rejectByUuid(@PathVariable UUID invitationUuid) {
+        invitationFacade.rejectByUuid(invitationUuid);
+    }
+
+    @Operation(summary = "Список приглашений для текущего пользователя")
+    @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
+    public List<InvitationResponse> getMyInvitations() {
+        return invitationFacade.getMyInvitations();
+    }
+
     @Operation(summary = "Получить приглашения организации")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список приглашений"),
