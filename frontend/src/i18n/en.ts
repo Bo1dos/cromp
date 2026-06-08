@@ -64,11 +64,13 @@ const en = {
     darkInactive: 'Switch to dark theme',
     languageDescription: 'Select your preferred language for the application interface.',
     languageComingSoon: 'Multi-language support (i18n) will be implemented in a future update.',
-    notificationsComingSoon: 'The notification module is under development. Preferences saved here will be applied once it launches.',
+    notificationsComingSoon: 'Notification preferences are now synchronized with the server.',
   },
 
   // ---- Notifications ----
   notifications: {
+    title: 'Notifications',
+    all: 'All',
     channels: 'Notification Channels',
     eventTypes: 'Event Types',
     emailChannel: 'Email',
@@ -85,6 +87,31 @@ const en = {
     jobDisabledDesc: 'When a job is manually disabled',
     jobTimeout: 'Job Timeout',
     jobTimeoutDesc: 'When a job exceeds its timeout',
+    markAllRead: 'Mark all read',
+    viewAll: 'View all',
+    empty: 'No notifications yet',
+    noNotifications: 'No notifications',
+    unread: 'Unread',
+    read: 'Read',
+  },
+
+  // ---- Webhooks ----
+  webhooks: {
+    title: 'Webhooks',
+    addWebhook: 'Add Webhook',
+    editWebhook: 'Edit Webhook',
+    url: 'Webhook URL',
+    urlPlaceholder: 'https://hooks.example.com/cromp',
+    eventTypes: 'Event Types',
+    secret: 'Secret',
+    secretWarning: 'Save this secret now — it won\'t be shown again!',
+    copySecret: 'Copy Secret',
+    rotateSecret: 'Rotate',
+    deliveries: 'Delivery History',
+    noDeliveries: 'No deliveries yet',
+    deleteConfirm: 'Delete this webhook?',
+    rotateConfirm: 'Rotate the secret? This will invalidate the old one.',
+    noWebhooks: 'No webhooks configured',
   },
 
   // ---- Dashboard ----

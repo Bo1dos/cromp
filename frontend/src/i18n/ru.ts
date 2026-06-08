@@ -66,11 +66,13 @@ const ru: Translations = {
     darkInactive: 'Переключить на тёмную тему',
     languageDescription: 'Выберите предпочитаемый язык интерфейса.',
     languageComingSoon: 'Поддержка нескольких языков (i18n) будет реализована в следующем обновлении.',
-    notificationsComingSoon: 'Модуль уведомлений в разработке. Сохранённые настройки будут применены после его запуска.',
+    notificationsComingSoon: 'Настройки уведомлений теперь синхронизируются с сервером.',
   },
 
   // ---- Notifications ----
   notifications: {
+    title: 'Уведомления',
+    all: 'Все',
     channels: 'Каналы уведомлений',
     eventTypes: 'Типы событий',
     emailChannel: 'Email',
@@ -87,6 +89,31 @@ const ru: Translations = {
     jobDisabledDesc: 'Когда задача отключена вручную',
     jobTimeout: 'Тайм-аут задачи',
     jobTimeoutDesc: 'Когда задача превысила время выполнения',
+    markAllRead: 'Прочитать все',
+    viewAll: 'Все уведомления',
+    empty: 'Уведомлений пока нет',
+    noNotifications: 'Нет уведомлений',
+    unread: 'Непрочитанные',
+    read: 'Прочитанные',
+  },
+
+  // ---- Webhooks ----
+  webhooks: {
+    title: 'Вебхуки',
+    addWebhook: 'Добавить вебхук',
+    editWebhook: 'Редактировать вебхук',
+    url: 'URL вебхука',
+    urlPlaceholder: 'https://hooks.example.com/cromp',
+    eventTypes: 'Типы событий',
+    secret: 'Секрет',
+    secretWarning: 'Сохраните секрет сейчас — он больше не будет показан!',
+    copySecret: 'Копировать',
+    rotateSecret: 'Обновить',
+    deliveries: 'История доставок',
+    noDeliveries: 'Доставок пока нет',
+    deleteConfirm: 'Удалить этот вебхук?',
+    rotateConfirm: 'Обновить секрет? Старый секрет перестанет работать.',
+    noWebhooks: 'Вебхуки не настроены',
   },
 
   // ---- Dashboard ----

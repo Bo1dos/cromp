@@ -2,7 +2,7 @@
 // SettingsTab — appearance, language & notifications settings
 // ---------------------------------------------------------------------------
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Tabs,
   Card,
@@ -18,45 +18,41 @@ import {
   BgColorsOutlined,
   GlobalOutlined,
   BellOutlined,
+  ApiOutlined,
 } from '@ant-design/icons';
 
 import { useTheme } from '@/hooks/useTheme';
 import { useLanguage, type Locale } from '@/hooks/useLanguage';
+import { useNotificationPreferences, useUpdateNotificationPreferences } from '@/hooks/useNotifications';
+import WebhookSettingsTab from '@/components/settings/WebhookSettingsTab';
+import type { NotificationPreferences } from '@/types/notification';
 
 const { Text, Title, Paragraph } = Typography;
 
 // ---------------------------------------------------------------------------
-// Notification prefs — localStorage helpers
+// Notification prefs — localStorage helpers (for migration only)
 // ---------------------------------------------------------------------------
 const NOTIF_CHANNELS_KEY = 'caas-notif-channels';
 const NOTIF_EVENTS_KEY = 'caas-notif-events';
 
-interface ChannelPrefs {
-  email: boolean;
-  inApp: boolean;
-  webhook: boolean;
-}
-
-interface EventPrefs {
-  jobFailed: boolean;
-  jobSucceeded: boolean;
-  jobDisabled: boolean;
-  jobTimeout: boolean;
-}
-
-const defaultChannels: ChannelPrefs = { email: true, inApp: true, webhook: false };
-const defaultEvents: EventPrefs = { jobFailed: true, jobSucceeded: true, jobDisabled: true, jobTimeout: true };
-
-function readPrefs<T>(key: string, defaults: T): T {
+function readLegacyPrefs(): { channels?: Record<string, boolean>; events?: Record<string, boolean> } {
   try {
-    const raw = localStorage.getItem(key);
-    if (raw) return { ...defaults, ...JSON.parse(raw) };
-  } catch { /* ignore */ }
-  return defaults;
+    const channelsRaw = localStorage.getItem(NOTIF_CHANNELS_KEY);
+    const eventsRaw = localStorage.getItem(NOTIF_EVENTS_KEY);
+    return {
+      channels: channelsRaw ? JSON.parse(channelsRaw) : undefined,
+      events: eventsRaw ? JSON.parse(eventsRaw) : undefined,
+    };
+  } catch {
+    return {};
+  }
 }
 
-function writePrefs<T>(key: string, val: T) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* ignore */ }
+function clearLegacyPrefs() {
+  try {
+    localStorage.removeItem(NOTIF_CHANNELS_KEY);
+    localStorage.removeItem(NOTIF_EVENTS_KEY);
+  } catch { /* ignore */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -142,108 +138,120 @@ function LanguageTab() {
   );
 }
 
-/** Notifications — functional toggles with localStorage persistence */
+/** Notifications — API-driven toggles with localStorage migration */
 function NotificationsTab() {
   const { t } = useLanguage();
+  const { data: prefs, isLoading } = useNotificationPreferences();
+  const updateMutation = useUpdateNotificationPreferences();
 
-  const [channels, setChannels] = useState<ChannelPrefs>(() =>
-    readPrefs(NOTIF_CHANNELS_KEY, defaultChannels),
-  );
-  const [events, setEvents] = useState<EventPrefs>(() =>
-    readPrefs(NOTIF_EVENTS_KEY, defaultEvents),
-  );
+  // Migrate localStorage → API on first load
+  useEffect(() => {
+    if (prefs || isLoading) return;
+    const legacy = readLegacyPrefs();
+    if (legacy.channels || legacy.events) {
+      const merged: NotificationPreferences = {
+        channels: {
+          EMAIL: legacy.channels?.email ?? true,
+          IN_APP: legacy.channels?.inApp ?? true,
+          WEBHOOK: legacy.channels?.webhook ?? false,
+        },
+        eventTypes: {
+          JOB_EXECUTION_FAILED: legacy.events?.jobFailed ?? true,
+          JOB_EXECUTION_SUCCEEDED: legacy.events?.jobSucceeded ?? true,
+          JOB_DISABLED: legacy.events?.jobDisabled ?? true,
+          JOB_EXECUTION_TIMEOUT: legacy.events?.jobTimeout ?? true,
+          INVITATION_CREATED: true,
+          INVITATION_ACCEPTED: true,
+          INVITATION_REJECTED: true,
+          INVITATION_REVOKED: true,
+          INVITATION_EXPIRED: true,
+          MEMBER_ADDED: true,
+          MEMBER_REMOVED: true,
+          MEMBER_ROLE_CHANGED: true,
+          SECRET_EXPIRING: true,
+          SECRET_ROTATED: true,
+          BILLING_TRIAL_ENDING: true,
+        },
+      };
+      updateMutation.mutate(merged);
+      clearLegacyPrefs();
+    }
+  }, [prefs, isLoading]);
 
-  const toggleChannel = useCallback(
-    (key: keyof ChannelPrefs) => {
-      setChannels((prev) => {
-        const next = { ...prev, [key]: !prev[key] };
-        writePrefs(NOTIF_CHANNELS_KEY, next);
-        return next;
-      });
-    },
-    [],
-  );
+  const channels = prefs?.channels ?? {};
+  const eventTypes = prefs?.eventTypes ?? {};
 
-  const toggleEvent = useCallback(
-    (key: keyof EventPrefs) => {
-      setEvents((prev) => {
-        const next = { ...prev, [key]: !prev[key] };
-        writePrefs(NOTIF_EVENTS_KEY, next);
-        return next;
-      });
-    },
-    [],
-  );
+  const toggleChannel = (key: string) => {
+    if (!prefs) return;
+    updateMutation.mutate({
+      ...prefs,
+      channels: { ...prefs.channels, [key]: !prefs.channels[key] },
+    });
+  };
+
+  const toggleEvent = (key: string) => {
+    if (!prefs) return;
+    updateMutation.mutate({
+      ...prefs,
+      eventTypes: { ...prefs.eventTypes, [key]: !prefs.eventTypes[key] },
+    });
+  };
 
   const channelItems = [
-    { key: 'email' as const, label: t.notifications.emailChannel, description: t.notifications.emailDesc },
-    { key: 'inApp' as const, label: t.notifications.inAppChannel, description: t.notifications.inAppDesc },
-    { key: 'webhook' as const, label: t.notifications.webhookChannel, description: t.notifications.webhookDesc },
+    { key: 'EMAIL', label: t.notifications.emailChannel, description: t.notifications.emailDesc },
+    { key: 'IN_APP', label: t.notifications.inAppChannel, description: t.notifications.inAppDesc },
+    { key: 'WEBHOOK', label: t.notifications.webhookChannel, description: t.notifications.webhookDesc },
   ];
 
   const eventItems = [
-    { key: 'jobFailed' as const, label: t.notifications.jobFailed, description: t.notifications.jobFailedDesc, tag: 'error' as const },
-    { key: 'jobSucceeded' as const, label: t.notifications.jobSucceeded, description: t.notifications.jobSucceededDesc, tag: 'success' as const },
-    { key: 'jobDisabled' as const, label: t.notifications.jobDisabled, description: t.notifications.jobDisabledDesc, tag: 'warning' as const },
-    { key: 'jobTimeout' as const, label: t.notifications.jobTimeout, description: t.notifications.jobTimeoutDesc, tag: 'error' as const },
+    { key: 'JOB_EXECUTION_FAILED', label: t.notifications.jobFailed, description: t.notifications.jobFailedDesc, tag: 'error' as const },
+    { key: 'JOB_EXECUTION_SUCCEEDED', label: t.notifications.jobSucceeded, description: t.notifications.jobSucceededDesc, tag: 'success' as const },
+    { key: 'JOB_DISABLED', label: t.notifications.jobDisabled, description: t.notifications.jobDisabledDesc, tag: 'warning' as const },
+    { key: 'JOB_EXECUTION_TIMEOUT', label: t.notifications.jobTimeout, description: t.notifications.jobTimeoutDesc, tag: 'error' as const },
+    { key: 'INVITATION_CREATED', label: 'Invitation Created', description: 'When you receive an invitation', tag: 'blue' as const },
+    { key: 'INVITATION_ACCEPTED', label: 'Invitation Accepted', description: 'When someone accepts your invitation', tag: 'green' as const },
   ];
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      {/* ---- Channels ---- */}
-      <Card title={t.notifications.channels}>
+      <Card title={t.notifications.channels} loading={isLoading}>
         <List
           dataSource={channelItems}
           renderItem={(item) => (
             <List.Item
               extra={
                 <Switch
-                  checked={channels[item.key]}
+                  checked={channels[item.key] ?? false}
                   onChange={() => toggleChannel(item.key)}
                 />
               }
             >
-              <List.Item.Meta
-                title={item.label}
-                description={item.description}
-              />
+              <List.Item.Meta title={item.label} description={item.description} />
             </List.Item>
           )}
         />
       </Card>
 
-      {/* ---- Event types ---- */}
-      <Card title={t.notifications.eventTypes}>
+      <Card title={t.notifications.eventTypes} loading={isLoading}>
         <List
           dataSource={eventItems}
           renderItem={(item) => (
             <List.Item
               extra={
                 <Switch
-                  checked={events[item.key]}
+                  checked={eventTypes[item.key] ?? true}
                   onChange={() => toggleEvent(item.key)}
                 />
               }
             >
               <List.Item.Meta
-                title={
-                  <Space>
-                    <Tag color={item.tag}>{item.label}</Tag>
-                  </Space>
-                }
+                title={<Space><Tag color={item.tag}>{item.label}</Tag></Space>}
                 description={item.description}
               />
             </List.Item>
           )}
         />
       </Card>
-
-      <Alert
-        type="info"
-        showIcon
-        message={t.common.loading.replace('…', '')}
-        description={t.settings.notificationsComingSoon}
-      />
     </Space>
   );
 }
@@ -291,6 +299,16 @@ export default function SettingsTab() {
             </Space>
           ),
           children: <NotificationsTab />,
+        },
+        {
+          key: 'webhooks',
+          label: (
+            <Space>
+              <ApiOutlined />
+              <span>Webhooks</span>
+            </Space>
+          ),
+          children: <WebhookSettingsTab />,
         },
       ]}
     />

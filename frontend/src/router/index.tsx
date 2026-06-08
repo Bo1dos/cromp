@@ -4,6 +4,7 @@ import RootLayout from '@/components/layout/RootLayout';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
+import AcceptInvitationPage from '@/pages/auth/AcceptInvitationPage';
 import SelectOrganizationPage from '@/pages/organization/SelectOrganizationPage';
 import DashboardLayout from '@/pages/dashboard/DashboardLayout';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
@@ -20,6 +21,7 @@ import MembersPage from '@/pages/members/MembersPage';
 import AuditLogPage from '@/pages/audit/AuditLogPage';
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ProfilePage from '@/pages/profile/ProfilePage';
+import NotificationsPage from '@/pages/notifications/NotificationsPage';
 import RoleGuard from '@/components/auth/RoleGuard';
 
 export const router = createBrowserRouter([
@@ -38,6 +40,10 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: <RegisterPage />,
+      },
+      {
+        path: 'accept',
+        element: <AcceptInvitationPage />,
       },
       {
         path: 'select-organization',
@@ -73,7 +79,7 @@ export const router = createBrowserRouter([
               {
                 path: 'audit',
                 element: (
-                  <RoleGuard allowedRoles={['ADMIN']}>
+                  <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
                     <AuditLogPage />
                   </RoleGuard>
                 ),
@@ -81,6 +87,10 @@ export const router = createBrowserRouter([
               {
                 path: 'profile',
                 element: <ProfilePage />,
+              },
+              {
+                path: 'notifications',
+                element: <NotificationsPage />,
               },
             ],
           },

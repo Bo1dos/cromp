@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useLanguage } from '@/hooks/useLanguage';
 import OrganizationSwitcher from './OrganizationSwitcher';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -78,6 +79,7 @@ export default function AppHeader({ extraLeft }: AppHeaderProps) {
       {/* Right — organisation switcher + user profile */}
       <Space size={16}>
         <OrganizationSwitcher />
+        <NotificationBell />
 
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
           <Space
