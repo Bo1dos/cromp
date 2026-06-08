@@ -118,3 +118,20 @@ databaseChangeLog:
   - include:
       file: db/changelog/V0029-executions-fix-stale-dispatched.yaml
       relativeToChangelogFile: false
+
+  # ── Notifications ─────────────────────────────────────────────────────────
+  - include:
+      file: db/changelog/V0030-notifications.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0031-notification-preferences.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0032-webhook-subscriptions.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0033-webhook-deliveries.yaml
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V0034-add-analytics-read.yaml
+      relativeToChangelogFile: false
