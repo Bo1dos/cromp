@@ -7,5 +7,7 @@ public record ClaimAttemptResult(
         Long attemptId,
         UUID attemptUuid,
         Long executionId,
+        Long organizationId,
+        Long jobId,
         String jobConfig   // JSONB конфиг версии — исполнитель сам десериализует
 ) {}

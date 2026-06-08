@@ -43,6 +43,7 @@ class JobApplicationServiceTest {
     @Mock private AuditPort auditPort;
     @Mock private ExecutionCreationPort executionCreationPort;
     @Mock private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    @Mock private com.cromp.common.event.integration.publisher.DomainEventPublisher domainEventPublisher;
 
     private JobApplicationService service;
 
@@ -50,7 +51,7 @@ class JobApplicationServiceTest {
     void setUp() {
         service = new JobApplicationService(jobRepository, versionRepository, currentActorPort,
                 permissionCheckerPort, auditPort, executionCreationPort, new JobApiMapper(),
-                jdbcTemplate);
+                jdbcTemplate, domainEventPublisher);
         when(currentActorPort.currentUserId()).thenReturn(Optional.of(11L));
         when(currentActorPort.currentOrganizationId()).thenReturn(Optional.of(101L));
         when(permissionCheckerPort.isMember(11L, 101L)).thenReturn(true);

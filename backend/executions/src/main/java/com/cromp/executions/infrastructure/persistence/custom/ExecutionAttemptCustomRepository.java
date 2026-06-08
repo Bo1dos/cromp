@@ -28,11 +28,17 @@ public class ExecutionAttemptCustomRepository {
     @Transactional
     public Optional<ClaimAttemptResult> claimAttempt(Long organizationId) {
         List<ClaimAttemptResult> results = jdbcTemplate.query(
-                "SELECT attempt_id, execution_id, attempt_uuid, config FROM claim_execution_attempt()",
+                "SELECT a.attempt_id, a.execution_id, a.attempt_uuid, "
+                        + "e.organization_id, e.job_id, jv.config "
+                        + "FROM claim_execution_attempt() a "
+                        + "JOIN executions e ON e.id = a.execution_id "
+                        + "JOIN job_versions jv ON jv.id = e.job_version_id",
                 (rs, rowNum) -> new ClaimAttemptResult(
                         rs.getLong("attempt_id"),
                         rs.getObject("attempt_uuid", UUID.class),
                         rs.getLong("execution_id"),
+                        rs.getLong("organization_id"),
+                        rs.getLong("job_id"),
                         rs.getString("config")
                 )
         );

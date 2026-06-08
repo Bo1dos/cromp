@@ -12,6 +12,10 @@ import com.cromp.iam.domain.model.Organization;
 import com.cromp.iam.domain.model.Role;
 import com.cromp.iam.domain.model.User;
 import com.cromp.iam.domain.model.exceptions.DomainException;
+import com.cromp.common.event.integration.publisher.DomainEventPublisher;
+import com.cromp.common.event.domain.membership.MemberAddedEvent;
+import com.cromp.common.event.domain.membership.MemberRemovedEvent;
+import com.cromp.common.event.domain.membership.MemberRoleChangedEvent;
 import com.cromp.iam.domain.repository.MembershipRepositoryPort;
 import com.cromp.iam.domain.repository.OrganizationRepositoryPort;
 import com.cromp.iam.domain.repository.RoleRepositoryPort;
@@ -35,6 +39,7 @@ public class MembershipApplicationService implements MembershipFacade {
     private final MembershipApiMapper membershipMapper;
     private final CurrentActorPort currentActorPort;
     private final PermissionCheckerPort permissionCheckerPort;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Override
     public MembershipResponse add(AddMembershipRequest request) {
@@ -54,6 +59,15 @@ public class MembershipApplicationService implements MembershipFacade {
 
         Membership membership = Membership.join(user.getId(), organizationId, role.getId());
         membership = membershipRepository.save(membership);
+
+        domainEventPublisher.publish(new MemberAddedEvent(
+                organizationId,
+                user.getId(),
+                user.getEmail(),
+                role.getName().toString(),
+                currentUserId
+        ));
+
         return membershipMapper.toResponse(membership);
     }
 
@@ -72,8 +86,22 @@ public class MembershipApplicationService implements MembershipFacade {
         Role role = roleRepository.findByName(request.role())
                 .orElseThrow(() -> new DomainException("Role not found"));
 
+        String oldRoleName = roleRepository.findById(membership.getRoleId())
+                .map(r -> r.getName().toString()).orElse("UNKNOWN");
+
         membership.changeRole(role.getId());
         membershipRepository.save(membership);
+
+        User member = userRepository.findById(membership.getUserId()).orElse(null);
+        domainEventPublisher.publish(new MemberRoleChangedEvent(
+                membership.getOrganizationId(),
+                membership.getUserId(),
+                member != null ? member.getEmail() : "unknown",
+                oldRoleName,
+                role.getName().toString(),
+                currentUserId
+        ));
+
         return membershipMapper.toResponse(membership);
     }
     
@@ -88,6 +116,15 @@ public class MembershipApplicationService implements MembershipFacade {
         if (!permissionCheckerPort.hasPermission(currentUserId, membership.getOrganizationId(), "org:update")) {
             throw new SecurityException("No permission to remove members from this organization");
         }
+
+        User member = userRepository.findById(membership.getUserId()).orElse(null);
+
+        domainEventPublisher.publish(new MemberRemovedEvent(
+                membership.getOrganizationId(),
+                membership.getUserId(),
+                member != null ? member.getEmail() : "unknown",
+                currentUserId
+        ));
 
         membershipRepository.deleteById(membership.getId());
     }

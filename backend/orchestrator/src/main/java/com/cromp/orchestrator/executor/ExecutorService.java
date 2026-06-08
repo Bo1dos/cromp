@@ -1,5 +1,8 @@
 package com.cromp.orchestrator.executor;
 
+import com.cromp.common.event.integration.publisher.DomainEventPublisher;
+import com.cromp.common.event.domain.job.JobExecutionFailedEvent;
+import com.cromp.common.event.domain.job.JobExecutionSucceededEvent;
 import com.cromp.executions.application.port.AttemptClaimPort;
 import com.cromp.executions.application.port.AttemptCompletionPort;
 import com.cromp.executions.api.dto.request.CompleteAttemptRequest;
@@ -58,6 +61,7 @@ public class ExecutorService {
     private final OrchestratorProperties properties;
     private final ObjectMapper objectMapper;
     private final Executor taskExecutor;
+    private final DomainEventPublisher domainEventPublisher;
 
     // Метрики
     private final Counter startedCounter;
@@ -73,7 +77,8 @@ public class ExecutorService {
             OrchestratorProperties properties,
             ObjectMapper objectMapper,
             @Qualifier("orchestratorTaskExecutor") Executor taskExecutor,
-            MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry,
+            DomainEventPublisher domainEventPublisher) {
 
         this.claimPort = claimPort;
         this.completionPort = completionPort;
@@ -82,6 +87,7 @@ public class ExecutorService {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.taskExecutor = taskExecutor;
+        this.domainEventPublisher = domainEventPublisher;
 
         this.startedCounter = Counter.builder("orchestrator.executor.attempts.started")
                 .description("Число захваченных и запущенных попыток")
@@ -155,6 +161,7 @@ public class ExecutorService {
             Map<String, String> resolvedSecrets = resolveSecrets(claimed, secretRefs);
 
             // 4. Выполняем HTTP-запрос
+            long startMs = System.currentTimeMillis();
             HttpTaskResult result = durationTimer.record(() ->
                     httpTaskAdapter.execute(
                             claimed.attemptUuid(),
@@ -162,11 +169,19 @@ public class ExecutorService {
                             resolvedSecrets
                     )
             );
+            long durationMs = System.currentTimeMillis() - startMs;
 
             // 5. Фиксируем результат
             if (result.success()) {
                 completeAttempt(claimed, result, AttemptStatus.SUCCEEDED);
                 successCounter.increment();
+                domainEventPublisher.publish(new JobExecutionSucceededEvent(
+                        new java.util.UUID(0, 0),
+                        "job-" + claimed.jobId(),
+                        claimed.attemptUuid(),
+                        claimed.organizationId(),
+                        durationMs
+                ));
             } else {
                 handleFailure(claimed, result, jobConfig);
             }
@@ -175,6 +190,13 @@ public class ExecutorService {
             log.error("[executor] unhandled error in worker attemptUuid={}", claimed.attemptUuid(), e);
             failAttempt(claimed, "INTERNAL_ERROR", e.getMessage(), "FAILED");
             failedCounter.increment();
+            domainEventPublisher.publish(new JobExecutionFailedEvent(
+                    new java.util.UUID(0, 0),
+                    "job-" + claimed.jobId(),
+                    claimed.attemptUuid(),
+                    claimed.organizationId(),
+                    e.getMessage()
+            ));
         } finally {
             sample.stop(durationTimer);
         }
@@ -206,6 +228,14 @@ public class ExecutorService {
         completeAttempt(claimed, result,
                 "TIMEOUT".equals(errorType) ? AttemptStatus.TIMEOUT : AttemptStatus.FAILED);
         failedCounter.increment();
+
+        domainEventPublisher.publish(new JobExecutionFailedEvent(
+                new java.util.UUID(0, 0),
+                "job-" + claimed.jobId(),
+                claimed.attemptUuid(),
+                claimed.organizationId(),
+                result.errorMessage() != null ? result.errorMessage() : errorType
+        ));
     }
 
     // ── Вспомогательные методы ────────────────────────────────────────────────

@@ -62,7 +62,7 @@ class AttemptServiceTest {
 
     @Test
     void shouldReturnClaimedAttemptWhenCustomRepositoryReturnsResult() {
-        ClaimAttemptResult result = new ClaimAttemptResult(1L, UUID.randomUUID(), 10L, "{\"job\":true}");
+        ClaimAttemptResult result = new ClaimAttemptResult(1L, UUID.randomUUID(), 10L, 100L, 200L, "{\"job\":true}");
         when(customRepository.claimAttempt(ORGANIZATION_ID)).thenReturn(Optional.of(result));
 
         assertThat(service.claimNextAttempt(ORGANIZATION_ID)).contains(result);

@@ -1,5 +1,7 @@
 package com.cromp.jobs.application.service;
 
+import com.cromp.common.event.integration.publisher.DomainEventPublisher;
+import com.cromp.common.event.domain.job.JobDisabledEvent;
 import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PermissionCheckerPort;
 import com.cromp.jobs.api.dto.request.*;
@@ -33,6 +35,7 @@ public class JobApplicationService implements JobFacade {
     private final ExecutionCreationPort executionCreationPort;
     private final JobApiMapper jobApiMapper;
     private final JdbcTemplate jdbcTemplate;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Override
     public JobResponse createJob(CreateJobRequest request) {
@@ -212,6 +215,11 @@ public class JobApplicationService implements JobFacade {
         jobRepository.save(job);
         auditPort.record("JOB.STATUS_CHANGE", organizationId, userId, "jobs", jobId,
                 Map.of("status", request.status().name()));
+
+        if (request.status() == JobStatus.DISABLED) {
+            domainEventPublisher.publish(new JobDisabledEvent(
+                    job.getJobUuid(), job.getName(), organizationId, userId));
+        }
 
         JobVersion version = versionRepository.findLatestByJobId(jobId).orElseThrow();
         int vCount = versionRepository.findByJobIdOrderByVersionDesc(jobId).size();
