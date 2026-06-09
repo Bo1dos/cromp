@@ -102,12 +102,21 @@ def _retrain_for_org(org_id: int) -> dict:
 
 def _reload_predictor() -> None:
     """
-    Перезагружает модели в глобальном Predictor'е.
-    Импортируем здесь чтобы избежать circular import при старте.
+    Стучится в POST /reload на ml-service API, чтобы перезагрузить модели
+    в процессе FastAPI (worker и API — разные процессы/контейнеры).
+    Использует urllib из stdlib — не требует дополнительных зависимостей.
     """
+    import json
+    import urllib.request
+
+    api_url = "http://ml-service:8000/reload"
     try:
-        from app.main import predictor
-        predictor.reload_models()
-        logger.info("[retrain] predictor reloaded successfully")
+        req = urllib.request.Request(api_url, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read().decode())
+            logger.info(
+                "[retrain] predictor reload response: status=%s models_loaded=%s",
+                body.get("status"), body.get("models_loaded"),
+            )
     except Exception as e:
-        logger.error("[retrain] failed to reload predictor: %s", e)
+        logger.error("[retrain] failed to call reload API at %s: %s", api_url, e)

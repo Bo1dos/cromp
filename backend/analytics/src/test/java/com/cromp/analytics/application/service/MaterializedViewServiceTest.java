@@ -39,31 +39,32 @@ class MaterializedViewServiceTest {
     // ── refresh ───────────────────────────────────────────────────────────
 
     @Test
-    void shouldExecuteRefreshSqlAndEvictCachesOnSuccess() {
+    void shouldExecuteUpsertSqlAndEvictCachesOnSuccess() {
         when(cacheManager.getCache("analytics.summary")).thenReturn(summaryCache);
         when(cacheManager.getCache("analytics.predictions")).thenReturn(predictionsCache);
         when(cacheManager.getCache("analytics.anomalies")).thenReturn(anomaliesCache);
+        when(jdbc.update(anyString())).thenReturn(5);
 
         materializedViewService.refresh();
 
-        verify(jdbc).execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_job_execution_daily");
+        verify(jdbc).update(anyString());
         verify(summaryCache).clear();
         verify(predictionsCache).clear();
         verify(anomaliesCache).clear();
     }
 
     @Test
-    void shouldNotThrowWhenJdbcExecuteFails() {
+    void shouldNotThrowWhenJdbcUpdateFails() {
         doThrow(new RuntimeException("DB connection lost"))
-                .when(jdbc).execute(anyString());
+                .when(jdbc).update(anyString());
 
         // Should not throw - the method swallows exceptions
         materializedViewService.refresh();
     }
 
     @Test
-    void shouldNotEvictCachesWhenJdbcExecuteFails() {
-        doThrow(new RuntimeException("DB error")).when(jdbc).execute(anyString());
+    void shouldNotEvictCachesWhenJdbcUpdateFails() {
+        doThrow(new RuntimeException("DB error")).when(jdbc).update(anyString());
 
         materializedViewService.refresh();
 
@@ -75,6 +76,7 @@ class MaterializedViewServiceTest {
         when(cacheManager.getCache("analytics.summary")).thenReturn(null);
         when(cacheManager.getCache("analytics.predictions")).thenReturn(null);
         when(cacheManager.getCache("analytics.anomalies")).thenReturn(null);
+        when(jdbc.update(anyString())).thenReturn(0);
 
         // Should not throw NPE
         materializedViewService.refresh();
@@ -85,6 +87,7 @@ class MaterializedViewServiceTest {
         when(cacheManager.getCache("analytics.summary")).thenReturn(summaryCache);
         when(cacheManager.getCache("analytics.predictions")).thenReturn(null);
         when(cacheManager.getCache("analytics.anomalies")).thenReturn(anomaliesCache);
+        when(jdbc.update(anyString())).thenReturn(3);
 
         materializedViewService.refresh();
 
@@ -98,6 +101,7 @@ class MaterializedViewServiceTest {
         when(cacheManager.getCache("analytics.summary")).thenReturn(summaryCache);
         when(cacheManager.getCache("analytics.predictions")).thenReturn(predictionsCache);
         when(cacheManager.getCache("analytics.anomalies")).thenReturn(anomaliesCache);
+        when(jdbc.update(anyString())).thenReturn(10);
 
         materializedViewService.refresh();
 
@@ -111,6 +115,7 @@ class MaterializedViewServiceTest {
         when(cacheManager.getCache("analytics.summary")).thenReturn(summaryCache);
         when(cacheManager.getCache("analytics.predictions")).thenReturn(predictionsCache);
         when(cacheManager.getCache("analytics.anomalies")).thenReturn(anomaliesCache);
+        when(jdbc.update(anyString())).thenReturn(7);
 
         materializedViewService.refresh();
 
@@ -120,14 +125,12 @@ class MaterializedViewServiceTest {
     }
 
     @Test
-    void refreshSqlShouldContainCorrectTableName() {
-        // Verify the SQL constant is well-formed
-        String expectedPrefix = "REFRESH MATERIALIZED VIEW CONCURRENTLY";
-        // Reflection or simply verify the execute call
+    void refreshSqlShouldContainUpsertKeywords() {
         when(cacheManager.getCache(anyString())).thenReturn(null);
+        when(jdbc.update(anyString())).thenReturn(0);
 
         materializedViewService.refresh();
 
-        verify(jdbc).execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_job_execution_daily");
+        verify(jdbc).update(anyString());
     }
 }

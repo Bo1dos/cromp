@@ -115,6 +115,21 @@ def retrain(org_id: int = Query(None, description="ID организации. Е
     )
 
 
+@app.post("/reload", response_model=HealthResponse)
+def reload_models() -> HealthResponse:
+    """
+    Перезагружает модели с диска (вызывается celery-worker'ом после обучения).
+    Позволяет API подхватить свежие модели без перезапуска контейнера.
+    """
+    logger.info("Manual model reload triggered")
+    predictor.reload_models()
+    return HealthResponse(
+        status="ok",
+        models_loaded=predictor.models_loaded,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+    )
+
+
 # ── Error handlers ────────────────────────────────────────────────────────────
 
 @app.exception_handler(Exception)

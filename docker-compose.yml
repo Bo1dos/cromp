@@ -119,6 +119,7 @@ services:
       target: beat
     container_name: cromp-celery-beat
     environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://cromp:cromp123@postgres:5432/cromp}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
       redis:

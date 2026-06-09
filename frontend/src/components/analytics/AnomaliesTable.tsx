@@ -41,9 +41,10 @@ export default function AnomaliesTable({ data, loading }: Props) {
   const columns: ColumnsType<AnomalyItem> = [
     {
       title: 'Job',
-      dataIndex: 'jobName',
-      key: 'jobName',
-      sorter: (a: AnomalyItem, b: AnomalyItem) => a.jobName.localeCompare(b.jobName),
+      dataIndex: 'jobId',
+      key: 'jobId',
+      sorter: (a: AnomalyItem, b: AnomalyItem) => a.jobId - b.jobId,
+      render: (id: number) => `#${id}`,
     },
     {
       title: 'Description',

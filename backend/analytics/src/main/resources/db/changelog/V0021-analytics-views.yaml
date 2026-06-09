@@ -1,30 +1,27 @@
 databaseChangeLog:
   - changeSet:
-      id: create-analytics-materialized-view
+      id: create-analytics-aggregate-table
       author: bo1dos
       changes:
         - sql:
             sql: |
-              CREATE MATERIALIZED VIEW mv_job_execution_daily AS
-              SELECT
-                e.job_id,
-                e.organization_id,
-                date_trunc('day', e.created_at) AS day,
-                count(*) AS total_executions,
-                count(*) FILTER (WHERE e.final_status = 'SUCCEEDED') AS succeeded,
-                count(*) FILTER (WHERE e.final_status = 'FAILED') AS failed,
-                avg(a.duration_ms) FILTER (WHERE a.duration_ms IS NOT NULL) AS avg_attempt_duration_ms,
-                percentile_cont(0.5) WITHIN GROUP (ORDER BY a.duration_ms) FILTER (WHERE a.duration_ms IS NOT NULL) AS p50_duration_ms,
-                percentile_cont(0.95) WITHIN GROUP (ORDER BY a.duration_ms) FILTER (WHERE a.duration_ms IS NOT NULL) AS p95_duration_ms,
-                max(a.duration_ms) FILTER (WHERE a.duration_ms IS NOT NULL) AS max_duration_ms,
-                sum(e.total_attempts) AS total_attempts
-              FROM executions e
-              LEFT JOIN execution_attempts a ON a.execution_id = e.id
-              WHERE e.created_at >= now() - INTERVAL '90 days'
-              GROUP BY e.job_id, e.organization_id, date_trunc('day', e.created_at);
+              CREATE TABLE IF NOT EXISTS mv_job_execution_daily (
+                job_id                  bigint    NOT NULL,
+                organization_id         bigint    NOT NULL,
+                day                     date      NOT NULL,
+                total_executions        bigint    NOT NULL DEFAULT 0,
+                succeeded               bigint    NOT NULL DEFAULT 0,
+                failed                  bigint    NOT NULL DEFAULT 0,
+                avg_attempt_duration_ms double precision,
+                p50_duration_ms         double precision,
+                p95_duration_ms         double precision,
+                max_duration_ms         double precision,
+                total_attempts          bigint    NOT NULL DEFAULT 0
+              );
         - sql:
             sql: |
-              CREATE UNIQUE INDEX idx_mv_job_exec_daily ON mv_job_execution_daily (job_id, day);
+              CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_job_exec_daily
+                ON mv_job_execution_daily (job_id, day);
         - rollback:
             sql: |
-              DROP MATERIALIZED VIEW IF EXISTS mv_job_execution_daily;
+              DROP TABLE IF EXISTS mv_job_execution_daily;

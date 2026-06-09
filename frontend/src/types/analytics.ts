@@ -37,7 +37,6 @@ export type AnomalySeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 /** Backend AnomalyItem */
 export interface AnomalyItem {
   jobId: number;
-  jobName: string;
   metric: string;
   value: number;
   expectedMin: number;
@@ -50,7 +49,7 @@ export interface AnomalyItem {
 export interface AnomaliesResponse {
   organizationId: number;
   jobId: number | null;
-  fromDate: string;
-  toDate: string;
+  from: string;
+  to: string;
   anomalies: AnomalyItem[];
 }

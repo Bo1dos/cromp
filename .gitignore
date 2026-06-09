@@ -34,3 +34,7 @@ tt/
 # Frontend dependencies
 frontend/node_modules/
 node_modules/
+
+ml-service/full_data.csv
+ml-service/test_data.csv
+ml-service/test_predict.json
