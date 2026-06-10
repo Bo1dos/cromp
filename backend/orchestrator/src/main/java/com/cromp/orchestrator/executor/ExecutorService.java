@@ -154,10 +154,6 @@ public class ExecutorService {
 
             // 3. Разрешаем секреты батчем
             List<JobSecretRef> secretRefs = jobConfig.secrets();
-            // organizationId нам недоступен напрямую из ClaimAttemptResult —
-            // получаем его из Execution через executionId.
-            // В MVP используем системный вызов без organizationId (null-safe в SecretResolvePort).
-            // TODO: добавить organizationId в ClaimAttemptResult для полной изоляции.
             Map<String, String> resolvedSecrets = resolveSecrets(claimed, secretRefs);
 
             // 4. Выполняем HTTP-запрос
@@ -269,9 +265,7 @@ public class ExecutorService {
             return Map.of();
         }
         try {
-            // organizationId = null — system-wide, SecretResolverService пропустит проверку
-            // TODO: передавать organizationId когда он появится в ClaimAttemptResult
-            return secretResolverService.resolve(null, secretRefs);
+            return secretResolverService.resolve(claimed.organizationId(), secretRefs);
         } catch (Exception e) {
             log.error("[executor] failed to resolve secrets attemptUuid={}: {}",
                     claimed.attemptUuid(), e.getMessage());

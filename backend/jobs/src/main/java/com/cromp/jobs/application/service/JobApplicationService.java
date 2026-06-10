@@ -15,6 +15,8 @@ import com.cromp.jobs.domain.model.enums.JobStatus;
 import com.cromp.jobs.domain.model.exceptions.*;
 import com.cromp.jobs.domain.repository.JobRepositoryPort;
 import com.cromp.jobs.domain.repository.JobVersionRepositoryPort;
+import com.cromp.secrets.domain.model.Secret;
+import com.cromp.secrets.domain.repository.SecretRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class JobApplicationService implements JobFacade {
 
     private final JobRepositoryPort jobRepository;
     private final JobVersionRepositoryPort versionRepository;
+    private final SecretRepositoryPort secretRepository;
     private final CurrentActorPort currentActorPort;
     private final PermissionCheckerPort permissionCheckerPort;
     private final AuditPort auditPort;
@@ -53,6 +56,8 @@ public class JobApplicationService implements JobFacade {
         Job job = Job.create(UUID.randomUUID(), organizationId, request.name(), request.description(),
                 request.queueName() != null ? request.queueName() : "default", request.priority(), userId);
         job = jobRepository.save(job);
+
+        validateSecretRefs(request.config(), organizationId);
 
         JobVersion version = JobVersion.create(job.getId(), 1, request.config(), userId);
         versionRepository.save(version);
@@ -107,6 +112,7 @@ public class JobApplicationService implements JobFacade {
         int newVersionNumber = currentVersion.getVersion();
 
         if (request.config() != null) {
+            validateSecretRefs(request.config(), organizationId);
             newVersionNumber = currentVersion.getVersion() + 1;
             JobVersion newVersion = JobVersion.create(jobId, newVersionNumber, request.config(), userId);
             versionRepository.save(newVersion);
@@ -292,6 +298,25 @@ public class JobApplicationService implements JobFacade {
     private void ensureOrganizationAccess(Job job, Long organizationId) {
         if (!Objects.equals(job.getOrganizationId(), organizationId)) {
             throw new SecurityException("Foreign organization access denied");
+        }
+    }
+
+    /**
+     * Проверяет, что все секреты из JobConfig существуют, не удалены
+     * и принадлежат той же организации.
+     */
+    private void validateSecretRefs(JobConfig config, Long organizationId) {
+        if (config == null || config.secrets() == null || config.secrets().isEmpty()) {
+            return;
+        }
+        for (var ref : config.secrets()) {
+            Secret secret = secretRepository.findBySecretUuid(ref.secretId())
+                    .orElse(null);
+            if (secret == null || secret.isDeleted()
+                    || !Objects.equals(secret.getOrganizationId(), organizationId)) {
+                throw new InvalidJobStateException(
+                        "Secret not found or not accessible: " + ref.secretId());
+            }
         }
     }
 

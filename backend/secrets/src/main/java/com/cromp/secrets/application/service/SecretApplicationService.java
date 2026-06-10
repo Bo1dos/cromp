@@ -18,6 +18,7 @@ import com.cromp.secrets.domain.repository.SecretRepositoryPort;
 import com.cromp.secrets.domain.repository.SecretVersionRepositoryPort;
 import com.cromp.secrets.domain.service.EncryptionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ public class SecretApplicationService implements SecretFacade {
     private final AuditPort auditPort;
     private final CurrentActorPort currentActorPort;
     private final PermissionCheckerPort permissionCheckerPort;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public SecretResponse createSecret(CreateSecretRequest request) {
@@ -117,6 +119,10 @@ public class SecretApplicationService implements SecretFacade {
         if (!secret.getOrganizationId().equals(organizationId)) {
             throw new SecurityException("Secret does not belong to organization");
         }
+
+        // Проверяем, не используется ли секрет в активных job-ах
+        checkSecretReferences(secretUuid, organizationId);
+
         secret.markDeleted();
         secretRepository.save(secret);
         auditPort.record("SECRET.DELETE", organizationId, userId, "secrets",
@@ -170,5 +176,29 @@ public class SecretApplicationService implements SecretFacade {
         return versionRepository.findBySecretIdOrderByVersionDesc(secret.getId()).stream()
                 .map(mapper::toVersionResponse)
                 .toList();
+    }
+
+    /**
+     * Проверяет, что секрет не используется ни в одной активной Job.
+     * Ищет по JSONB-полю config в job_versions (последняя версия не-удалённой job).
+     */
+    private void checkSecretReferences(UUID secretUuid, Long organizationId) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM job_versions jv
+                JOIN jobs j ON j.id = jv.job_id
+                WHERE j.deleted_at IS NULL
+                  AND j.organization_id = ?
+                  AND jv.config::text LIKE ?
+                """,
+                Integer.class,
+                organizationId,
+                "%" + secretUuid + "%"
+        );
+        if (count != null && count > 0) {
+            throw new InvalidSecretStateException(
+                    "Secret is still referenced by " + count + " active job(s). Remove references first.");
+        }
     }
 }

@@ -93,7 +93,7 @@ export interface RetryPolicyRequest {
 
 export interface SecretRefRequest {
   secretId: string;
-  key: string;
+  envName: string;
 }
 
 export interface UpdateJobRequest {

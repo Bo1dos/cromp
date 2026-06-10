@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Form,
   Input,
@@ -17,6 +18,8 @@ import {
 } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type { CreateJobRequest, HttpMethod, JobResponse } from '@/types/job';
+import type { SecretResponse } from '@/types/secret';
+import { listSecrets } from '@/api/secrets.api';
 import CronInput from './CronInput';
 
 const { TextArea } = Input;
@@ -58,14 +61,15 @@ interface JobFormProps {
 // ---------------------------------------------------------------------------
 // Steps configuration
 // ---------------------------------------------------------------------------
-const STEPS = ['Basic', 'HTTP Config', 'Retry Policy', 'Schedule'];
+const STEPS = ['Basic', 'HTTP Config', 'Retry Policy', 'Secrets', 'Schedule'];
 
 // Fields per step — used to validate only visible fields on Next
 const STEP_FIELDS: (string | string[])[] = [
   ['name'],                                                              // Step 0: Basic
   [['httpConfig', 'url'], ['httpConfig', 'method'], ['httpConfig', 'timeoutMs']], // Step 1: HTTP
   [['retryPolicy', 'maxAttempts'], ['retryPolicy', 'backoffMs'], ['retryPolicy', 'backoffMultiplier']], // Step 2: Retry
-  [],                                                                    // Step 3: Schedule (all optional)
+  [],                                                                    // Step 3: Secrets (optional)
+  [],                                                                    // Step 4: Schedule (optional)
 ];
 
 export default function JobForm({ mode, initialValues, onSubmit, loading }: JobFormProps) {
@@ -95,6 +99,7 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
         backoffMs: cfg?.retryPolicy?.backoffMs ?? 1_000,
         backoffMultiplier: cfg?.retryPolicy?.backoffMultiplier ?? 2,
       },
+      secrets: cfg?.secrets?.map((s) => ({ secretId: s.secretId, envName: s.envName })) ?? [],
       cronExpression: initialValues?.cronExpression ?? '',
       timezone: initialValues?.timezone ?? 'UTC',
     };
@@ -104,6 +109,14 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
     form.setFieldsValue(defaultValues);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultValues]);
+
+  // Fetch secrets for the dropdown (page 1, large pageSize to get all)
+  const { data: secretsData } = useQuery<SecretResponse[], Error>({
+    queryKey: ['secrets'],
+    queryFn: () => listSecrets({ limit: 200, offset: 0 }),
+    staleTime: 120_000,
+  });
+  const secretsList: SecretResponse[] = secretsData ?? [];
 
   const handleNext = async () => {
     try {
@@ -158,7 +171,9 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
           backoffMultiplier: values.retryPolicy?.backoffMultiplier ?? 2,
         },
         timeoutMs: values.httpConfig?.timeoutMs ?? 30_000,
-        secrets: [],
+        secrets: (values.secrets ?? [])
+        .filter((s: any) => s && s.secretId)
+        .map((s: any) => ({ secretId: s.secretId, envName: s.envName || s.secretId })),
       },
       queueName: undefined,
       priority: 0,
@@ -320,9 +335,72 @@ export default function JobForm({ mode, initialValues, onSubmit, loading }: JobF
       )}
 
       {/* ================================================================ */}
-      {/* STEP 4 — Schedule (optional)                                    */}
+      {/* STEP 4 — Secrets (optional)                                     */}
       {/* ================================================================ */}
       {currentStep === 3 && (
+        <>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+            Bind secrets from the secrets vault to HTTP headers. The secret value
+            will be injected as a header named <Text code>envName</Text> when the job executes.
+          </Text>
+
+          <Form.List name="secrets">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...rest }) => (
+                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                    <Form.Item
+                      {...rest}
+                      name={[name, 'secretId']}
+                      label="Secret"
+                      rules={[{ required: true, message: 'Select a secret' }]}
+                    >
+                      <Select
+                        showSearch
+                        placeholder="Choose secret…"
+                        style={{ width: 220 }}
+                        filterOption={(input, option) =>
+                          (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                        }
+                        options={secretsList.map((s) => ({
+                          label: `${s.name} (${s.scope})`,
+                          value: s.secretUuid,
+                        }))}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      {...rest}
+                      name={[name, 'envName']}
+                      label="Header Name"
+                      rules={[{ required: true, message: 'Header name required' }]}
+                    >
+                      <Input placeholder="e.g. X-API-Key" style={{ width: 200 }} />
+                    </Form.Item>
+                    <MinusCircleOutlined
+                      onClick={() => remove(name)}
+                      style={{ marginTop: 30 }}
+                    />
+                  </Space>
+                ))}
+                <Button
+                  type="dashed"
+                  onClick={() => add({ secretId: undefined, envName: '' })}
+                  icon={<PlusOutlined />}
+                  size="small"
+                  disabled={secretsList.length === 0}
+                >
+                  {secretsList.length === 0 ? 'No secrets available' : 'Bind Secret'}
+                </Button>
+              </>
+            )}
+          </Form.List>
+        </>
+      )}
+
+      {/* ================================================================ */}
+      {/* STEP 5 — Schedule (optional)                                    */}
+      {/* ================================================================ */}
+      {currentStep === 4 && (
         <>
           <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
             Optionally set a cron schedule. Leave empty for manual-only jobs.
