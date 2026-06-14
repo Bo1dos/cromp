@@ -110,14 +110,14 @@ export default function DashboardPage() {
       render: (s: string) => <Tag color={statusColors[s] || 'default'}>{s}</Tag>,
     },
     {
-      title: 'Job',
+      title: t.nav.jobs,
       dataIndex: 'jobId',
       key: 'jobId',
       width: 80,
       render: (id: number) => <Text>#{id}</Text>,
     },
     {
-      title: 'Triggered',
+      title: t.executions.triggered,
       dataIndex: 'triggeredAt',
       key: 'triggeredAt',
       width: 150,
@@ -227,7 +227,7 @@ export default function DashboardPage() {
             <Space>
               <WarningOutlined style={{ color: '#faad14', fontSize: 16 }} />
               <Text strong>
-                {unscheduledActive.length} active job{unscheduledActive.length > 1 ? 's' : ''} without schedule
+                {t.dashboard.activeJobsNoSchedule.replace('{count}', String(unscheduledActive.length))}
               </Text>
             </Space>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -267,7 +267,7 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <Space size={4}>
                       <span style={{ width: 10, height: 10, borderRadius: 2, background: '#52c41a', display: 'inline-block' }} />
-                      <Text>Succeeded</Text>
+                      <Text>{t.analytics.successful}</Text>
                     </Space>
                     <Text strong>{summary.succeeded}</Text>
                   </div>
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <Space size={4}>
                       <span style={{ width: 10, height: 10, borderRadius: 2, background: '#ff4d4f', display: 'inline-block' }} />
-                      <Text>Failed</Text>
+                      <Text>{t.analytics.failed}</Text>
                     </Space>
                     <Text strong>{summary.failed}</Text>
                   </div>
@@ -305,9 +305,9 @@ export default function DashboardPage() {
                 {/* Error Rate */}
                 <div style={{ marginTop: 8, textAlign: 'center' }}>
                   <Text type="secondary">
-                    Error Rate: {summary.errorRate != null ? `${(summary.errorRate * 100).toFixed(1)}%` : '—'}
-                    {summary.avgDurationMs != null ? `  ·  Avg: ${(summary.avgDurationMs / 1000).toFixed(1)}s` : ''}
-                    {summary.p95DurationMs != null ? `  ·  P95: ${(summary.p95DurationMs / 1000).toFixed(1)}s` : ''}
+                    {t.dashboard.errorRate}: {summary.errorRate != null ? `${(summary.errorRate * 100).toFixed(1)}%` : '—'}
+                    {summary.avgDurationMs != null ? `  ·  ${t.dashboard.avg}: ${(summary.avgDurationMs / 1000).toFixed(1)}s` : ''}
+                    {summary.p95DurationMs != null ? `  ·  ${t.dashboard.p95}: ${(summary.p95DurationMs / 1000).toFixed(1)}s` : ''}
                   </Text>
                 </div>
               </Space>
@@ -318,7 +318,7 @@ export default function DashboardPage() {
         {/* Right column: Job Status Donut + Success Rate */}
         <Col xs={24} lg={8}>
           {/* ---- Job Status Donut ---- */}
-          <Card title="Job Status" style={{ marginBottom: 16 }}>
+          <Card title={`${t.nav.jobs} ${t.common.status}`} style={{ marginBottom: 16 }}>
             <div style={{ textAlign: 'center' }}>
               <Progress
                 type="circle"
@@ -333,14 +333,14 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24 }}>
                     <Space size={4}>
                       <span style={{ width: 10, height: 10, borderRadius: 2, background: '#52c41a', display: 'inline-block' }} />
-                      <Text type="secondary">Active</Text>
+                      <Text type="secondary">{t.dashboard.activeJobs}</Text>
                     </Space>
                     <Text strong>{activeJobs}</Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24 }}>
                     <Space size={4}>
                       <span style={{ width: 10, height: 10, borderRadius: 2, background: '#d9d9d9', display: 'inline-block' }} />
-                      <Text type="secondary">Disabled</Text>
+                      <Text type="secondary">{t.dashboard.disabledJobs}</Text>
                     </Space>
                     <Text strong>{disabledJobs}</Text>
                   </div>
@@ -376,33 +376,33 @@ export default function DashboardPage() {
                       {successRate}%
                     </Text>
                     <br />
-                    <Text type="secondary">Success Rate</Text>
+                    <Text type="secondary">{t.dashboard.successRate}</Text>
                   </div>
                 </div>
 
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Text type="secondary">Total</Text>
+                    <Text type="secondary">{t.dashboard.totalJobs}</Text>
                     <Text strong>{summary?.total ?? '—'}</Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Space size={4}>
                       <span style={{ width: 12, height: 12, borderRadius: 3, background: '#52c41a', display: 'inline-block' }} />
-                      <Text type="secondary">Succeeded</Text>
+                      <Text type="secondary">{t.analytics.successful}</Text>
                     </Space>
                     <Text strong>{summary?.succeeded ?? '—'}</Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Space size={4}>
                       <span style={{ width: 12, height: 12, borderRadius: 3, background: '#ff4d4f', display: 'inline-block' }} />
-                      <Text type="secondary">Failed</Text>
+                      <Text type="secondary">{t.analytics.failed}</Text>
                     </Space>
                     <Text strong>{summary?.failed ?? '—'}</Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Space size={4}>
                       <ThunderboltOutlined />
-                      <Text type="secondary">Avg duration</Text>
+                      <Text type="secondary">{t.dashboard.avgDuration}</Text>
                     </Space>
                     <Text strong>
                       {summary?.avgDurationMs != null ? `${(summary.avgDurationMs / 1000).toFixed(1)}s` : '—'}
@@ -423,7 +423,7 @@ export default function DashboardPage() {
           title={
             <Space>
               <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-              <span>Last Failures</span>
+              <span>{t.dashboard.lastFailures}</span>
             </Space>
           }
           extra={
@@ -435,14 +435,14 @@ export default function DashboardPage() {
           <Table<ExecutionResponse>
             columns={[
               {
-                title: 'Job',
+                title: '#',
                 dataIndex: 'jobId',
                 key: 'jobId',
-                width: 80,
+                width: 60,
                 render: (id: number) => <Text>#{id}</Text>,
               },
               {
-                title: 'Status',
+                title: t.common.status,
                 dataIndex: 'finalStatus',
                 key: 'status',
                 width: 100,

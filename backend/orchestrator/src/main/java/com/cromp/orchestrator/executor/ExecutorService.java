@@ -283,7 +283,9 @@ public class ExecutorService {
                             status,
                             outputSummary,
                             result.errorClass(),
-                            result.errorMessage()
+                            result.errorMessage(),
+                            result.rawBody(),
+                            result.contentType()
                     )
             );
             log.info("[executor] attempt completed status={} attemptUuid={}",
@@ -303,7 +305,9 @@ public class ExecutorService {
                             AttemptStatus.FAILED,
                             null,
                             errorClass,
-                            errorMessage
+                            errorMessage,
+                            null,
+                            null
                     )
             );
         } catch (Exception e) {

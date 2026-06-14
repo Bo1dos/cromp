@@ -7,6 +7,7 @@ import { Table, Select, Space, Button, Tag } from 'antd';
 import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import type { SecretResponse, SecretScope } from '@/types/secret';
 import { useSecretsList, useDeleteSecret } from '@/hooks/useSecrets';
+import { useLanguage } from '@/hooks/useLanguage';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import EmptyState from '@/components/common/EmptyState';
 import SearchInput from '@/components/common/SearchInput';
@@ -20,15 +21,15 @@ const SCOPE_CONFIG: Record<SecretScope, { color: string; label: string }> = {
 /** Small component for row actions — needs its own hook context */
 function SecretActions({ secret }: { secret: SecretResponse }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const deleteMutation = useDeleteSecret();
 
   const handleDelete = () => {
     ConfirmModal.show({
-      title: `Delete "${secret.name}"?`,
-      content:
-        'This action cannot be undone. The secret will be permanently removed and any jobs relying on it will fail.',
+      title: `${t.secrets.deleteSecret} "${secret.name}"?`,
+      content: t.secrets.deleteConfirm,
       danger: true,
-      okText: 'Delete',
+      okText: t.common.delete,
       onOk: () => deleteMutation.mutate(secret.secretUuid),
     });
   };
@@ -39,7 +40,7 @@ function SecretActions({ secret }: { secret: SecretResponse }) {
         type="text"
         icon={<EyeOutlined />}
         size="small"
-        title="View details"
+        title={t.common.edit}
         onClick={(e) => {
           e.stopPropagation();
           navigate(`/dashboard/secrets/${secret.secretUuid}`);
@@ -50,7 +51,7 @@ function SecretActions({ secret }: { secret: SecretResponse }) {
         danger
         icon={<DeleteOutlined />}
         size="small"
-        title="Delete"
+        title={t.common.delete}
         onClick={(e) => {
           e.stopPropagation();
           handleDelete();
@@ -81,11 +82,12 @@ export default function SecretTable({
   onPageChange,
 }: SecretTableProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { data: secrets, isLoading } = useSecretsList({ scope, search, page, pageSize });
 
   const columns = [
     {
-      title: 'Name',
+      title: t.common.name,
       dataIndex: 'name',
       key: 'name',
       sorter: (a: SecretResponse, b: SecretResponse) => a.name.localeCompare(b.name),
@@ -123,7 +125,7 @@ export default function SecretTable({
       sorter: (a: SecretResponse, b: SecretResponse) => a.currentVersion - b.currentVersion,
     },
     {
-      title: 'Created At',
+      title: t.secrets.createdAt,
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
@@ -136,7 +138,7 @@ export default function SecretTable({
       ),
     },
     {
-      title: 'Actions',
+      title: t.common.actions,
       key: 'actions',
       width: 120,
       render: (_: unknown, record: SecretResponse) => (
@@ -162,7 +164,7 @@ export default function SecretTable({
         <SearchInput
           value={search ?? ''}
           onChange={onSearchChange}
-          placeholder="Search by name…"
+          placeholder={t.common.search + '…'}
         />
       </Space>
 
@@ -172,7 +174,7 @@ export default function SecretTable({
         rowKey="uuid"
         loading={isLoading}
         locale={{
-          emptyText: <EmptyState description="No secrets found" hint="Create your first secret to get started!" />,
+          emptyText: <EmptyState description={t.secrets.noSecrets} hint={t.secrets.noSecretsHint} />,
         }}
         pagination={{
           current: page,

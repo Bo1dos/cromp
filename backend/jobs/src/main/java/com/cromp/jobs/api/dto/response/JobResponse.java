@@ -9,6 +9,8 @@ import java.util.UUID;
 public record JobResponse(
         @Schema(description = "UUID задачи")
         UUID jobUuid,
+        @Schema(description = "Внутренний ID задачи")
+        Long id,
         @Schema(description = "Название задачи")
         String name,
         @Schema(description = "Описание")

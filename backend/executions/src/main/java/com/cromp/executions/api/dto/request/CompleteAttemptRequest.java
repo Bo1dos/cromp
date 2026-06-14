@@ -6,5 +6,7 @@ public record CompleteAttemptRequest(
         AttemptStatus status,       // SUCCEEDED | FAILED | TIMEOUT | CANCELLED
         String outputSummary,       // JSON-строка, nullable
         String errorClass,          // nullable
-        String statusReason         // nullable
+        String statusReason,        // nullable
+        byte[] rawBody,             // nullable — бинарное тело ответа для артефакта
+        String contentType          // nullable — Content-Type ответа
 ) {}

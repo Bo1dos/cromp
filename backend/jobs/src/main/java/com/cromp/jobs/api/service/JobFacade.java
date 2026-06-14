@@ -11,6 +11,7 @@ public interface JobFacade {
     JobResponse createJob(CreateJobRequest request);
     JobResponse updateJob(UUID jobUuid, UpdateJobRequest request);
     JobResponse getJob(UUID jobUuid);
+    JobResponse getJobById(Long id);
     List<JobResponse> listJobs(JobStatus status, int limit, int offset);
     void deleteJob(UUID jobUuid);
     JobResponse changeStatus(UUID jobUuid, ChangeJobStatusRequest request);

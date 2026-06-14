@@ -73,8 +73,8 @@ export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps
       });
     }
 
-    // Audit — visible only to ADMIN
-    if (isAdmin(activeRole)) {
+    // Audit — visible to OWNER or ADMIN
+    if (isOwnerOrAdmin(activeRole)) {
       items.push({
         key: '/dashboard/audit',
         icon: <AuditOutlined />,

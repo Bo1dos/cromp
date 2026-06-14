@@ -8,8 +8,10 @@ import { PlusOutlined } from '@ant-design/icons';
 import PageHeader from '@/components/common/PageHeader';
 import SecretTable from '@/components/secrets/SecretTable';
 import SecretForm from '@/components/secrets/SecretForm';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function SecretListPage() {
+  const { t } = useLanguage();
   const [scope, setScope] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -24,15 +26,15 @@ export default function SecretListPage() {
   return (
     <div>
       <PageHeader
-        title="Secrets"
-        breadcrumbs={[{ title: 'Dashboard' }, { title: 'Secrets' }]}
+        title={t.nav.secrets}
+        breadcrumbs={[{ title: t.nav.dashboard }, { title: t.nav.secrets }]}
         extra={
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setCreateModalOpen(true)}
           >
-            Create Secret
+            {t.secrets.createSecret}
           </Button>
         }
       />

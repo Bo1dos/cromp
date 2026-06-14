@@ -62,6 +62,19 @@ public class JobController {
         return jobFacade.listJobs(status, limit, offset);
     }
 
+    @Operation(summary = "Получить задачу по числовому ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Данные задачи"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "404", description = "Задача не найдена")
+    })
+    @GetMapping("/by-id/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public JobResponse getById(
+            @Parameter(description = "Числовой ID задачи") @PathVariable("id") Long id) {
+        return jobFacade.getJobById(id);
+    }
+
     @Operation(summary = "Получить задачу по UUID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Данные задачи"),

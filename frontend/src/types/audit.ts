@@ -18,13 +18,13 @@ export type AuditAction =
   | 'OTHER';
 
 export interface AuditLogResponse {
-  uuid: string;
-  actorUuid: string;
-  actorName: string;
+  id: number;
+  organizationId: number;
+  recordedAt: string;
+  actorId: number | null;
+  actorSnapshot: Record<string, unknown>;
   action: AuditAction;
   resourceType: string;
-  resourceUuid: string;
-  details?: string;
-  createdAt: string;
-  organizationUuid: string;
+  resourceId: number;
+  changesDiff: Record<string, unknown>;
 }

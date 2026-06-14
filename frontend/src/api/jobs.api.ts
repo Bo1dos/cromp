@@ -29,6 +29,11 @@ export async function getJob(uuid: string): Promise<JobResponse> {
   return response.data;
 }
 
+export async function getJobById(id: number): Promise<JobResponse> {
+  const response = await apiClient.get<JobResponse>(`/jobs/by-id/${id}`);
+  return response.data;
+}
+
 export async function updateJob(uuid: string, data: UpdateJobRequest): Promise<JobResponse> {
   const response = await apiClient.put<JobResponse>(`/jobs/${uuid}`, data);
   return response.data;

@@ -10,6 +10,7 @@ import {
   BarChartOutlined,
 } from '@ant-design/icons';
 import type { SummaryResponse } from '@/types/analytics';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface Props {
   summary: SummaryResponse;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function SummaryCards({ summary, loading }: Props) {
+  const { t } = useLanguage();
   const { total, succeeded, failed, avgDurationMs } = summary;
 
   const successRate =
@@ -36,7 +38,7 @@ export default function SummaryCards({ summary, loading }: Props) {
       <Col xs={24} sm={12} lg={6}>
         <Card bordered={false}>
           <Statistic
-            title="Total Executions"
+            title={t.analytics.totalExecutions}
             value={total}
             prefix={<BarChartOutlined style={{ color: '#1677ff' }} />}
             loading={loading}
@@ -48,7 +50,7 @@ export default function SummaryCards({ summary, loading }: Props) {
       <Col xs={24} sm={12} lg={6}>
         <Card bordered={false}>
           <Statistic
-            title="Successful"
+            title={t.analytics.successful}
             value={succeeded}
             suffix={`/ ${successRate}%`}
             prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
@@ -61,7 +63,7 @@ export default function SummaryCards({ summary, loading }: Props) {
       <Col xs={24} sm={12} lg={6}>
         <Card bordered={false}>
           <Statistic
-            title="Failed"
+            title={t.analytics.failed}
             value={failed}
             suffix={`/ ${failureRate}%`}
             prefix={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
@@ -74,7 +76,7 @@ export default function SummaryCards({ summary, loading }: Props) {
       <Col xs={24} sm={12} lg={6}>
         <Card bordered={false}>
           <Statistic
-            title="Avg Duration"
+            title={t.analytics.avgDuration}
             value={formatDuration(avgDurationMs)}
             prefix={<ClockCircleOutlined style={{ color: '#fa8c16' }} />}
             loading={loading}

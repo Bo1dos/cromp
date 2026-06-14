@@ -98,4 +98,37 @@ public class ArtifactService {
                 .map(mapper::toArtifactResponse)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public ArtifactDownloadResult downloadArtifact(Long organizationId, UUID execUuid, String artifactId) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+
+        Execution execution = executionRepository.findByExecUuid(execUuid)
+                .filter(e -> e.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new ExecutionNotFoundException(execUuid));
+
+        ExecutionArtifact artifact = artifactRepository.findByExecutionId(execution.getId())
+                .stream()
+                .filter(a -> String.valueOf(a.getId()).equals(artifactId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Artifact not found"));
+
+        var stream = storagePort.download(artifact.getStoragePath());
+        String filename = artifact.getStoragePath().substring(
+                artifact.getStoragePath().lastIndexOf('/') + 1);
+        return new ArtifactDownloadResult(stream, filename, artifact.getSizeBytes(),
+                artifact.getContentType());
+    }
+
+    /** DTO для скачивания артефакта */
+    public record ArtifactDownloadResult(
+            java.io.InputStream stream,
+            String filename,
+            long size,
+            String contentType
+    ) {}
 }

@@ -65,7 +65,7 @@ export default function JobExecutionsTab({ jobId }: Props) {
       ),
     },
     {
-      title: 'Source',
+      title: t.executions.source,
       dataIndex: 'source',
       key: 'source',
       width: 100,
@@ -74,14 +74,14 @@ export default function JobExecutionsTab({ jobId }: Props) {
       ),
     },
     {
-      title: 'Attempts',
+      title: t.executions.attempts,
       dataIndex: 'totalAttempts',
       key: 'attempts',
       width: 90,
       align: 'center',
     },
     {
-      title: 'Triggered',
+      title: t.executions.triggered,
       dataIndex: 'triggeredAt',
       key: 'triggeredAt',
       width: 170,
@@ -90,7 +90,7 @@ export default function JobExecutionsTab({ jobId }: Props) {
       ),
     },
     {
-      title: 'Duration',
+      title: t.executions.duration,
       key: 'duration',
       width: 100,
       render: (_: unknown, record: ExecutionResponse) => {
@@ -117,7 +117,7 @@ export default function JobExecutionsTab({ jobId }: Props) {
       <Space style={{ marginBottom: 16 }}>
         <Select
           allowClear
-          placeholder="All statuses"
+          placeholder={t.jobs.allStatuses}
           style={{ width: 160 }}
           value={statusFilter || undefined}
           onChange={(val) => {

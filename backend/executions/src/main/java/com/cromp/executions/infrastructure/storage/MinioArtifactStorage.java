@@ -67,6 +67,18 @@ public class MinioArtifactStorage implements ArtifactStoragePort {
         }
     }
 
+    @Override
+    public InputStream download(String storagePath) {
+        try {
+            return minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(properties.getBucket())
+                    .object(storagePath)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to download artifact from MinIO", e);
+        }
+    }
+
     private void ensureBucketExists() {
         try {
             boolean exists = minioClient.bucketExists(

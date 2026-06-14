@@ -35,6 +35,7 @@ public class RestClientConfig {
 
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectionRequestTimeout(Timeout.of(timeoutMs, TimeUnit.MILLISECONDS))
+                .setConnectTimeout(Timeout.of(timeoutMs, TimeUnit.MILLISECONDS))
                 .setResponseTimeout(Timeout.of(timeoutMs, TimeUnit.MILLISECONDS))
                 .build();
 

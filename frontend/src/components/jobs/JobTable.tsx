@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import type { JobResponse, JobStatus } from '@/types/job';
 import { useJobsList, useDeleteJob, useToggleJobStatus } from '@/hooks/useJobs';
+import { useLanguage } from '@/hooks/useLanguage';
 import JobStatusBadge from './JobStatusBadge';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import EmptyState from '@/components/common/EmptyState';
@@ -100,11 +101,12 @@ export default function JobTable({
   onPageChange,
 }: JobTableProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { data: jobs, isLoading } = useJobsList({ status, search, page, pageSize });
 
   const columns = [
     {
-      title: 'Name',
+      title: t.common.name,
       dataIndex: 'name',
       key: 'name',
       sorter: (a: JobResponse, b: JobResponse) => a.name.localeCompare(b.name),
@@ -115,31 +117,31 @@ export default function JobTable({
       ),
     },
     {
-      title: 'Status',
+      title: t.common.status,
       dataIndex: 'status',
       key: 'status',
       width: 120,
       filters: [
-        { text: 'Active', value: 'ACTIVE' },
-        { text: 'Disabled', value: 'DISABLED' },
+        { text: t.common.enabled, value: 'ACTIVE' },
+        { text: t.common.disabled, value: 'DISABLED' },
         { text: 'Archived', value: 'ARCHIVED' },
       ],
       onFilter: (value: any, record: JobResponse) => record.status === value,
       render: (status: JobStatus) => <JobStatusBadge status={status} />,
     },
     {
-      title: 'Schedule',
+      title: t.jobs.schedule,
       dataIndex: 'hasSchedule',
       key: 'schedule',
       width: 100,
       render: (has: boolean) => (
         has
-          ? <Tag color="blue" style={{ margin: 0 }}>Scheduled</Tag>
-          : <Text type="secondary" style={{ fontSize: 12 }}>Manual</Text>
+          ? <Tag color="blue" style={{ margin: 0 }}>{t.jobs.scheduled}</Tag>
+          : <Text type="secondary" style={{ fontSize: 12 }}>{t.jobs.manual}</Text>
       ),
     },
     {
-      title: 'Actions',
+      title: t.common.actions,
       key: 'actions',
       width: 180,
       render: (_: unknown, record: JobResponse) => <JobActions job={record} />,
@@ -151,20 +153,20 @@ export default function JobTable({
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
           allowClear
-          placeholder="All statuses"
+          placeholder={t.jobs.allStatuses}
           style={{ width: 160 }}
           value={status || undefined}
           onChange={(val) => onStatusChange(val ?? '')}
           options={[
-            { label: 'Active', value: 'ACTIVE' },
-            { label: 'Disabled', value: 'DISABLED' },
+            { label: t.common.enabled, value: 'ACTIVE' },
+            { label: t.common.disabled, value: 'DISABLED' },
             { label: 'Archived', value: 'ARCHIVED' },
           ]}
         />
         <SearchInput
           value={search ?? ''}
           onChange={onSearchChange}
-          placeholder="Search by name…"
+          placeholder={t.jobs.searchByName}
         />
       </Space>
 
@@ -174,7 +176,7 @@ export default function JobTable({
         rowKey="uuid"
         loading={isLoading}
         locale={{
-          emptyText: <EmptyState description="No jobs found" hint="Create your first job to get started!" />,
+          emptyText: <EmptyState description={t.jobs.noJobsFound} hint={t.jobs.createFirstHint} />,
         }}
         pagination={{
           current: page,

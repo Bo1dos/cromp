@@ -9,6 +9,7 @@ import dayjs from 'dayjs';
 import type { AuditLogResponse, AuditAction } from '@/types/audit';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useAuditByOrg } from '@/hooks/useAuditLog';
+import { useLanguage } from '@/hooks/useLanguage';
 import EmptyState from '@/components/common/EmptyState';
 import { formatDateFull } from '@/utils/formatters';
 
@@ -68,6 +69,7 @@ interface AuditLogTableProps {
 export default function AuditLogTable({ dataSource: externalData, loading: externalLoading }: AuditLogTableProps) {
   const { activeOrganization } = useOrganization();
   const orgUuid = activeOrganization?.orgUuid;
+  const { t } = useLanguage();
 
   // --- Server data (when no external data provided) ---
   const { data: serverData, isLoading: serverLoading } = useAuditByOrg(orgUuid);
@@ -84,14 +86,33 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  const actionOptions = useMemo(() => ACTION_OPTIONS.map((a) => ({ ...a })), []);
+
+  /** Format changesDiff map into a readable string */
+  function formatDetails(diff: Record<string, unknown> | undefined): string {
+    if (!diff || Object.keys(diff).length === 0) return '';
+    return Object.entries(diff)
+      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+      .join('; ');
+  }
+
+  /** Get actor display name */
+  function getActorName(r: AuditLogResponse): string {
+    if (r.actorId == null) return 'system';
+    const snap = r.actorSnapshot as Record<string, unknown> | undefined;
+    if (snap && typeof snap.name === 'string') return snap.name;
+    if (snap && typeof snap.email === 'string') return snap.email;
+    return `User #${r.actorId}`;
+  }
+
   // --- Filtered data ---
   const filtered = useMemo(() => {
     let list = rawData;
 
-    // Search by actor name
+    // Search by actor
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      list = list.filter((r) => r.actorName.toLowerCase().includes(q));
+      list = list.filter((r) => getActorName(r).toLowerCase().includes(q));
     }
 
     // Date range
@@ -99,12 +120,12 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
       const from = dateRange[0].valueOf();
       const to = dateRange[1].valueOf();
       list = list.filter((r) => {
-        const t = dayjs(r.createdAt).valueOf();
-        return t >= from && t <= to;
+        const tr = dayjs(r.recordedAt).valueOf();
+        return tr >= from && tr <= to;
       });
     }
 
-    // Action filter (multi-select)
+    // Action filter
     if (selectedActions.length > 0) {
       list = list.filter((r) => selectedActions.includes(r.action));
     }
@@ -115,12 +136,12 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
   // --- Columns ---
   const columns = [
     {
-      title: 'Timestamp',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      title: t.audit.timestamp,
+      dataIndex: 'recordedAt',
+      key: 'recordedAt',
       width: 180,
       sorter: (a: AuditLogResponse, b: AuditLogResponse) =>
-        dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf(),
+        dayjs(a.recordedAt).valueOf() - dayjs(b.recordedAt).valueOf(),
       defaultSortOrder: 'descend' as const,
       render: (val: string) => (
         <Tooltip title={formatDateFull(val)}>
@@ -129,13 +150,15 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
       ),
     },
     {
-      title: 'Actor',
-      dataIndex: 'actorName',
-      key: 'actorName',
-      width: 180,
+      title: t.audit.actor,
+      key: 'actor',
+      width: 160,
+      render: (_: unknown, record: AuditLogResponse) => (
+        <Text>{getActorName(record)}</Text>
+      ),
     },
     {
-      title: 'Action',
+      title: t.audit.action,
       dataIndex: 'action',
       key: 'action',
       width: 150,
@@ -144,35 +167,31 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
       ),
     },
     {
-      title: 'Resource',
+      title: t.audit.resource,
       key: 'resource',
-      width: 280,
+      width: 220,
       render: (_: unknown, record: AuditLogResponse) => (
         <Space size={4}>
           <Text type="secondary" style={{ fontSize: 12 }}>{record.resourceType}</Text>
-          <Text code style={{ fontSize: 11, maxWidth: 180 }} ellipsis={{ tooltip: record.resourceUuid }}>
-            {record.resourceUuid}
-          </Text>
+          <Text code style={{ fontSize: 11 }}>#{record.resourceId}</Text>
         </Space>
       ),
     },
     {
-      title: 'Details',
-      dataIndex: 'details',
+      title: t.audit.details,
       key: 'details',
-      render: (details: string | undefined) =>
-        details ? (
+      render: (_: unknown, record: AuditLogResponse) => {
+        const details = formatDetails(record.changesDiff);
+        return details ? (
           <Tooltip title={details}>
-            <Text
-              ellipsis
-              style={{ maxWidth: 300, display: 'inline-block' }}
-            >
+            <Text ellipsis style={{ maxWidth: 300, display: 'inline-block' }}>
               {details}
             </Text>
           </Tooltip>
         ) : (
           <Text type="secondary">—</Text>
-        ),
+        );
+      },
     },
   ];
 
@@ -181,7 +200,7 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
       {/* Filters */}
       <Space wrap style={{ marginBottom: 16 }}>
         <Input
-          placeholder="Search by actor…"
+          placeholder={t.common.search + '…'}
           prefix={<SearchOutlined />}
           value={search}
           onChange={(e) => {
@@ -203,13 +222,13 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
 
         <Select
           mode="multiple"
-          placeholder="Filter by action"
+          placeholder={t.audit.action}
           value={selectedActions}
           onChange={(vals) => {
             setSelectedActions(vals);
             setPage(1);
           }}
-          options={ACTION_OPTIONS}
+          options={actionOptions}
           allowClear
           style={{ minWidth: 200 }}
         />
@@ -217,12 +236,12 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
 
       {/* Table */}
       <Table<AuditLogResponse>
-        rowKey="uuid"
+        rowKey="id"
         columns={columns}
         dataSource={filtered}
         loading={isLoading}
         locale={{
-          emptyText: <EmptyState description="No audit log entries found" hint="Audit events will appear here as actions are performed." />,
+          emptyText: <EmptyState description={t.audit.noEntries} hint={t.audit.noEntriesHint} />,
         }}
         pagination={{
           current: page,
@@ -234,7 +253,7 @@ export default function AuditLogTable({ dataSource: externalData, loading: exter
             setPage(p);
             setPageSize(ps);
           },
-          showTotal: (total) => `Total ${total} entries`,
+          showTotal: (total) => `${t.audit.title}: ${total}`,
         }}
         scroll={{ x: 900 }}
       />

@@ -135,6 +135,30 @@ public class ExecutionController {
         return artifactService.listArtifacts(organizationId, executionId);
     }
 
+    @Operation(summary = "Скачать артефакт (проксирование из MinIO)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Файл артефакта"),
+            @ApiResponse(responseCode = "401", description = "Не аутентифицирован"),
+            @ApiResponse(responseCode = "404", description = "Артефакт не найден")
+    })
+    @GetMapping("/{executionId}/artifacts/{artifactId}/download")
+    @PreAuthorize("isAuthenticated()")
+    public void downloadArtifact(
+            @Parameter(description = "UUID организации") @PathVariable UUID orgUuid,
+            @Parameter(description = "UUID запуска") @PathVariable("executionId") UUID executionId,
+            @Parameter(description = "ID артефакта") @PathVariable String artifactId,
+            jakarta.servlet.http.HttpServletResponse response
+    ) throws java.io.IOException {
+        long organizationId = resolveOrg(orgUuid);
+        var result = artifactService.downloadArtifact(organizationId, executionId, artifactId);
+        response.setContentType(result.contentType() != null ? result.contentType() : "application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + result.filename() + "\"");
+        response.setContentLengthLong(result.size());
+        try (var out = response.getOutputStream(); var in = result.stream()) {
+            in.transferTo(out);
+        }
+    }
+
     @Operation(summary = "Загрузить артефакт запуска")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Артефакт загружен"),

@@ -18,6 +18,7 @@ public class JobApiMapper {
     public JobResponse toJobResponse(Job job, JobVersion currentVersion, int versionCount, boolean hasSchedule) {
         return new JobResponse(
                 job.getJobUuid(),
+                job.getId(),
                 job.getName(),
                 job.getDescription(),
                 job.getStatus().name(),

@@ -152,6 +152,28 @@ public class JobApplicationService implements JobFacade {
 
     @Override
     @Transactional(readOnly = true)
+    public JobResponse getJobById(Long id) {
+        Long userId = currentActorPort.currentUserId()
+                .orElseThrow(() -> new SecurityException("Not authenticated"));
+        Long organizationId = currentActorPort.currentOrganizationId()
+                .orElseThrow(() -> new SecurityException("Not in an organization"));
+        if (!permissionCheckerPort.isMember(userId, organizationId)) {
+            throw new SecurityException("Not a member of this organization");
+        }
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+        ensureOrganizationAccess(job, organizationId);
+        if (job.isDeleted()) {
+            throw new JobNotFoundException("Job not found");
+        }
+        JobVersion version = versionRepository.findLatestByJobId(job.getId())
+                .orElseThrow(() -> new JobVersionNotFoundException(job.getId(), -1));
+        int versionCount = versionRepository.findByJobIdOrderByVersionDesc(job.getId()).size();
+        return jobApiMapper.toJobResponse(job, version, versionCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<JobResponse> listJobs(JobStatus status, int limit, int offset) {
         Long userId = currentActorPort.currentUserId()
                 .orElseThrow(() -> new SecurityException("Not authenticated"));

@@ -8,6 +8,7 @@ import { Table, Select, DatePicker, Space, Tag, Typography } from 'antd';
 import { ClockCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useExecutionsList } from '@/hooks/useExecutions';
+import { useLanguage } from '@/hooks/useLanguage';
 import ExecutionStatusBadge from './ExecutionStatusBadge';
 import EmptyState from '@/components/common/EmptyState';
 import { formatDate, formatDuration } from '@/utils/formatters';
@@ -19,20 +20,24 @@ const { RangePicker } = DatePicker;
 // ---------------------------------------------------------------------------
 // Status filter options
 // ---------------------------------------------------------------------------
-const STATUS_OPTIONS: { value: ExecutionStatus; label: string }[] = [
-  { value: 'CREATED', label: 'Created' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'SUCCEEDED', label: 'Succeeded' },
-  { value: 'FAILED', label: 'Failed' },
-  { value: 'CANCELLED', label: 'Cancelled' },
-  { value: 'SKIPPED', label: 'Skipped' },
-];
+function getStatusOptions(t: any): { value: ExecutionStatus; label: string }[] {
+  return [
+    { value: 'CREATED', label: t.executions.statusCreated },
+    { value: 'IN_PROGRESS', label: t.executions.statusInProgress },
+    { value: 'SUCCEEDED', label: t.executions.statusSucceeded },
+    { value: 'FAILED', label: t.executions.statusFailed },
+    { value: 'CANCELLED', label: t.executions.statusCancelled },
+    { value: 'SKIPPED', label: t.executions.statusSkipped },
+  ];
+}
 
-const SOURCE_OPTIONS: { value: ExecutionSource; label: string }[] = [
-  { value: 'SCHEDULED', label: 'Scheduled' },
-  { value: 'MANUAL', label: 'Manual' },
-  { value: 'API', label: 'API' },
-];
+function getSourceOptions(t: any): { value: ExecutionSource; label: string }[] {
+  return [
+    { value: 'SCHEDULED', label: t.executions.sourceScheduled },
+    { value: 'MANUAL', label: t.executions.sourceManual },
+    { value: 'API', label: t.executions.sourceApi },
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,6 +52,7 @@ interface ExecutionTableProps {
 
 export default function ExecutionTable({ jobId }: ExecutionTableProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<ExecutionStatus[]>([]);
@@ -54,6 +60,9 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+
+  const statusOptions = useMemo(() => getStatusOptions(t), [t]);
+  const sourceOptions = useMemo(() => getSourceOptions(t), [t]);
 
   // Build query params
   const filters = useMemo(() => {
@@ -71,40 +80,40 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
   // ---- Columns ----------------------------------------------------------
   const columns = [
     {
-      title: 'Job ID',
+      title: t.executions.jobId,
       dataIndex: 'jobId',
       key: 'jobId',
       width: 80,
     },
     {
-      title: 'Status',
+      title: t.common.status,
       dataIndex: 'finalStatus',
       key: 'finalStatus',
       width: 140,
       render: (status: string) => <ExecutionStatusBadge status={status as ExecutionStatus} />,
     },
     {
-      title: 'Source',
+      title: t.executions.source,
       dataIndex: 'source',
       key: 'source',
       width: 120,
       render: (source: string) =>
         source === 'SCHEDULED' ? (
           <Tag icon={<ClockCircleOutlined />} color="blue">
-            Scheduled
+            {t.executions.sourceScheduled}
           </Tag>
         ) : source === 'API' ? (
           <Tag icon={<ThunderboltOutlined />} color="purple">
-            API
+            {t.executions.sourceApi}
           </Tag>
         ) : (
           <Tag icon={<ThunderboltOutlined />} color="orange">
-            Manual
+            {t.executions.sourceManual}
           </Tag>
         ),
     },
     {
-      title: 'Started At',
+      title: t.executions.startedAt,
       dataIndex: 'startedAt',
       key: 'startedAt',
       width: 180,
@@ -115,7 +124,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
       ),
     },
     {
-      title: 'Finished At',
+      title: t.executions.finishedAt,
       dataIndex: 'finishedAt',
       key: 'finishedAt',
       width: 180,
@@ -129,7 +138,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
         ),
     },
     {
-      title: 'Attempts',
+      title: t.executions.attempts,
       dataIndex: 'totalAttempts',
       key: 'totalAttempts',
       width: 90,
@@ -148,18 +157,18 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
           mode="multiple"
-          placeholder="Filter by status"
+          placeholder={t.executions.filterByStatus}
           value={statusFilter}
           onChange={setStatusFilter}
-          options={STATUS_OPTIONS}
+          options={statusOptions}
           allowClear
           style={{ minWidth: 200 }}
         />
         <Select
-          placeholder="Filter by source"
+          placeholder={t.executions.filterBySource}
           value={sourceFilter}
           onChange={setSourceFilter}
-          options={SOURCE_OPTIONS}
+          options={sourceOptions}
           allowClear
           style={{ minWidth: 150 }}
         />
@@ -176,7 +185,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
         dataSource={data?.items ?? []}
         loading={isLoading}
         locale={{
-          emptyText: <EmptyState description="No executions found" hint="Executions will appear here when jobs run." />,
+          emptyText: <EmptyState description={t.executions.noExecutions} hint={t.executions.noExecutionsHint} />,
         }}
         pagination={{
           current: page + 1,
@@ -188,7 +197,7 @@ export default function ExecutionTable({ jobId }: ExecutionTableProps) {
             setPage(p - 1);
             setPageSize(ps);
           },
-          showTotal: (total) => `Total ${total} executions`,
+          showTotal: (total) => t.executions.totalExecutions.replace('{total}', String(total)),
         }}
         onRow={(record) => ({
           onClick: () => navigate(`/dashboard/executions/${record.execUuid}`),

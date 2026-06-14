@@ -7,28 +7,32 @@ import { DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import type { MembershipResponse, OrganizationRole } from '@/types/organization';
 import { useMembersList, useChangeRole, useRemoveMember } from '@/hooks/useMembers';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useLanguage } from '@/hooks/useLanguage';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import EmptyState from '@/components/common/EmptyState';
 import { formatDate } from '@/utils/formatters';
 
 const { Text } = Typography;
 
-const ROLE_CONFIG: Record<OrganizationRole, { color: string }> = {
-  OWNER: { color: 'gold' },
-  ADMIN: { color: 'blue' },
-  MEMBER: { color: 'default' },
+const ROLE_CONFIG: Record<OrganizationRole, { color: string; labelKey: string }> = {
+  OWNER: { color: 'gold', labelKey: 'roleOwner' },
+  ADMIN: { color: 'blue', labelKey: 'roleAdmin' },
+  MEMBER: { color: 'default', labelKey: 'roleDeveloper' },
 };
 
-const ROLE_OPTIONS: { label: string; value: OrganizationRole }[] = [
-  { label: 'Admin', value: 'ADMIN' },
-  { label: 'Member', value: 'MEMBER' },
-];
+function getRoleOptions(t: any): { label: string; value: OrganizationRole }[] {
+  return [
+    { label: t.members.roleAdmin, value: 'ADMIN' },
+    { label: t.members.roleDeveloper, value: 'MEMBER' },
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // Row actions
 // ---------------------------------------------------------------------------
 function MemberActions({ membership }: { membership: MembershipResponse }) {
   const { activeRole } = useOrganization();
+  const { t } = useLanguage();
   const changeRole = useChangeRole();
   const removeMember = useRemoveMember();
 
@@ -43,10 +47,10 @@ function MemberActions({ membership }: { membership: MembershipResponse }) {
   const handleRemove = () => {
     const displayName = membership.userName || membership.userEmail || 'this member';
     ConfirmModal.show({
-      title: `Remove ${displayName}?`,
+      title: `${t.members.removeMember} ${displayName}?`,
       content: `Are you sure you want to remove "${displayName}" from the organization?`,
       danger: true,
-      okText: 'Remove',
+      okText: t.members.removeMember,
       onOk: () => removeMember.mutate(membership.membershipUuid),
     });
   };
@@ -56,11 +60,11 @@ function MemberActions({ membership }: { membership: MembershipResponse }) {
       {canChange && (
         <Select
           size="small"
-          style={{ width: 100 }}
+          style={{ width: 120 }}
           value={membership.roleName === 'ADMIN' || membership.roleName === 'MEMBER' ? membership.roleName : undefined}
-          placeholder="Role"
+          placeholder={t.members.role}
           onChange={handleRoleChange}
-          options={ROLE_OPTIONS}
+          options={getRoleOptions(t)}
           loading={changeRole.isPending}
         />
       )}
@@ -70,7 +74,7 @@ function MemberActions({ membership }: { membership: MembershipResponse }) {
           danger
           icon={<DeleteOutlined />}
           size="small"
-          title="Remove member"
+          title={t.members.removeMember}
           onClick={handleRemove}
           loading={removeMember.isPending}
         />
@@ -88,10 +92,11 @@ interface MembersTableProps {
 
 export default function MembersTable({ orgUuid }: MembersTableProps) {
   const { data: members, isLoading } = useMembersList(orgUuid);
+  const { t } = useLanguage();
 
   const columns = [
     {
-      title: 'User',
+      title: t.members.title,
       key: 'user',
       render: (_: unknown, record: MembershipResponse) => (
         <Space>
@@ -110,18 +115,19 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
       ),
     },
     {
-      title: 'Role',
+      title: t.members.role,
       dataIndex: 'roleName',
       key: 'roleName',
       width: 120,
       render: (roleName: string) => {
         const role = roleName as OrganizationRole;
-        const cfg = ROLE_CONFIG[role] ?? { color: 'default' };
-        return <Tag color={cfg.color}>{roleName}</Tag>;
+        const cfg = ROLE_CONFIG[role] ?? { color: 'default', labelKey: 'roleDeveloper' };
+        const label = (t.members as any)[cfg.labelKey] || roleName;
+        return <Tag color={cfg.color}>{label}</Tag>;
       },
     },
     {
-      title: 'Joined At',
+      title: t.members.joinedAt,
       dataIndex: 'joinedAt',
       key: 'joinedAt',
       width: 180,
@@ -129,7 +135,7 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
         date ? formatDate(date) : '—',
     },
     {
-      title: 'Actions',
+      title: t.common.actions,
       key: 'actions',
       width: 180,
       render: (_: unknown, record: MembershipResponse) => (
@@ -145,7 +151,7 @@ export default function MembersTable({ orgUuid }: MembersTableProps) {
       rowKey="membershipUuid"
       loading={isLoading}
       locale={{
-        emptyText: <EmptyState description="No members" hint="Invite team members to collaborate." />,
+        emptyText: <EmptyState description={t.members.noMembers} hint="Invite team members to collaborate." />,
       }}
       pagination={false}
     />

@@ -2,8 +2,9 @@
 // ExecutionDetailPage — view execution details, attempts, artifacts
 // ---------------------------------------------------------------------------
 
-import { useParams } from 'react-router-dom';
-import { Descriptions, Space, Tag, Typography, Tabs } from 'antd';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Descriptions, Space, Tag, Typography, Tabs, Button } from 'antd';
+import { LinkOutlined } from '@ant-design/icons';
 import PageHeader from '@/components/common/PageHeader';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ExecutionStatusBadge from '@/components/executions/ExecutionStatusBadge';
@@ -13,11 +14,13 @@ import ArtifactViewer from '@/components/executions/ArtifactViewer';
 import { formatDateFull } from '@/utils/formatters';
 import { useExecutionDetail } from '@/hooks/useExecutions';
 import { useLanguage } from '@/hooks/useLanguage';
+import { getJobById } from '@/api/jobs.api';
 
 const { Text } = Typography;
 
 export default function ExecutionDetailPage() {
   const { executionId } = useParams<{ executionId: string }>();
+  const navigate = useNavigate();
   const { data: execution, isLoading, isError } = useExecutionDetail(executionId!);
   const { t } = useLanguage();
 
@@ -44,25 +47,39 @@ export default function ExecutionDetailPage() {
       label: t.jobs.overview,
       children: (
         <Descriptions bordered column={2} size="small">
-          <Descriptions.Item label="Execution ID" span={2}>
+          <Descriptions.Item label={t.executions.executionId} span={2}>
             <Text code>{execution.execUuid}</Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Job ID">
-            <Text>{execution.jobId}</Text>
+          <Descriptions.Item label={t.executions.jobId}>
+            <Button
+              type="link"
+              icon={<LinkOutlined />}
+              style={{ padding: 0 }}
+              onClick={async () => {
+                try {
+                  const job = await getJobById(execution.jobId);
+                  navigate(`/dashboard/jobs/${job.jobUuid}`);
+                } catch {
+                  // Silently fail — link just won't navigate
+                }
+              }}
+            >
+              #{execution.jobId}
+            </Button>
           </Descriptions.Item>
           <Descriptions.Item label={t.common.status}>
             <ExecutionStatusBadge status={execution.finalStatus as any} />
           </Descriptions.Item>
-          <Descriptions.Item label="Source">
+          <Descriptions.Item label={t.executions.source}>
             <Tag>{execution.source}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Started At">
+          <Descriptions.Item label={t.executions.startedAt}>
             {formatDateFull(execution.startedAt)}
           </Descriptions.Item>
-          <Descriptions.Item label="Completed At">
+          <Descriptions.Item label={t.executions.completedAt}>
             {execution.finishedAt ? formatDateFull(execution.finishedAt) : <Text type="secondary">—</Text>}
           </Descriptions.Item>
-          <Descriptions.Item label="Attempts">
+          <Descriptions.Item label={t.executions.attempts}>
             {execution.totalAttempts}
           </Descriptions.Item>
         </Descriptions>
@@ -70,12 +87,12 @@ export default function ExecutionDetailPage() {
     },
     {
       key: 'attempts',
-      label: 'Attempts',
+      label: t.executions.attempts,
       children: <AttemptsTimeline executionId={execution!.execUuid} />,
     },
     {
       key: 'artifacts',
-      label: 'Artifacts',
+      label: t.executions.artifacts,
       children: <ArtifactViewer executionId={execution!.execUuid} />,
     },
   ];

@@ -68,3 +68,12 @@ export async function getArtifacts(
   );
   return response.data;
 }
+
+export function getArtifactDownloadUrl(
+  orgId: string,
+  executionId: string,
+  artifactId: number,
+): string {
+  // apiClient.defaults.baseURL === '/api/v1', gives relative URL
+  return `/api/v1/organizations/${orgId}/executions/${executionId}/artifacts/${artifactId}/download`;
+}

@@ -5,12 +5,14 @@ import com.cromp.orchestrator.config.OrchestratorProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 
@@ -86,15 +88,21 @@ public class HttpTaskAdapter {
                         .body(target.body());
             }
 
-            ResponseEntity<String> response = requestSpec
+            ResponseEntity<byte[]> response = requestSpec
                     .retrieve()
-                    .toEntity(String.class);
+                    .toEntity(byte[].class);
 
             int statusCode = response.getStatusCode().value();
-            String body = response.getBody();
+            byte[] bodyBytes = response.getBody();
+            MediaType ct = response.getHeaders().getContentType();
+            String body = bodyToText(ct, bodyBytes);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("[executor] HTTP success status={} attemptUuid={}", statusCode, attemptUuid);
+                if (isBinaryContent(ct) && bodyBytes != null && bodyBytes.length > 0) {
+                    return HttpTaskResult.success(statusCode, truncate(body),
+                            bodyBytes, ct != null ? ct.toString() : "application/octet-stream");
+                }
                 return HttpTaskResult.success(statusCode, truncate(body));
             } else {
                 log.warn("[executor] HTTP non-2xx status={} attemptUuid={}", statusCode, attemptUuid);
@@ -130,6 +138,32 @@ public class HttpTaskAdapter {
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
+
+    /**
+     * Конвертирует тело ответа в строку.
+     * Для текстовых типов (text/*, application/json, application/xml) — как есть.
+     * Для бинарных (image/*, application/octet-stream) — Base64.
+     */
+    private String bodyToText(MediaType contentType, byte[] body) {
+        if (body == null || body.length == 0) return "";
+        if (contentType != null && (
+                contentType.getType().equals("text") ||
+                contentType.includes(MediaType.APPLICATION_JSON) ||
+                contentType.includes(MediaType.APPLICATION_XML) ||
+                contentType.getSubtype().contains("json") ||
+                contentType.getSubtype().contains("xml"))) {
+            return new String(body, java.nio.charset.StandardCharsets.UTF_8);
+        }
+        // Binary or unknown: store as Base64
+        return "[base64]" + Base64.getEncoder().encodeToString(body);
+    }
+
+    private boolean isBinaryContent(MediaType contentType) {
+        if (contentType == null) return false;
+        String type = contentType.getType();
+        return type.equals("image") || type.equals("audio") || type.equals("video")
+                || contentType.includes(MediaType.APPLICATION_OCTET_STREAM);
+    }
 
     /** Обрезаем тело ответа — не храним мегабайты в БД. */
     private String truncate(String body) {

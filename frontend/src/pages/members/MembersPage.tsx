@@ -10,27 +10,29 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import MembersTable from '@/components/members/MembersTable';
 import InviteMemberModal from '@/components/members/InviteMemberModal';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function MembersPage() {
   const { activeOrganization } = useOrganization();
+  const { t } = useLanguage();
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   if (!activeOrganization) {
-    return <LoadingSpinner tip="Loading organization…" />;
+    return <LoadingSpinner tip={t.common.loading} />;
   }
 
   return (
     <div>
       <PageHeader
-        title="Members"
-        breadcrumbs={[{ title: 'Dashboard' }, { title: 'Members' }]}
+        title={t.nav.members}
+        breadcrumbs={[{ title: t.nav.dashboard }, { title: t.nav.members }]}
         extra={
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setInviteModalOpen(true)}
           >
-            Invite Member
+            {t.members.inviteMember}
           </Button>
         }
       />

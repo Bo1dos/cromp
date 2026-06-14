@@ -5,6 +5,7 @@
 import { Table, Progress, Tag, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { PredictionItem } from '@/types/analytics';
+import { useLanguage } from '@/hooks/useLanguage';
 import dayjs from 'dayjs';
 
 interface Props {
@@ -18,88 +19,78 @@ function getProbabilityColor(prob: number): string {
   return '#ff4d4f';
 }
 
-const columns: ColumnsType<PredictionItem> = [
-  {
-    title: 'Job',
-    dataIndex: 'jobId',
-    key: 'jobId',
-    sorter: (a: PredictionItem, b: PredictionItem) => a.jobId - b.jobId,
-    render: (id: number) => `#${id}`,
-  },
-  {
-    title: 'Failure Probability',
-    dataIndex: 'failureProbability',
-    key: 'failureProbability',
-    sorter: (a: PredictionItem, b: PredictionItem) => a.failureProbability - b.failureProbability,
-    defaultSortOrder: 'descend',
-    render: (prob: number) => (
-      <Progress
-        percent={Math.round(prob * 100)}
-        size="small"
-        strokeColor={getProbabilityColor(prob)}
-        style={{ minWidth: 120 }}
-      />
-    ),
-  },
-  {
-    title: 'Expected Duration',
-    dataIndex: 'expectedDurationMs',
-    key: 'expectedDurationMs',
-    sorter: (a: PredictionItem, b: PredictionItem) => (a.expectedDurationMs ?? 0) - (b.expectedDurationMs ?? 0),
-    render: (ms: number | null) => {
-      if (ms == null) return '—';
-      if (ms < 1000) return `${ms}ms`;
-      return `${(ms / 1000).toFixed(1)}s`;
-    },
-  },
-  {
-    title: 'Confidence',
-    dataIndex: 'confidence',
-    key: 'confidence',
-    sorter: (a: PredictionItem, b: PredictionItem) => a.confidence - b.confidence,
-    render: (conf: number) => (
-      <Progress
-        percent={Math.round(conf * 100)}
-        size="small"
-        strokeColor="#1677ff"
-        style={{ minWidth: 100 }}
-      />
-    ),
-  },
-  {
-    title: 'Next Run',
-    dataIndex: 'nextRunAt',
-    key: 'nextRunAt',
-    sorter: (a: PredictionItem, b: PredictionItem) =>
-      new Date(a.nextRunAt ?? 0).getTime() -
-      new Date(b.nextRunAt ?? 0).getTime(),
-    render: (iso: string | null) => {
-      if (!iso) return '—';
-      const d = dayjs(iso);
-      const now = dayjs();
-      const diffDays = d.diff(now, 'day');
-      return (
-        <span>
-          {d.format('DD.MM.YYYY HH:mm')}
-          {diffDays <= 3 && diffDays >= 0 && (
-            <Tag color="blue" style={{ marginLeft: 8 }}>
-              soon
-            </Tag>
-          )}
-        </span>
-      );
-    },
-  },
-];
-
 export default function PredictionsTable({ data, loading }: Props) {
+  const { t } = useLanguage();
+
+  const columns: ColumnsType<PredictionItem> = [
+    {
+      title: t.analytics.job,
+      dataIndex: 'jobId',
+      key: 'jobId',
+      sorter: (a: PredictionItem, b: PredictionItem) => a.jobId - b.jobId,
+      render: (id: number) => `#${id}`,
+    },
+    {
+      title: t.analytics.failureProbability,
+      dataIndex: 'failureProbability',
+      key: 'failureProbability',
+      sorter: (a: PredictionItem, b: PredictionItem) => a.failureProbability - b.failureProbability,
+      defaultSortOrder: 'descend',
+      render: (prob: number) => (
+        <Progress
+          percent={Math.round(prob * 100)}
+          size="small"
+          strokeColor={getProbabilityColor(prob)}
+          style={{ minWidth: 120 }}
+        />
+      ),
+    },
+    {
+      title: t.analytics.expectedDuration,
+      dataIndex: 'expectedDurationMs',
+      key: 'expectedDurationMs',
+      sorter: (a: PredictionItem, b: PredictionItem) => (a.expectedDurationMs ?? 0) - (b.expectedDurationMs ?? 0),
+      render: (ms: number | null) => {
+        if (ms == null) return '—';
+        if (ms < 1000) return `${ms}ms`;
+        return `${(ms / 1000).toFixed(1)}s`;
+      },
+    },
+    {
+      title: t.analytics.confidence,
+      dataIndex: 'confidence',
+      key: 'confidence',
+      sorter: (a: PredictionItem, b: PredictionItem) => a.confidence - b.confidence,
+      render: (conf: number) => (
+        <Progress
+          percent={Math.round(conf * 100)}
+          size="small"
+          strokeColor="#1677ff"
+          style={{ minWidth: 100 }}
+        />
+      ),
+    },
+    {
+      title: t.analytics.nextRun,
+      dataIndex: 'nextRunAt',
+      key: 'nextRunAt',
+      sorter: (a: PredictionItem, b: PredictionItem) =>
+        new Date(a.nextRunAt ?? 0).getTime() -
+        new Date(b.nextRunAt ?? 0).getTime(),
+      render: (iso: string | null) => {
+        if (!iso) return '—';
+        return dayjs(iso).format('DD.MM.YYYY HH:mm');
+      },
+    },
+  ];
+
   return (
     <Table<PredictionItem>
       columns={columns}
       dataSource={data}
       loading={loading}
       rowKey="jobId"
-      locale={{ emptyText: <Empty description="No predictions available" /> }}
+      locale={{ emptyText: <Empty description={t.analytics.noPredictions} /> }}
       pagination={false}
     />
   );

@@ -48,11 +48,14 @@ export interface AttemptResponse {
 
 /** Backend ArtifactResponse */
 export interface ArtifactResponse {
-  artifactUuid: string;
-  type: 'stdout' | 'stderr';
-  content: string;
+  id: number;
+  kind: string;
+  storagePath: string;
   sizeBytes: number;
-  createdAt: string;
+  contentType: string;
+  checksumSha256: string;
+  retentionDays: number | null;
+  uploadedAt: string;
 }
 
 /** Backend PagedResponse — uses "items" and "total" (not "content" / "totalElements") */
