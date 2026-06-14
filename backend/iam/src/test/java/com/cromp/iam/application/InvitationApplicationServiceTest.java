@@ -5,6 +5,8 @@ import com.cromp.iam.api.dto.request.InviteUserRequest;
 import com.cromp.iam.api.dto.request.RejectInvitationRequest;
 import com.cromp.iam.api.dto.request.RevokeInvitationRequest;
 import com.cromp.iam.api.mapper.InvitationApiMapper;
+import com.cromp.common.application.port.EmailSenderPort;
+import com.cromp.common.event.integration.publisher.DomainEventPublisher;
 import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PermissionCheckerPort;
 import com.cromp.iam.application.service.InvitationApplicationService;
@@ -58,6 +60,10 @@ class InvitationApplicationServiceTest {
     private CurrentActorPort currentActorPort;
     @Mock
     private PermissionCheckerPort permissionCheckerPort;
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
+    @Mock
+    private EmailSenderPort emailSenderPort;
 
     private InvitationApplicationService service;
 
@@ -71,7 +77,9 @@ class InvitationApplicationServiceTest {
                 membershipRepository,
                 new InvitationApiMapper(),
                 currentActorPort,
-                permissionCheckerPort
+                permissionCheckerPort,
+                domainEventPublisher,
+                emailSenderPort
         );
     }
 

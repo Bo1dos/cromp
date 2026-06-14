@@ -2,7 +2,9 @@ package com.cromp.iam.application;
 
 import com.cromp.iam.api.dto.request.AddMembershipRequest;
 import com.cromp.iam.api.dto.request.ChangeMembershipRoleRequest;
+import com.cromp.common.event.integration.publisher.DomainEventPublisher;
 import com.cromp.iam.api.mapper.MembershipApiMapper;
+import com.cromp.iam.api.mapper.OrganizationApiMapper;
 import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PermissionCheckerPort;
 import com.cromp.iam.application.service.MembershipApplicationService;
@@ -48,6 +50,10 @@ class MembershipApplicationServiceTest {
     private CurrentActorPort currentActorPort;
     @Mock
     private PermissionCheckerPort permissionCheckerPort;
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
+    @Mock
+    private OrganizationApiMapper organizationMapper;
 
     private MembershipApplicationService service;
 
@@ -58,9 +64,10 @@ class MembershipApplicationServiceTest {
                 userRepository,
                 organizationRepository,
                 roleRepository,
-                new MembershipApiMapper(new com.cromp.iam.api.mapper.OrganizationApiMapper()),
+                new MembershipApiMapper(organizationMapper),
                 currentActorPort,
-                permissionCheckerPort
+                permissionCheckerPort,
+                domainEventPublisher
         );
     }
 

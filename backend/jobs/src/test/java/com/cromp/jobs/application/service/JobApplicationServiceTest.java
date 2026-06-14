@@ -12,6 +12,7 @@ import com.cromp.jobs.domain.model.exceptions.InvalidJobStateException;
 import com.cromp.jobs.domain.model.exceptions.JobNotFoundException;
 import com.cromp.jobs.domain.repository.JobRepositoryPort;
 import com.cromp.jobs.domain.repository.JobVersionRepositoryPort;
+import com.cromp.secrets.domain.repository.SecretRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,7 @@ class JobApplicationServiceTest {
 
     @Mock private JobRepositoryPort jobRepository;
     @Mock private JobVersionRepositoryPort versionRepository;
+    @Mock private SecretRepositoryPort secretRepository;
     @Mock private CurrentActorPort currentActorPort;
     @Mock private PermissionCheckerPort permissionCheckerPort;
     @Mock private AuditPort auditPort;
@@ -49,9 +51,9 @@ class JobApplicationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new JobApplicationService(jobRepository, versionRepository, currentActorPort,
-                permissionCheckerPort, auditPort, executionCreationPort, new JobApiMapper(),
-                jdbcTemplate, domainEventPublisher);
+        service = new JobApplicationService(jobRepository, versionRepository, secretRepository,
+                currentActorPort, permissionCheckerPort, auditPort, executionCreationPort,
+                new JobApiMapper(), jdbcTemplate, domainEventPublisher);
         when(currentActorPort.currentUserId()).thenReturn(Optional.of(11L));
         when(currentActorPort.currentOrganizationId()).thenReturn(Optional.of(101L));
         when(permissionCheckerPort.isMember(11L, 101L)).thenReturn(true);

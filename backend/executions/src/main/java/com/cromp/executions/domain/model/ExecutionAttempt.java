@@ -127,4 +127,9 @@ public class ExecutionAttempt {
         this.finishedAt = now;
         this.updatedAt = now;
     }
+
+    public void markRetrying() {
+        this.status = AttemptStatus.RETRYING;
+        this.updatedAt = Instant.now();
+    }
 }

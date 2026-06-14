@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -56,6 +57,8 @@ class SecretApplicationServiceTest {
     private CurrentActorPort currentActorPort;
     @Mock
     private PermissionCheckerPort permissionCheckerPort;
+    @Mock
+    private JdbcTemplate jdbcTemplate;
 
     private SecretApplicationService service;
 
@@ -68,7 +71,8 @@ class SecretApplicationServiceTest {
                 new SecretApiMapper(),
                 auditPort,
                 currentActorPort,
-                permissionCheckerPort
+                permissionCheckerPort,
+                jdbcTemplate
         );
     }
 

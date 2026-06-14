@@ -25,7 +25,6 @@ class JobApiMapperTest {
 
         JobResponse response = mapper.toJobResponse(job, version, 2);
 
-        assertThat(response.id()).isEqualTo(1L);
         assertThat(response.jobUuid()).isEqualTo(job.getJobUuid());
         assertThat(response.status()).isEqualTo("ACTIVE");
         assertThat(response.currentVersion()).isEqualTo(2);

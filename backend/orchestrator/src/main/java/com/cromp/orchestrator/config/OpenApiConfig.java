@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * OpenAPI 3 / Swagger конфигурация для Cron as a Service.
+ * OpenAPI 3 / Swagger конфигурация для Cromp.
  *
  * Определяет:
  * - метаданные API,
@@ -24,9 +24,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Cron as a Service API",
+                title = "Cromp API",
                 description = """
-                        REST API для платформы Cron as a Service — модульного монолита
+                        REST API для платформы Cromp — модульного монолита
                         для управления периодическими задачами (cron jobs).
 
                         Модули:
@@ -40,7 +40,7 @@ import org.springframework.context.annotation.Configuration;
                 version = "1.0.0",
                 contact = @Contact(
                         name = "Cromp Team",
-                        email = "dev@cromp.io"
+                        email = "noreply.cromp@gmail.com"
                 ),
                 license = @License(
                         name = "Proprietary",

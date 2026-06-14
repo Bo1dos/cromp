@@ -1,5 +1,6 @@
 package com.cromp.orchestrator.executor;
 
+import com.cromp.common.event.integration.publisher.DomainEventPublisher;
 import com.cromp.executions.api.dto.request.CompleteAttemptRequest;
 import com.cromp.executions.api.dto.response.ClaimAttemptResult;
 import com.cromp.executions.application.port.AttemptClaimPort;
@@ -57,6 +58,8 @@ class ExecutorServiceTest {
     private HttpTaskAdapter httpTaskAdapter;
     @Mock
     private SecretResolverService secretResolverService;
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
 
     private OrchestratorProperties properties;
     private ObjectMapper objectMapper;
@@ -66,24 +69,25 @@ class ExecutorServiceTest {
     private ExecutorService service;
 
     private static final UUID ATTEMPT_UUID = UUID.randomUUID();
+    private static final Long ORG_ID = 42L;
+    private static final Long JOB_ID = 99L;
 
     @BeforeEach
     void setUp() {
         properties = new OrchestratorProperties();
         objectMapper = new ObjectMapper();
         meterRegistry = new SimpleMeterRegistry();
-        // Use direct executor for synchronous test execution
         taskExecutor = Runnable::run;
         service = new ExecutorService(
                 claimPort, completionPort, httpTaskAdapter,
                 secretResolverService, properties, objectMapper,
-                taskExecutor, meterRegistry);
+                taskExecutor, meterRegistry, domainEventPublisher);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private ClaimAttemptResult createClaimResult(String jobConfigJson) {
-        return new ClaimAttemptResult(1L, ATTEMPT_UUID, 100L, jobConfigJson);
+        return new ClaimAttemptResult(1L, ATTEMPT_UUID, 100L, ORG_ID, JOB_ID, jobConfigJson);
     }
 
     private String jobConfigJson() throws JsonProcessingException {
