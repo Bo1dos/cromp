@@ -241,6 +241,8 @@ const ru: Translations = {
     noAnomalies: 'Аномалии не обнаружены',
     noPredictions: 'Нет прогнозов',
     loadingAnalytics: 'Загрузка аналитики…',
+    recommendations: 'Рекомендации',
+    noDataYet: 'Данных пока нет. Аналитика и рекомендации появятся после выполнения задач.',
     metrics: {
       avg_duration_ms: 'Сред. длительность',
       error_rate: 'Частота ошибок',
@@ -248,6 +250,15 @@ const ru: Translations = {
       failure_count: 'Кол-во ошибок',
       success_rate: 'Успешность',
       total_executions: 'Всего запусков',
+    },
+    recs: {
+      highErrorRate: 'Задача {jobRef}: {label} составляет {value} (порог {threshold}). Рекомендуется проверить целевой URL и параметры запроса.',
+      highDuration: 'Задача {jobRef}: {label} выросла до {value} (ожидалось ≤{threshold}). Рассмотрите увеличение тайм-аута.',
+      failures: 'Задача {jobRef}: зафиксированы ошибки выполнения ({value}). Проверьте логи попыток для диагностики.',
+      lowSuccessRate: 'Задача {jobRef}: успешность снизилась до {value} (порог {threshold}). Проверьте стабильность целевого сервиса.',
+      criticalAnomaly: 'Задача {jobRef}: обнаружена {severity} аномалия по метрике «{label}». Требуется немедленное внимание.',
+      severity_critical: 'критическая',
+      severity_high: 'серьёзная',
     },
   },
 

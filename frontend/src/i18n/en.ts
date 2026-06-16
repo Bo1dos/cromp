@@ -239,6 +239,8 @@ const en = {
     noAnomalies: 'No anomalies detected',
     noPredictions: 'No predictions available',
     loadingAnalytics: 'Loading analytics…',
+    recommendations: 'Recommendations',
+    noDataYet: 'No data yet. Analytics and recommendations will appear as jobs are executed.',
     // Human-readable metric names
     metrics: {
       avg_duration_ms: 'Avg Duration',
@@ -247,6 +249,16 @@ const en = {
       failure_count: 'Failure Count',
       success_rate: 'Success Rate',
       total_executions: 'Total Executions',
+    },
+    // Recommendation templates — {jobRef} {label} {value} {threshold}
+    recs: {
+      highErrorRate: 'Job {jobRef}: {label} is {value} (threshold {threshold}). Check the target URL and request parameters.',
+      highDuration: 'Job {jobRef}: {label} increased to {value} (expected ≤{threshold}). Consider increasing the timeout.',
+      failures: 'Job {jobRef}: execution failures detected ({value}). Check attempt logs for diagnostics.',
+      lowSuccessRate: 'Job {jobRef}: success rate dropped to {value} (threshold {threshold}). Verify the target service stability.',
+      criticalAnomaly: 'Job {jobRef}: {severity} anomaly detected for metric "{label}". Immediate attention required.',
+      severity_critical: 'critical',
+      severity_high: 'serious',
     },
   },
 

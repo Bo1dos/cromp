@@ -139,7 +139,7 @@ export default function AnomaliesTable({ data, loading }: Props) {
         loading={loading}
         rowKey={(record) => `${record.jobId}-${record.detectedAt}`}
         locale={{ emptyText: <Empty description={t.analytics.noAnomalies} /> }}
-        pagination={false}
+        pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50'] }}
       />
     </div>
   );

@@ -33,7 +33,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useJobsList } from '@/hooks/useJobs';
 import { useExecutionsList } from '@/hooks/useExecutions';
-import { useSummary } from '@/hooks/useAnalytics';
+import { useSummary, usePredictions } from '@/hooks/useAnalytics';
 import { formatRelative } from '@/utils/formatters';
 import type { ExecutionResponse } from '@/types/execution';
 import type { ColumnsType } from 'antd/es/table';
@@ -70,6 +70,7 @@ export default function DashboardPage() {
   } = useSummary(orgId, '7d');
   const { data: executionsPage } = useExecutionsList({ page: 0, size: 6 });
   const { data: failedPage } = useExecutionsList({ status: 'FAILED', page: 0, size: 5 });
+  const { data: predData } = usePredictions(orgId);
 
   // ---- Derived counts ---------------------------------------------------
   const totalJobs = jobs.length;
@@ -246,6 +247,47 @@ export default function DashboardPage() {
               )}
             </div>
           </Space>
+        </Card>
+      )}
+
+      {/* ---- High-risk Predictions Insight ---- */}
+      {predData?.predictions && predData.predictions.filter((p) => p.failureProbability > 0.5).length > 0 && (
+        <Card
+          size="small"
+          style={{ marginBottom: 24, borderLeft: '3px solid #ff4d4f' }}
+          title={
+            <Space>
+              <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+              <span>⚠ High failure risk predicted</span>
+            </Space>
+          }
+        >
+          {predData.predictions
+            .filter((p) => p.failureProbability > 0.5)
+            .sort((a, b) => b.failureProbability - a.failureProbability)
+            .map((p) => (
+              <div key={p.jobId} style={{ marginBottom: 8 }}>
+                <Space>
+                  <Button
+                    size="small"
+                    type="link"
+                    style={{ padding: 0 }}
+                    onClick={() => {
+                      const job = jobs.find((j) => j.id === p.jobId);
+                      if (job) navigate(`/dashboard/jobs/${job.jobUuid}`);
+                    }}
+                  >
+                    Job #{p.jobId}
+                  </Button>
+                  <Tag color="error">{Math.round(p.failureProbability * 100)}% failure probability</Tag>
+                  {p.expectedDurationMs != null && (
+                    <Text type="secondary">
+                      expected {p.expectedDurationMs < 1000 ? `${p.expectedDurationMs}ms` : `${(p.expectedDurationMs / 1000).toFixed(1)}s`}
+                    </Text>
+                  )}
+                </Space>
+              </div>
+            ))}
         </Card>
       )}
 

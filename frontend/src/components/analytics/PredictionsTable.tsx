@@ -91,7 +91,7 @@ export default function PredictionsTable({ data, loading }: Props) {
       loading={loading}
       rowKey="jobId"
       locale={{ emptyText: <Empty description={t.analytics.noPredictions} /> }}
-      pagination={false}
+      pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50'] }}
     />
   );
 }
