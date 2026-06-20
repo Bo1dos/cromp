@@ -1,11 +1,13 @@
 package com.cromp.iam.application.service;
 
 import com.cromp.iam.api.dto.request.CreateOrganizationRequest;
+import com.cromp.iam.api.dto.request.RecordAuditLogRequest;
 import com.cromp.iam.api.dto.request.RenameOrganizationRequest;
 import com.cromp.iam.api.dto.response.MembershipResponse;
 import com.cromp.iam.api.dto.response.OrganizationResponse;
 import com.cromp.iam.api.mapper.MembershipApiMapper;
 import com.cromp.iam.api.mapper.OrganizationApiMapper;
+import com.cromp.iam.api.service.AuditLogFacade;
 import com.cromp.iam.api.service.OrganizationFacade;
 import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PermissionCheckerPort;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -36,6 +39,7 @@ public class OrganizationApplicationService implements OrganizationFacade {
     private final MembershipApiMapper membershipMapper;
     private final CurrentActorPort currentActorPort;
     private final PermissionCheckerPort permissionCheckerPort;
+    private final AuditLogFacade auditLogFacade;
 
     @Override
     public OrganizationResponse create(CreateOrganizationRequest request, Long creatorUserId) {
@@ -46,6 +50,12 @@ public class OrganizationApplicationService implements OrganizationFacade {
                 .orElseThrow(() -> new IllegalStateException("OWNER role not found"));
         Membership membership = Membership.join(creatorUserId, org.getId(), ownerRole.getId());
         membershipRepository.save(membership);
+
+        auditLogFacade.record(new RecordAuditLogRequest(
+                org.getId(), creatorUserId, Map.of(),
+                "ORG.CREATE", "organizations", org.getId(),
+                Map.of("name", request.name())
+        ));
 
         return organizationMapper.toResponse(org);
     }
@@ -61,7 +71,15 @@ public class OrganizationApplicationService implements OrganizationFacade {
             throw new SecurityException("No permission to update this organization");
         }
         organization.rename(request.name());
-        return organizationMapper.toResponse(organizationRepository.save(organization));
+        organizationRepository.save(organization);
+
+        auditLogFacade.record(new RecordAuditLogRequest(
+                organization.getId(), currentUserId, Map.of(),
+                "ORG.UPDATE", "organizations", organization.getId(),
+                Map.of("name", request.name())
+        ));
+
+        return organizationMapper.toResponse(organization);
     }
 
     @Override

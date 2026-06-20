@@ -5,6 +5,7 @@ import com.cromp.executions.api.dto.response.AttemptResponse;
 import com.cromp.executions.api.dto.response.ClaimAttemptResult;
 import com.cromp.executions.api.mapper.ExecutionApiMapper;
 import com.cromp.executions.application.port.ArtifactStoragePort;
+import com.cromp.executions.application.port.AuditPort;
 import com.cromp.executions.application.port.StoredArtifact;
 import com.cromp.executions.domain.model.ExecutionArtifact;
 import com.cromp.executions.domain.model.ExecutionAttempt;
@@ -44,6 +45,7 @@ public class AttemptService {
     private final ExecutionAttemptRepositoryPort attemptRepository;
     private final ExecutionArtifactRepositoryPort artifactRepository;
     private final ArtifactStoragePort artifactStorage;
+    private final AuditPort auditPort;
     private final ExecutionAttemptCustomRepository customRepository;
     private final ExecutionApiMapper mapper;
     private final CurrentActorPort currentActorPort;
@@ -88,6 +90,20 @@ public class AttemptService {
                 log.error("Failed to auto-save artifact for attempt {}", attemptUuid, e);
                 // Не фейлим попытку — артефакт опционален
             }
+        }
+
+        // Аудит завершения выполнения
+        String auditAction = switch (newStatus) {
+            case SUCCEEDED -> "EXECUTION.SUCCEED";
+            case FAILED -> "EXECUTION.FAIL";
+            case TIMEOUT -> "EXECUTION.TIMEOUT";
+            case CANCELLED -> "EXECUTION.CANCELLED";
+            default -> null;
+        };
+        if (auditAction != null) {
+            auditPort.record(auditAction, attempt.getOrganizationId(), null,
+                    "executions", attempt.getExecutionId(),
+                    java.util.Map.of("attemptUuid", attempt.getAttemptUuid()));
         }
         // Обновление finalStatus Execution — через триггер БД (fn_update_execution_final_status)
     }

@@ -47,7 +47,7 @@ export default function LoginPage() {
     >
       <div style={{ width: 400, padding: 32, background: 'var(--color-bg-base, #fff)', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.09)' }}>
         <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          Sign in to CaaS
+          Sign in to Cromp
         </Title>
 
         <Form<LoginFormValues>

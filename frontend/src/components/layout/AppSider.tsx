@@ -123,7 +123,7 @@ export default function AppSider({ isDrawer = false, onNavigate }: AppSiderProps
             letterSpacing: 1,
           }}
         >
-          CaaS
+          Cromp
         </span>
       </div>
 

@@ -54,7 +54,7 @@ export default function AppHeader({ extraLeft }: AppHeaderProps) {
     },
   ];
 
-  const orgName = activeOrganization?.name ?? 'CaaS';
+  const orgName = activeOrganization?.name ?? 'Cromp';
 
   return (
     <Header

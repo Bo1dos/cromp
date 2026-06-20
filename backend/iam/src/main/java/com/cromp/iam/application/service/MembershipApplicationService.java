@@ -2,8 +2,10 @@ package com.cromp.iam.application.service;
 
 import com.cromp.iam.api.dto.request.AddMembershipRequest;
 import com.cromp.iam.api.dto.request.ChangeMembershipRoleRequest;
+import com.cromp.iam.api.dto.request.RecordAuditLogRequest;
 import com.cromp.iam.api.dto.response.MembershipResponse;
 import com.cromp.iam.api.mapper.MembershipApiMapper;
+import com.cromp.iam.api.service.AuditLogFacade;
 import com.cromp.iam.api.service.MembershipFacade;
 import com.cromp.iam.application.port.CurrentActorPort;
 import com.cromp.iam.application.port.PermissionCheckerPort;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -40,6 +43,7 @@ public class MembershipApplicationService implements MembershipFacade {
     private final CurrentActorPort currentActorPort;
     private final PermissionCheckerPort permissionCheckerPort;
     private final DomainEventPublisher domainEventPublisher;
+    private final AuditLogFacade auditLogFacade;
 
     @Override
     public MembershipResponse add(AddMembershipRequest request) {
@@ -66,6 +70,12 @@ public class MembershipApplicationService implements MembershipFacade {
                 user.getEmail(),
                 role.getName().toString(),
                 currentUserId
+        ));
+
+        auditLogFacade.record(new RecordAuditLogRequest(
+                organizationId, currentUserId, Map.of("name", user.getEmail()),
+                "MEMBER.INVITE", "members", membership.getId(),
+                Map.of("userId", user.getId(), "role", role.getName().toString())
         ));
 
         return membershipMapper.toResponse(membership);
@@ -102,6 +112,14 @@ public class MembershipApplicationService implements MembershipFacade {
                 currentUserId
         ));
 
+        auditLogFacade.record(new RecordAuditLogRequest(
+                membership.getOrganizationId(), currentUserId,
+                Map.of("name", member != null ? member.getEmail() : "unknown"),
+                "MEMBER.ROLE_CHANGE", "members", membership.getId(),
+                Map.of("userId", membership.getUserId(),
+                       "from", oldRoleName, "to", role.getName().toString())
+        ));
+
         return membershipMapper.toResponse(membership);
     }
     
@@ -124,6 +142,13 @@ public class MembershipApplicationService implements MembershipFacade {
                 membership.getUserId(),
                 member != null ? member.getEmail() : "unknown",
                 currentUserId
+        ));
+
+        auditLogFacade.record(new RecordAuditLogRequest(
+                membership.getOrganizationId(), currentUserId,
+                Map.of("name", member != null ? member.getEmail() : "unknown"),
+                "MEMBER.REMOVE", "members", membership.getId(),
+                Map.of("userId", membership.getUserId())
         ));
 
         membershipRepository.deleteById(membership.getId());
